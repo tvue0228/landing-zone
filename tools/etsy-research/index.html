@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Etsy Research Hub</title>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// ─── Niche Data ───────────────────────────────────────────────────────────────
+const NICHES = [
+  {
+    id: "pod", icon: "🖨️", label: "Print on Demand", color: "#2563eb", light: "#eff6ff",
+    desc: "No inventory. Design once, sell forever.",
+    tip: "Niche down hard — dog breeds, professions, hobbies outperform generic. Seasonal hooks spike sales.",
+    keywords: ["funny dog mom sweatshirt", "bachelorette party shirts custom", "personalized teacher mug", "retro vintage graphic tee custom", "mental health awareness shirt"],
+    products: [
+      { name: "Funny Pet Owner Sweatshirt",      q: "funny dog mom sweatshirt personalized",           price: "$35–65", comp: "high", hot: true  },
+      { name: "Bachelorette Party Shirts",        q: "bachelorette party matching shirts custom",        price: "$25–40", comp: "high", hot: true  },
+      { name: "Teacher Appreciation Mug",         q: "personalized teacher mug custom gift",             price: "$18–30", comp: "high", hot: false },
+      { name: "Dog Mom / Cat Mom Tee",            q: "dog mom shirt personalized pet gift",              price: "$22–38", comp: "high", hot: true  },
+      { name: "Retro Vintage Graphic Tee",        q: "retro vintage style custom graphic tee",           price: "$28–42", comp: "med",  hot: true  },
+      { name: "Mental Health Awareness Shirt",    q: "mental health awareness shirt gift",               price: "$25–40", comp: "med",  hot: true  },
+      { name: "Personalized Gift Mug",            q: "custom name mug personalized gift",                price: "$18–28", comp: "high", hot: false },
+      { name: "Baby Milestone Bodysuit",          q: "custom baby bodysuit milestone month",             price: "$18–28", comp: "med",  hot: false },
+      { name: "State Pride Hoodie",               q: "state pride hoodie custom city",                   price: "$45–70", comp: "med",  hot: false },
+      { name: "Family Reunion Matching Tees",     q: "family reunion matching custom t-shirts",          price: "$20–35", comp: "med",  hot: false },
+    ],
+  },
+  {
+    id: "personalization", icon: "✍️", label: "Personalization", color: "#7c3aed", light: "#f5f3ff",
+    desc: "Custom names, dates, messages — buyers pay 2–3× more.",
+    tip: "Gift occasions drive the most volume: weddings, babies, Christmas, Mother's Day. Bundle with gift wrap.",
+    keywords: ["custom name necklace personalized", "personalized wedding gift couples", "personalized baby gift custom name", "custom star map night sky", "personalized family portrait custom"],
+    products: [
+      { name: "Custom Name Necklace",             q: "custom name necklace personalized jewelry gold",   price: "$20–55", comp: "high", hot: true  },
+      { name: "Personalized Wedding Gift",        q: "personalized wedding gift custom couples keepsake", price: "$40–120",comp: "high", hot: true  },
+      { name: "Personalized Baby Gift Set",       q: "personalized baby gift custom name newborn",       price: "$30–70", comp: "high", hot: true  },
+      { name: "Custom Star Map Print",            q: "custom star map personalized night sky date",      price: "$20–55", comp: "high", hot: true  },
+      { name: "Personalized Location Map Print",  q: "personalized custom map location coordinates",     price: "$20–50", comp: "med",  hot: true  },
+      { name: "Custom Family Name Sign",          q: "custom family name sign personalized wood home",   price: "$30–80", comp: "high", hot: false },
+      { name: "Custom Keepsake Box",              q: "personalized keepsake box custom name engraved",   price: "$30–75", comp: "med",  hot: false },
+      { name: "Monogram Tote Bag",               q: "personalized monogram tote bag custom initial",    price: "$18–38", comp: "med",  hot: false },
+      { name: "Custom Pet ID Tag",                q: "custom pet id tag personalized dog cat name",      price: "$10–22", comp: "med",  hot: false },
+      { name: "Personalized Bookmark",            q: "personalized custom name bookmark gift reader",    price: "$8–18",  comp: "low",  hot: false },
+    ],
+  },
+  {
+    id: "digital", icon: "💾", label: "Digital Assets", color: "#059669", light: "#f0fdf4",
+    desc: "Zero COGS. One upload, unlimited sales. Pure margin.",
+    tip: "Bundles drastically outperform single files. Target Cricut crafters, Canva users, and planners — huge audiences.",
+    keywords: ["SVG bundle Cricut digital download", "digital planner GoodNotes iPad", "printable wall art set instant download", "Canva template social media pack", "wedding invitation template editable"],
+    products: [
+      { name: "SVG Bundle for Cricut",            q: "SVG cut files bundle Cricut digital download",     price: "$3–12",  comp: "high", hot: true  },
+      { name: "Digital Planner (GoodNotes/iPad)", q: "digital planner GoodNotes iPad undated download",  price: "$8–25",  comp: "high", hot: true  },
+      { name: "Printable Wall Art Set",           q: "printable wall art digital download set instant",  price: "$3–15",  comp: "high", hot: true  },
+      { name: "Editable Wedding Invitation",      q: "wedding invitation template editable digital",     price: "$8–28",  comp: "high", hot: true  },
+      { name: "Canva Social Media Templates",     q: "Canva template social media pack editable",        price: "$5–22",  comp: "med",  hot: true  },
+      { name: "Resume / CV Template",             q: "resume template editable Word Canva digital",      price: "$5–15",  comp: "high", hot: false },
+      { name: "Budget / Finance Tracker",         q: "budget tracker spreadsheet Google Sheets digital", price: "$5–18",  comp: "med",  hot: false },
+      { name: "Kids Printable Activity Pack",     q: "kids printable activity worksheets digital",       price: "$3–10",  comp: "med",  hot: false },
+      { name: "Lightroom Preset Pack",            q: "Lightroom preset pack digital download mobile",    price: "$8–30",  comp: "high", hot: true  },
+      { name: "Affirmation / Journal Cards",      q: "journal printable affirmation cards digital",      price: "$3–12",  comp: "med",  hot: false },
+    ],
+  },
+  {
+    id: "laser", icon: "⚡", label: "Laser Engraving", color: "#d97706", light: "#fffbeb",
+    desc: "High perceived value. Personalization adds 50–100% to base price.",
+    tip: "Keychains and ornaments: low material cost, easy to customize, gift-ready. Cutting boards dominate search volume.",
+    keywords: ["laser engraved cutting board personalized", "custom wooden keychain laser engraved", "personalized ornament laser engraved", "laser cut wood earrings", "engraved wedding gift wood"],
+    products: [
+      { name: "Engraved Bamboo Cutting Board",    q: "laser engraved personalized cutting board bamboo", price: "$35–85", comp: "high", hot: true  },
+      { name: "Custom Wooden Keychain",           q: "laser engraved wooden keychain custom name",       price: "$8–20",  comp: "med",  hot: true  },
+      { name: "Engraved Wedding Gift Box",        q: "laser engraved wedding gift wood personalized",    price: "$45–130",comp: "high", hot: true  },
+      { name: "Custom Pet Portrait Ornament",     q: "laser engraved pet ornament custom portrait",      price: "$15–38", comp: "med",  hot: true  },
+      { name: "Laser Cut Wood Earrings",          q: "laser cut wood earrings engraved handmade",        price: "$12–32", comp: "med",  hot: true  },
+      { name: "Custom City / State Map Art",      q: "laser cut city map wood custom engraved wall",     price: "$35–90", comp: "med",  hot: true  },
+      { name: "Personalized Coaster Set (4)",     q: "laser engraved coasters personalized set wood",    price: "$20–50", comp: "med",  hot: false },
+      { name: "Engraved Desk Name Plate",         q: "laser engraved desk nameplate personalized wood",  price: "$20–50", comp: "med",  hot: false },
+      { name: "Engraved Wine / Pint Glass",       q: "laser engraved wine glass personalized custom",    price: "$18–40", comp: "high", hot: false },
+      { name: "Custom Wooden Bookmark",           q: "laser engraved wooden bookmark personalized",      price: "$8–16",  comp: "low",  hot: false },
+    ],
+  },
+  {
+    id: "wood", icon: "🪵", label: "Wooden Products", color: "#92400e", light: "#fef3c7",
+    desc: "Natural materials, handmade appeal. Low material cost, high perceived value.",
+    tip: "Home décor and kids toys have year-round demand. Charcuterie boards are the highest-converting category.",
+    keywords: ["handmade wooden bead bracelet", "live edge charcuterie board wood", "personalized wood name puzzle kids", "rustic wood floating shelf", "wood slice ornament handmade"],
+    products: [
+      { name: "Live Edge Charcuterie Board",      q: "handmade live edge charcuterie board wood",        price: "$35–90", comp: "high", hot: true  },
+      { name: "Personalized Name Puzzle (Kids)",  q: "personalized wooden name puzzle kids custom",      price: "$20–48", comp: "med",  hot: true  },
+      { name: "Wooden Bead Bracelet",             q: "handmade wooden bead bracelet boho stackable",     price: "$8–22",  comp: "med",  hot: true  },
+      { name: "Floating Wood Shelf / Ledge",      q: "handmade floating wood shelf rustic natural",      price: "$28–70", comp: "med",  hot: true  },
+      { name: "Rustic Wood Home Sign",            q: "rustic wood home sign handmade farmhouse decor",   price: "$22–65", comp: "high", hot: false },
+      { name: "Wood Slice Ornament",              q: "wood slice ornament handmade rustic christmas",    price: "$6–16",  comp: "low",  hot: true  },
+      { name: "Wood Coaster Set",                 q: "handmade wooden coaster set natural live edge",    price: "$15–38", comp: "med",  hot: false },
+      { name: "Wooden Toy Car / Train",           q: "handmade wooden toy car train kids natural",       price: "$12–35", comp: "med",  hot: false },
+      { name: "Wood Wall Art / Sculpture",        q: "handmade wood wall art sculpture rustic decor",    price: "$35–110",comp: "med",  hot: true  },
+      { name: "Wooden Bookmark",                  q: "handmade wooden bookmark natural wood gift",       price: "$5–12",  comp: "low",  hot: false },
+    ],
+  },
+  {
+    id: "crafts", icon: "🎨", label: "Arts & Crafts", color: "#db2777", light: "#fdf2f8",
+    desc: "One-of-a-kind. Uniqueness justifies premium pricing.",
+    tip: "Trending crafts (resin, macramé, crochet) ride algorithm boosts. Seasonal candles and ornaments dominate Q4.",
+    keywords: ["macrame wall hanging handmade boho", "resin geode coaster set handmade", "handmade soy candle natural scented", "pressed flower art botanical framed", "crochet bucket hat cotton"],
+    products: [
+      { name: "Macramé Wall Hanging",             q: "macrame wall hanging handmade boho large",         price: "$28–110",comp: "high", hot: true  },
+      { name: "Resin Geode Coaster Set",          q: "resin geode coaster set handmade agate art",       price: "$32–75", comp: "high", hot: true  },
+      { name: "Handmade Soy Candle",              q: "handmade soy candle natural scented custom",       price: "$12–32", comp: "high", hot: true  },
+      { name: "Pressed Flower / Botanical Art",   q: "pressed flower real botanical art framed handmade",price: "$18–60", comp: "med",  hot: true  },
+      { name: "Crochet Bucket Hat",               q: "crochet bucket hat handmade cotton summer",        price: "$22–55", comp: "high", hot: true  },
+      { name: "Wax Seal Stamp Kit",               q: "wax seal stamp kit custom initial letter set",     price: "$12–35", comp: "med",  hot: true  },
+      { name: "Hand-Painted Ceramic Mug",         q: "hand painted ceramic mug custom art handmade",     price: "$18–45", comp: "med",  hot: false },
+      { name: "Embroidery Hoop Art",              q: "embroidery hoop art handmade floral botanical",    price: "$18–60", comp: "med",  hot: false },
+      { name: "Resin Earrings / Jewelry",         q: "resin earrings handmade statement jewelry unique", price: "$12–38", comp: "high", hot: true  },
+      { name: "Paper Flower Bouquet",             q: "paper flower bouquet handmade gift never wilts",   price: "$18–70", comp: "med",  hot: false },
+    ],
+  },
+];
+
+const COMP_META = {
+  low:  { label: "Low competition",  color: "#15803d", bg: "#dcfce7" },
+  med:  { label: "Mid competition",  color: "#92400e", bg: "#fef3c7" },
+  high: { label: "High competition", color: "#991b1b", bg: "#fee2e2" },
+};
+
+const LS_TRACKER = "etsy-tracker";
+const LS_APIKEY  = "etsy-api-key";
+const LS_TAB     = "etsy-main-tab";
+
+const etsyUrl = (q) => `https://www.etsy.com/search?q=${encodeURIComponent(q)}&order=most_relevant`;
+
+// ─── CSS ──────────────────────────────────────────────────────────────────────
+const CSS = `
+:root{--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--border:#e5e7eb;--bg2:#f9fafb;--text1:#111827;--text2:#6b7280;--text3:#9ca3af;--green:#16a34a;--green-bg:#dcfce7;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:#fff;color:var(--text1);min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+.eh-wrap{max-width:980px;margin:0 auto;padding:24px 16px 80px;}
+.eh-back{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--text2);margin-bottom:20px;transition:color .15s;}
+.eh-back:hover{color:var(--text1);}
+.eh-header{margin-bottom:24px;}
+.eh-title{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+.eh-sub{font-size:14px;color:var(--text2);}
+
+.eh-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.eh-tab{padding:10px 20px;background:none;border:none;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;position:relative;transition:color .15s;white-space:nowrap;}
+.eh-tab:hover{color:var(--text1);}
+.eh-tab.on{color:var(--green);}
+.eh-tab.on::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--green);border-radius:1px;}
+.eh-tab-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:5px;min-width:18px;height:18px;padding:0 4px;border-radius:99px;font-size:11px;font-weight:600;background:var(--green-bg);color:var(--green);}
+
+.eh-niche-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:20px;scrollbar-width:none;}
+.eh-niche-bar::-webkit-scrollbar{display:none;}
+.eh-niche-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:99px;border:1.5px solid var(--border);background:#fff;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .15s;}
+.eh-niche-btn:hover{border-color:#d1d5db;color:var(--text1);}
+.eh-niche-btn.on{color:#fff;border-color:transparent;}
+
+.eh-tip{display:flex;gap:10px;padding:12px 16px;background:var(--bg2);border-radius:10px;font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:20px;}
+.eh-tip-icon{flex-shrink:0;font-size:16px;}
+
+.eh-keywords{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;}
+.eh-kw{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;}
+.eh-kw:hover{border-color:#9ca3af;color:var(--text1);}
+.eh-kw-label{font-size:10px;color:var(--text3);}
+
+.eh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:28px;}
+
+.eh-card{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid var(--border);border-radius:12px;background:#fff;transition:box-shadow .15s,border-color .15s;}
+.eh-card:hover{border-color:#d1d5db;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.eh-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.eh-card-name{font-size:14px;font-weight:600;line-height:1.35;flex:1;}
+.eh-card-save{background:none;border:none;cursor:pointer;font-size:18px;padding:0;line-height:1;color:var(--text3);transition:color .15s;}
+.eh-card-save:hover{color:#f59e0b;}
+.eh-card-save.saved{color:#f59e0b;}
+.eh-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.eh-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;}
+.eh-tag-price{background:#f3f4f6;color:var(--text2);}
+.eh-tag-hot{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
+.eh-search-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);background:#fff;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;text-decoration:none;transition:all .15s;margin-top:4px;}
+.eh-search-btn:hover{background:#f9fafb;border-color:#d1d5db;color:var(--text1);}
+
+.eh-custom-search{margin-top:8px;}
+.eh-cs-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.eh-cs-row{display:flex;gap:8px;}
+.eh-cs-input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:14px;color:var(--text1);outline:none;transition:border-color .15s;}
+.eh-cs-input:focus{border-color:var(--green);}
+.eh-cs-btn{padding:9px 16px;border-radius:7px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.eh-cs-btn:hover{background:#15803d;}
+
+.eh-api-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;}
+.eh-api-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.eh-api-row{display:flex;gap:8px;margin-bottom:8px;}
+.eh-api-input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-family:monospace;font-size:13px;color:var(--text1);background:#fff;outline:none;transition:border-color .15s;}
+.eh-api-input:focus{border-color:var(--green);}
+.eh-api-note{font-size:12px;color:var(--text3);line-height:1.5;}
+.eh-api-note a{color:var(--green);text-decoration:underline;}
+.eh-api-kw-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;}
+.eh-api-kw-pill{padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:#fff;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;}
+.eh-api-kw-pill:hover{border-color:#9ca3af;color:var(--text1);}
+.eh-fetch-btn{padding:9px 20px;border-radius:7px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;}
+.eh-fetch-btn:hover{background:#15803d;}
+.eh-fetch-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+.eh-live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.eh-live-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;transition:box-shadow .15s,border-color .15s;}
+.eh-live-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.08);border-color:#d1d5db;}
+.eh-live-img{width:100%;aspect-ratio:1;object-fit:cover;background:#f3f4f6;display:block;}
+.eh-live-body{padding:10px;}
+.eh-live-title{font-size:13px;font-weight:500;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;}
+.eh-live-meta{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text2);}
+.eh-live-favs{display:flex;align-items:center;gap:3px;}
+.eh-live-price{font-weight:600;color:var(--text1);}
+.eh-live-link{display:block;margin-top:8px;text-align:center;padding:6px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:500;color:var(--text2);transition:all .15s;}
+.eh-live-link:hover{background:#f9fafb;color:var(--text1);}
+.eh-live-save{background:none;border:none;cursor:pointer;font-size:14px;padding:0;color:var(--text3);}
+.eh-live-save.saved{color:#f59e0b;}
+
+.eh-error{padding:14px 16px;background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;font-size:13px;color:#be123c;margin-bottom:16px;}
+.eh-loading{text-align:center;padding:40px;color:var(--text3);font-size:14px;}
+.eh-empty{text-align:center;padding:40px;color:var(--text3);font-size:14px;font-style:italic;}
+
+.eh-tracker-list{display:flex;flex-direction:column;gap:10px;}
+.eh-tracker-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:#fff;}
+.eh-tracker-info{flex:1;min-width:0;}
+.eh-tracker-name{font-size:14px;font-weight:600;margin-bottom:3px;}
+.eh-tracker-meta{font-size:12px;color:var(--text3);margin-bottom:6px;}
+.eh-tracker-note{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:13px;color:var(--text1);background:#f9fafb;outline:none;resize:none;transition:border-color .15s;}
+.eh-tracker-note:focus{border-color:var(--green);background:#fff;}
+.eh-tracker-del{background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:0;transition:color .15s;flex-shrink:0;}
+.eh-tracker-del:hover{color:#dc2626;}
+.eh-tracker-open{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--green);cursor:pointer;text-decoration:none;margin-top:4px;}
+.eh-section-hd{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px;}
+`;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function loadTracker() {
+  try { return JSON.parse(localStorage.getItem(LS_TRACKER) || "[]"); } catch { return []; }
+}
+function saveTracker(list) {
+  try { localStorage.setItem(LS_TRACKER, JSON.stringify(list)); } catch {}
+}
+
+// ─── CompTag ─────────────────────────────────────────────────────────────────
+function CompTag({ comp }) {
+  const m = COMP_META[comp];
+  return <span className="eh-tag" style={{ background: m.bg, color: m.color }}>{m.label}</span>;
+}
+
+// ─── Browse Tab ───────────────────────────────────────────────────────────────
+function BrowseTab({ tracked, onSave, onUnsave }) {
+  const [nicheId, setNicheId] = useState(NICHES[0].id);
+  const [custom, setCustom] = useState("");
+  const niche = NICHES.find(n => n.id === nicheId);
+  const savedNames = new Set(tracked.map(t => t.name));
+
+  const openCustom = () => {
+    const q = custom.trim();
+    if (!q) return;
+    window.open(etsyUrl(q), "_blank", "noopener");
+  };
+
+  return (
+    <div>
+      {/* Niche selector */}
+      <div className="eh-niche-bar">
+        {NICHES.map(n => (
+          <button
+            key={n.id}
+            className={`eh-niche-btn${nicheId === n.id ? " on" : ""}`}
+            style={nicheId === n.id ? { background: n.color } : {}}
+            onClick={() => setNicheId(n.id)}
+          >
+            {n.icon} {n.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Niche tip */}
+      <div className="eh-tip">
+        <span className="eh-tip-icon">💡</span>
+        <span><strong>{niche.desc}</strong> {niche.tip}</span>
+      </div>
+
+      {/* Trending keywords */}
+      <div style={{ marginBottom: 8 }}>
+        <div className="eh-section-hd">Trending searches — click to open in Etsy</div>
+        <div className="eh-keywords">
+          {niche.keywords.map(kw => (
+            <a key={kw} className="eh-kw" href={etsyUrl(kw)} target="_blank" rel="noopener">
+              🔍 {kw}
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Product grid */}
+      <div className="eh-section-hd">Product ideas — sorted by opportunity</div>
+      <div className="eh-grid">
+        {niche.products.map(p => {
+          const already = savedNames.has(p.name);
+          return (
+            <div key={p.name} className="eh-card">
+              <div className="eh-card-top">
+                <div className="eh-card-name">{p.name}</div>
+                <button
+                  className={`eh-card-save${already ? " saved" : ""}`}
+                  title={already ? "Remove from tracker" : "Save to tracker"}
+                  onClick={() => already
+                    ? onUnsave(p.name)
+                    : onSave({ name: p.name, q: p.q, price: p.price, source: "browse", niche: niche.label })
+                  }
+                >
+                  {already ? "★" : "☆"}
+                </button>
+              </div>
+              <div className="eh-tags">
+                <span className="eh-tag eh-tag-price">💰 {p.price}</span>
+                <CompTag comp={p.comp} />
+                {p.hot && <span className="eh-tag eh-tag-hot">🔥 Trending</span>}
+              </div>
+              <a className="eh-search-btn" href={etsyUrl(p.q)} target="_blank" rel="noopener">
+                Search Etsy (best sellers) →
+              </a>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Custom search */}
+      <div className="eh-custom-search">
+        <div className="eh-section-hd">Custom search — generate a best-sellers URL for any idea</div>
+        <div className="eh-cs-row">
+          <input
+            className="eh-cs-input"
+            placeholder="e.g. personalized dog breed ornament"
+            value={custom}
+            onChange={e => setCustom(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && openCustom()}
+          />
+          <button className="eh-cs-btn" onClick={openCustom} disabled={!custom.trim()}>Open in Etsy →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Live Search Tab ──────────────────────────────────────────────────────────
+function LiveTab({ tracked, onSave, onUnsave }) {
+  const [apiKey, setApiKey]     = useState(() => localStorage.getItem(LS_APIKEY) || "");
+  const [query, setQuery]       = useState("");
+  const [results, setResults]   = useState([]);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const savedNames = new Set(tracked.map(t => t.name));
+
+  const allKeywords = NICHES.flatMap(n => n.keywords).slice(0, 12);
+
+  const fetch_ = useCallback(async (q) => {
+    const key = apiKey.trim();
+    const kw  = (q || query).trim();
+    if (!key || !kw) return;
+    localStorage.setItem(LS_APIKEY, key);
+    setLoading(true); setError(""); setResults([]);
+    try {
+      const url = `https://openapi.etsy.com/v3/application/listings/active?keywords=${encodeURIComponent(kw)}&sort_on=score&sort_order=desc&limit=24&includes[]=Images`;
+      const res = await fetch(url, { headers: { "x-api-key": key } });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error_description || body.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setResults(data.results || []);
+    } catch (e) {
+      setError(e.message.includes("fetch")
+        ? "Network error — Etsy's API may block requests from this domain. Try opening the browser console for details."
+        : e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiKey, query]);
+
+  const fmtPrice = (p) => {
+    if (!p) return "—";
+    return `${p.currency_symbol || "$"}${(p.amount / p.divisor).toFixed(2)}`;
+  };
+
+  return (
+    <div>
+      <div className="eh-api-box">
+        <div className="eh-api-label">🔑 Etsy API Key</div>
+        <div className="eh-api-row">
+          <input
+            className="eh-api-input"
+            type="password"
+            placeholder="Paste your Etsy API keystring…"
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+          />
+        </div>
+        <div className="eh-api-note">
+          Free key at <a href="https://www.etsy.com/developers/register" target="_blank" rel="noopener">etsy.com/developers/register</a> → Create app → copy <strong>Keystring</strong>. Saved locally, never leaves your browser.
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div className="eh-api-label">Search</div>
+          <div className="eh-api-row">
+            <input
+              className="eh-api-input"
+              style={{ fontFamily: "inherit", fontSize: 14 }}
+              placeholder="e.g. laser engraved cutting board personalized"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && fetch_()}
+            />
+            <button className="eh-fetch-btn" onClick={() => fetch_()} disabled={!apiKey.trim() || !query.trim() || loading}>
+              {loading ? "Fetching…" : "Fetch →"}
+            </button>
+          </div>
+          <div className="eh-api-note" style={{ marginTop: 4 }}>Results sorted by Etsy's relevance score — a strong proxy for sales velocity.</div>
+        </div>
+
+        <div className="eh-api-kw-row" style={{ marginTop: 12 }}>
+          <span style={{ fontSize: 12, color: "var(--text3)" }}>Quick:</span>
+          {allKeywords.map(kw => (
+            <button key={kw} className="eh-api-kw-pill" onClick={() => { setQuery(kw); fetch_(kw); }}>{kw}</button>
+          ))}
+        </div>
+      </div>
+
+      {error && <div className="eh-error">⚠️ {error}</div>}
+      {loading && <div className="eh-loading">Loading listings…</div>}
+      {!loading && !error && results.length === 0 && query && (
+        <div className="eh-empty">No results — try a different keyword or check your API key.</div>
+      )}
+      {results.length > 0 && (
+        <>
+          <div className="eh-section-hd" style={{ marginBottom: 12 }}>{results.length} listings — sorted by relevance score</div>
+          <div className="eh-live-grid">
+            {results.map(r => {
+              const img  = r.images?.[0]?.url_570xN || r.images?.[0]?.url_fullxfull;
+              const name = r.title || "Untitled";
+              const already = savedNames.has(name);
+              return (
+                <div key={r.listing_id} className="eh-live-card">
+                  {img
+                    ? <img className="eh-live-img" src={img} alt={name} loading="lazy" />
+                    : <div className="eh-live-img" style={{ display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>🏷️</div>
+                  }
+                  <div className="eh-live-body">
+                    <div className="eh-live-title">{name}</div>
+                    <div className="eh-live-meta">
+                      <span className="eh-live-favs">❤️ {(r.num_favorers || 0).toLocaleString()}</span>
+                      <span className="eh-live-price">{fmtPrice(r.price)}</span>
+                      <button
+                        className={`eh-live-save${already ? " saved" : ""}`}
+                        title={already ? "Remove" : "Save"}
+                        onClick={() => already
+                          ? onUnsave(name)
+                          : onSave({ name, q: query, price: fmtPrice(r.price), source: "live", niche: "API search", url: r.url })
+                        }
+                      >
+                        {already ? "★" : "☆"}
+                      </button>
+                    </div>
+                    <a className="eh-live-link" href={r.url} target="_blank" rel="noopener">View on Etsy →</a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Research Tracker Tab ─────────────────────────────────────────────────────
+function TrackerTab({ tracked, onNote, onUnsave }) {
+  if (tracked.length === 0) return (
+    <div className="eh-empty">
+      No saved ideas yet.<br />
+      <span style={{ fontSize: 13, marginTop: 6, display: "block" }}>Star items in Browse or Live Search to track them here.</span>
+    </div>
+  );
+  return (
+    <div>
+      <div className="eh-section-hd">{tracked.length} saved idea{tracked.length !== 1 ? "s" : ""}</div>
+      <div className="eh-tracker-list">
+        {tracked.map((t, i) => (
+          <div key={i} className="eh-tracker-item">
+            <div className="eh-tracker-info">
+              <div className="eh-tracker-name">{t.name}</div>
+              <div className="eh-tracker-meta">{t.niche} · {t.price || "—"} · saved from {t.source}</div>
+              <textarea
+                className="eh-tracker-note"
+                rows={2}
+                placeholder="Add notes (price research, competition, ideas…)"
+                value={t.note || ""}
+                onChange={e => onNote(i, e.target.value)}
+              />
+              <a className="eh-tracker-open" href={etsyUrl(t.q || t.name)} target="_blank" rel="noopener">
+                🔍 Search Etsy
+              </a>
+              {t.url && <a className="eh-tracker-open" href={t.url} target="_blank" rel="noopener" style={{ marginLeft: 12 }}>↗ View listing</a>}
+            </div>
+            <button className="eh-tracker-del" onClick={() => onUnsave(t.name)} title="Remove">✕</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab]         = useState(() => localStorage.getItem(LS_TAB) || "browse");
+  const [tracked, setTracked] = useState(loadTracker);
+
+  const switchTab = (t) => { setTab(t); localStorage.setItem(LS_TAB, t); };
+
+  const saveTracked = (list) => { setTracked(list); saveTracker(list); };
+
+  const onSave = (item) => {
+    if (tracked.some(t => t.name === item.name)) return;
+    saveTracked([...tracked, { ...item, note: "", savedAt: Date.now() }]);
+  };
+  const onUnsave = (name) => saveTracked(tracked.filter(t => t.name !== name));
+  const onNote   = (i, note) => {
+    const next = tracked.map((t, idx) => idx === i ? { ...t, note } : t);
+    saveTracked(next);
+  };
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="eh-wrap">
+        <a href="../../" className="eh-back">← Tools</a>
+        <div className="eh-header">
+          <h1 className="eh-title">Etsy Research Hub</h1>
+          <p className="eh-sub">Discover winning products in 6 high-opportunity niches — browse curated ideas or search live listings</p>
+        </div>
+
+        <div className="eh-tabs">
+          {[
+            ["browse",  "🔍 Browse Ideas"],
+            ["live",    "📡 Live Search"],
+            ["tracker", "📌 My Research"],
+          ].map(([t, label]) => (
+            <button key={t} className={`eh-tab${tab === t ? " on" : ""}`} onClick={() => switchTab(t)}>
+              {label}
+              {t === "tracker" && tracked.length > 0 && <span className="eh-tab-badge">{tracked.length}</span>}
+            </button>
+          ))}
+        </div>
+
+        {tab === "browse"  && <BrowseTab  tracked={tracked} onSave={onSave} onUnsave={onUnsave} />}
+        {tab === "live"    && <LiveTab    tracked={tracked} onSave={onSave} onUnsave={onUnsave} />}
+        {tab === "tracker" && <TrackerTab tracked={tracked} onNote={onNote} onUnsave={onUnsave} />}
+      </div>
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
