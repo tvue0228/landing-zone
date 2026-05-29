@@ -512,7 +512,7 @@ function Breaker({ init }) {
 
     try {
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareStr });
+        await navigator.share({ files: [file], text: shareStr, url: freshUrl });
       } else if (navigator.share) {
         await navigator.share({ text: shareStr, url: freshUrl });
       } else {
