@@ -624,11 +624,18 @@ function MainApp({ initialData, onNew, source }) {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 function App() {
   const { state: initialState, hasData, source: initialSource } = useMemo(resolveInitialState, []);
-  const [phase, setPhase]   = useState(hasData ? "ready" : "landing");
-  const [appKey, setAppKey] = useState(0); // increment to remount MainApp fresh
+  const [phase, setPhase]         = useState(hasData ? "ready" : "landing");
+  const [appKey, setAppKey]       = useState(0);
+  const [loadedState, setLoaded]  = useState(initialState);
+  const [loadedSource, setSource] = useState(initialSource);
+  const [importUrl, setImportUrl] = useState("");
+  const [importErr, setImportErr] = useState("");
 
   const handleCreate = () => {
-    encodeToUrl(EMPTY);
+    const state = EMPTY;
+    encodeToUrl(state);
+    setLoaded(state);
+    setSource(null);
     setPhase("ready");
     setAppKey(k => k + 1);
   };
@@ -637,7 +644,31 @@ function App() {
     if (!window.confirm("Start a new competition? Your current data will still be accessible via its URL.")) return;
     try { localStorage.removeItem(LS_KEY); } catch {}
     window.history.replaceState(null, "", window.location.pathname);
+    setImportUrl("");
+    setImportErr("");
     setPhase("landing");
+    setAppKey(k => k + 1);
+  };
+
+  const handleLoadUrl = () => {
+    setImportErr("");
+    const raw = importUrl.trim();
+    // Accept a full URL (extract hash) or a bare hash value
+    let hash = "";
+    try {
+      const u = new URL(raw);
+      hash = u.hash.replace(/^#/, "");
+    } catch {
+      hash = raw.replace(/^#/, "");
+    }
+    if (!hash) { setImportErr("No competition data found in that URL."); return; }
+    const state = tryDecode(hash);
+    if (!state) { setImportErr("Couldn't decode competition data — make sure you copied the full URL."); return; }
+    const migrated = migrateState(state);
+    encodeToUrl(migrated);
+    setLoaded(migrated);
+    setSource("url");
+    setPhase("ready");
     setAppKey(k => k + 1);
   };
 
@@ -658,12 +689,34 @@ function App() {
           <button className="wl-btn wl-btn-g wl-btn-lg" onClick={handleCreate}>
             Start a Competition →
           </button>
+          <div style={{ margin:"28px 0 0", borderTop:"1px solid #e2e8f0", paddingTop:24 }}>
+            <p style={{ fontSize:13, color:"#64748b", marginBottom:10 }}>Or load an existing competition from a shared link:</p>
+            <div style={{ display:"flex", gap:8 }}>
+              <input
+                className="wl-inp"
+                placeholder="Paste competition URL here…"
+                value={importUrl}
+                onChange={e => { setImportUrl(e.target.value); setImportErr(""); }}
+                onKeyDown={e => e.key === "Enter" && handleLoadUrl()}
+                style={{ flex:1, fontSize:13 }}
+              />
+              <button
+                className="wl-btn wl-btn-g"
+                onClick={handleLoadUrl}
+                disabled={!importUrl.trim()}
+                style={{ whiteSpace:"nowrap" }}
+              >
+                Load →
+              </button>
+            </div>
+            {importErr && <p style={{ fontSize:12, color:"#dc2626", marginTop:8 }}>{importErr}</p>}
+          </div>
         </div>
       </div>
     </>
   );
 
-  return <MainApp key={appKey} initialData={initialState || EMPTY} onNew={handleNew} source={initialSource} />;
+  return <MainApp key={appKey} initialData={loadedState || EMPTY} onNew={handleNew} source={loadedSource} />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
