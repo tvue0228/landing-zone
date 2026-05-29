@@ -18,6 +18,7 @@ const { useState, useMemo, useCallback, useRef, useEffect } = React;
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PALETTE = ["#16a34a","#2563eb","#dc2626","#d97706","#7c3aed","#db2777","#0891b2","#65a30d","#c2410c","#0f766e"];
 const EMPTY   = { competitors: [], unit: "lbs" };
+const LS_KEY  = "wl-current";
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 const uid     = () => Math.random().toString(36).slice(2, 9);
@@ -25,21 +26,42 @@ const calcPct = (start, cur) => (start - cur) / start * 100;
 const fmtDate = (s) => { const [y,m,d] = s.split("-"); return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"}); };
 const today   = () => new Date().toISOString().slice(0, 10);
 
-// State lives entirely in the URL hash, compressed with LZ-string.
-// Sharing the URL shares the current snapshot of the competition.
-function decodeState() {
-  const hash = window.location.hash.replace(/^#/, "");
-  if (!hash) return null;
+// State is encoded in the URL hash with LZ-string AND mirrored to localStorage.
+// On load: prefer URL hash (so shared links work), fall back to localStorage
+// (so the organizer can return without needing the URL).
+function tryDecode(compressed) {
   try {
-    const json = LZString.decompressFromEncodedURIComponent(hash);
-    if (!json) return null;
-    return JSON.parse(json);
+    const json = LZString.decompressFromEncodedURIComponent(compressed);
+    return json ? JSON.parse(json) : null;
   } catch { return null; }
+}
+
+function resolveInitialState() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash) {
+    const state = tryDecode(hash);
+    if (state) {
+      try { localStorage.setItem(LS_KEY, hash); } catch {}
+      return { state, hasData: true };
+    }
+  }
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) {
+      const state = tryDecode(saved);
+      if (state) {
+        window.history.replaceState(null, "", "#" + saved);
+        return { state, hasData: true };
+      }
+    }
+  } catch {}
+  return { state: null, hasData: false };
 }
 
 function encodeToUrl(state) {
   const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
   window.history.replaceState(null, "", "#" + compressed);
+  try { localStorage.setItem(LS_KEY, compressed); } catch {}
 }
 
 function rankCompetitors(competitors) {
@@ -182,10 +204,9 @@ function ProgressChart({ ranked, colorOf }) {
 }
 
 // ─── Share Bar ────────────────────────────────────────────────────────────────
-function ShareBar({ urlStamp }) {
+function ShareBar({ urlStamp, onNew }) {
   const [copied, setCopied] = useState(false);
-  // Read href at render time — urlStamp changing triggers a re-render
-  const url = window.location.href;
+  const url = window.location.href; // read at render; urlStamp re-triggers render on each save
 
   const copy = async () => {
     try { await navigator.clipboard.writeText(url); } catch { return; }
@@ -200,13 +221,16 @@ function ShareBar({ urlStamp }) {
       <button className={`wl-share-copy${copied ? " ok" : ""}`} onClick={copy}>
         {copied ? "✓ Copied" : "Copy link"}
       </button>
-      <span className="wl-share-note">URL updates with every change — share it to share the latest results</span>
+      <span className="wl-share-note">Copy after each update to share the latest</span>
+      <button onClick={onNew} style={{ background:"none", border:"none", fontSize:12, color:"#94a3b8", cursor:"pointer", padding:0, whiteSpace:"nowrap" }}>
+        New competition
+      </button>
     </div>
   );
 }
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
-function MainApp({ initialData }) {
+function MainApp({ initialData, onNew }) {
   const [competitors, setCompetitorsRaw] = useState(initialData.competitors || []);
   const [unit, setUnitRaw]               = useState(initialData.unit || "lbs");
   const [tab, setTab]                    = useState("rankings");
@@ -300,7 +324,7 @@ function MainApp({ initialData }) {
               ))}
             </div>
           </div>
-          <ShareBar urlStamp={urlStamp} />
+          <ShareBar urlStamp={urlStamp} onNew={onNew} />
         </div>
 
         <div className="wl-main">
@@ -533,13 +557,22 @@ function MainApp({ initialData }) {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 function App() {
-  const initialState = useMemo(decodeState, []);
-  const hasHash      = Boolean(window.location.hash.replace(/^#/, ""));
-  const [phase, setPhase] = useState(hasHash ? "ready" : "landing");
+  const { state: initialState, hasData } = useMemo(resolveInitialState, []);
+  const [phase, setPhase]   = useState(hasData ? "ready" : "landing");
+  const [appKey, setAppKey] = useState(0); // increment to remount MainApp fresh
 
   const handleCreate = () => {
     encodeToUrl(EMPTY);
     setPhase("ready");
+    setAppKey(k => k + 1);
+  };
+
+  const handleNew = () => {
+    if (!window.confirm("Start a new competition? Your current data will still be accessible via its URL.")) return;
+    try { localStorage.removeItem(LS_KEY); } catch {}
+    window.history.replaceState(null, "", window.location.pathname);
+    setPhase("landing");
+    setAppKey(k => k + 1);
   };
 
   if (phase === "landing") return (
@@ -554,7 +587,7 @@ function App() {
           <div className="wl-landing-title">Weight Loss Competition</div>
           <div className="wl-landing-desc">
             Track competitors, log weekly weigh-ins, and rank by percentage lost.
-            Each competition gets a shareable URL — copy it after any update to share the latest results.
+            Your competition is saved in this browser — come back any time. Share the link after each update so others see the latest.
           </div>
           <button className="wl-btn wl-btn-g wl-btn-lg" onClick={handleCreate}>
             Start a Competition →
@@ -564,7 +597,7 @@ function App() {
     </>
   );
 
-  return <MainApp initialData={initialState || EMPTY} />;
+  return <MainApp key={appKey} initialData={initialState || EMPTY} onNew={handleNew} />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
