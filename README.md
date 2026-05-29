@@ -2,7 +2,7 @@
 
 An R&D repo for micro-tools. Each tool lives in `tools/<name>/` so it can be extracted into its own project whenever it's ready.
 
-**Live:** https://tvue0228.github.io/tools/
+**Live:** https://tvue0228.github.io/landing-zone/
 
 ## Tools
 
