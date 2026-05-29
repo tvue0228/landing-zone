@@ -62,12 +62,12 @@ function pushHash(obj) {
 function shareLink(obj) {
   return window.location.origin + window.location.pathname + "#" + encode(obj);
 }
-function buildShareText(guesses, numPegs, maxGuesses, won) {
+function buildShareText(guesses, numPegs, maxGuesses, won, url) {
   const header = won ? `Mastermind ${guesses.length}/${maxGuesses}` : `Mastermind X/${maxGuesses}`;
   const grid = guesses.map(g =>
-    "🟧".repeat(g.fb.black) + "⬜".repeat(g.fb.white) + "⬛".repeat(numPegs - g.fb.black - g.fb.white)
+    "🟠".repeat(g.fb.black) + "⚪".repeat(g.fb.white) + "⚫".repeat(numPegs - g.fb.black - g.fb.white)
   );
-  return [header, "", ...grid].join("\n");
+  return [header, "", ...grid, "", "Try it yourself:", url].join("\n");
 }
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
@@ -375,10 +375,10 @@ function Breaker({ init }) {
   // Index of the first empty peg in the current row (for active-slot highlight)
   const nextEmpty = current.findIndex(c => !c);
 
-  const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon) : "", [isOver]);
+  const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon, window.location.href) : "", [isOver]);
 
   const copyResult = async () => {
-    try { await navigator.clipboard.writeText(shareStr + "\n\n" + window.location.href); } catch { return; }
+    try { await navigator.clipboard.writeText(shareStr); } catch { return; }
     setCopied(true); setTimeout(() => setCopied(false), 2200);
   };
 
@@ -468,7 +468,7 @@ function Breaker({ init }) {
             <button className="mm-btn mm-btn-ghost" onClick={clearRow} title="Clear row">✕</button>
           </div>
           <div className="mm-hint" style={{ marginTop: 8 }}>
-            🟧 right place · ⬜ right color, wrong place · ⬛ not in code
+            🟠 right place · ⚪ right color, wrong place · ⚫ not in code
           </div>
         </div>
       )}
