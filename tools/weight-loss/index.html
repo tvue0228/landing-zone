@@ -36,13 +36,27 @@ function tryDecode(compressed) {
   } catch { return null; }
 }
 
+// Ensures every weigh-in has an id — needed so delete works on data that
+// predates the id field, or was loaded from a URL encoded before ids existed.
+function migrateState(state) {
+  if (!state) return state;
+  return {
+    ...state,
+    competitors: (state.competitors || []).map(c => ({
+      ...c,
+      weighIns: (c.weighIns || []).map(wi => wi.id ? wi : { ...wi, id: uid() }),
+    })),
+  };
+}
+
 function resolveInitialState() {
   const hash = window.location.hash.replace(/^#/, "");
   if (hash) {
     const state = tryDecode(hash);
     if (state) {
+      const migrated = migrateState(state);
       try { localStorage.setItem(LS_KEY, hash); } catch {}
-      return { state, hasData: true };
+      return { state: migrated, hasData: true, source: "url" };
     }
   }
   try {
@@ -50,12 +64,13 @@ function resolveInitialState() {
     if (saved) {
       const state = tryDecode(saved);
       if (state) {
+        const migrated = migrateState(state);
         window.history.replaceState(null, "", "#" + saved);
-        return { state, hasData: true };
+        return { state: migrated, hasData: true, source: "local" };
       }
     }
   } catch {}
-  return { state: null, hasData: false };
+  return { state: null, hasData: false, source: null };
 }
 
 function encodeToUrl(state) {
@@ -146,6 +161,13 @@ a{color:inherit;text-decoration:none;}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:#f8fafc;}
 ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px;}
+.wl-setup-toggle{display:flex;align-items:center;gap:7px;padding:8px 0;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;background:none;border:none;font-family:inherit;transition:color .15s;user-select:none;}
+.wl-setup-toggle:hover{color:#0f172a;}
+.wl-setup-toggle-chevron{font-size:11px;display:inline-block;transition:transform .2s;line-height:1;}
+.wl-setup-toggle-chevron.open{transform:rotate(90deg);}
+.wl-io-bar{display:flex;gap:8px;margin-top:8px;}
+.wl-io-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;background:#fff;color:#64748b;transition:all .15s;white-space:nowrap;}
+.wl-io-btn:hover{border-color:#cbd5e1;color:#0f172a;}
 `;
 
 // ─── Progress Chart ────────────────────────────────────────────────────────────
@@ -230,11 +252,12 @@ function ShareBar({ urlStamp, onNew }) {
 }
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
-function MainApp({ initialData, onNew }) {
+function MainApp({ initialData, onNew, source }) {
   const [competitors, setCompetitorsRaw] = useState(initialData.competitors || []);
   const [unit, setUnitRaw]               = useState(initialData.unit || "lbs");
   const [tab, setTab]                    = useState("rankings");
   const [urlStamp, setUrlStamp]          = useState(0); // incremented to force ShareBar re-render
+  const [setupOpen, setSetupOpen]        = useState(source !== "url");
 
   const [newName, setNewName] = useState("");
   const [newWt, setNewWt]     = useState("");
@@ -242,7 +265,8 @@ function MainApp({ initialData, onNew }) {
   const [wiId, setWiId]       = useState("");
   const [wiDate, setWiDate]   = useState(today);
   const [wiWt, setWiWt]       = useState("");
-  const nameRef = useRef(null);
+  const nameRef   = useRef(null);
+  const uploadRef = useRef(null);
 
   // Use refs to avoid stale closures in save()
   const compsRef = useRef(competitors);
@@ -297,6 +321,35 @@ function MainApp({ initialData, onNew }) {
       c.id !== cId ? c : { ...c, weighIns: c.weighIns.filter(w => w.id !== wId) }
     ));
 
+  const downloadJson = () => {
+    const json = JSON.stringify({ competitors, unit }, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl; a.download = "weight-loss-competition.json"; a.click();
+    URL.revokeObjectURL(blobUrl);
+  };
+
+  const handleUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data.competitors)) throw new Error("Invalid");
+        const migrated = migrateState(data);
+        setCompetitorsRaw(migrated.competitors);
+        setUnitRaw(migrated.unit || "lbs");
+        save(migrated.competitors, migrated.unit || "lbs");
+      } catch {
+        alert("Could not read file. Make sure it's a valid competition JSON.");
+      }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  };
+
   const preview = (() => {
     if (!wiId || !wiWt) return null;
     const c = competitors.find(x => x.id === wiId);
@@ -325,10 +378,22 @@ function MainApp({ initialData, onNew }) {
             </div>
           </div>
           <ShareBar urlStamp={urlStamp} onNew={onNew} />
+          <div className="wl-io-bar">
+            <button className="wl-io-btn" onClick={downloadJson}>↓ Download JSON</button>
+            <label className="wl-io-btn">
+              ↑ Upload JSON
+              <input ref={uploadRef} type="file" accept=".json,application/json" style={{ display:"none" }} onChange={handleUpload} />
+            </label>
+          </div>
         </div>
 
         <div className="wl-main">
-          <div className="wl-grid2">
+          <div>
+            <button className="wl-setup-toggle" onClick={() => setSetupOpen(o => !o)}>
+              <span className={`wl-setup-toggle-chevron${setupOpen ? " open" : ""}`}>▶</span>
+              Data Entry
+            </button>
+            {setupOpen && <div className="wl-grid2">
 
             {/* Add Competitor */}
             <div className="wl-card">
@@ -416,6 +481,7 @@ function MainApp({ initialData, onNew }) {
               )}
             </div>
 
+            </div>}
           </div>
 
           {competitors.length > 0 && (
@@ -557,7 +623,7 @@ function MainApp({ initialData, onNew }) {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 function App() {
-  const { state: initialState, hasData } = useMemo(resolveInitialState, []);
+  const { state: initialState, hasData, source: initialSource } = useMemo(resolveInitialState, []);
   const [phase, setPhase]   = useState(hasData ? "ready" : "landing");
   const [appKey, setAppKey] = useState(0); // increment to remount MainApp fresh
 
@@ -597,7 +663,7 @@ function App() {
     </>
   );
 
-  return <MainApp key={appKey} initialData={initialState || EMPTY} onNew={handleNew} />;
+  return <MainApp key={appKey} initialData={initialState || EMPTY} onNew={handleNew} source={initialSource} />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
