@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg1" cx="18%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="#502890" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#07090f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bg2" cx="82%" cy="80%" r="50%">
+      <stop offset="0%" stop-color="#14328c" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#07090f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pR" cx="36%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#fca5a5"/>
+      <stop offset="52%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.65"/>
+    </radialGradient>
+    <radialGradient id="pO" cx="36%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#fdba74"/>
+      <stop offset="52%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.65"/>
+    </radialGradient>
+    <radialGradient id="pY" cx="36%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="52%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.65"/>
+    </radialGradient>
+    <radialGradient id="pG" cx="36%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="52%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.65"/>
+    </radialGradient>
+    <radialGradient id="pB" cx="36%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="52%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.65"/>
+    </radialGradient>
+    <radialGradient id="pV" cx="36%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#d8b4fe"/>
+      <stop offset="52%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.65"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#07090f"/>
+  <rect width="1200" height="630" fill="url(#bg1)"/>
+  <rect width="1200" height="630" fill="url(#bg2)"/>
+
+  <!-- ── Left: text ─────────────────────────────────────────── -->
+
+  <!-- Title -->
+  <text x="90" y="230" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="108" font-weight="700" letter-spacing="-3">
+    <tspan fill="#dde1f0">Master</tspan><tspan fill="#f59e0b">mind</tspan>
+  </text>
+
+  <!-- Divider line under title -->
+  <rect x="90" y="254" width="200" height="2" rx="1" fill="#f59e0b" opacity="0.35"/>
+
+  <!-- Tagline -->
+  <text x="90" y="308" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" fill="#6b7aaa" letter-spacing="0.3">
+    The code-breaking challenge
+  </text>
+
+  <!-- Description bullets -->
+  <text x="90" y="390" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#303555">
+    <tspan fill="#f59e0b">→</tspan><tspan fill="#6b7aaa"> Creator sets a secret color code</tspan>
+  </text>
+  <text x="90" y="430" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#303555">
+    <tspan fill="#f59e0b">→</tspan><tspan fill="#6b7aaa"> Share the link with a challenger</tspan>
+  </text>
+  <text x="90" y="470" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#303555">
+    <tspan fill="#f59e0b">→</tspan><tspan fill="#6b7aaa"> Can they crack the code?</tspan>
+  </text>
+
+  <!-- Share snippet -->
+  <rect x="90" y="510" width="460" height="68" rx="10" fill="#0b0e1c" stroke="#181d30" stroke-width="1.5"/>
+  <text x="114" y="535" font-family="'Courier New', monospace" font-size="18" fill="#404870">Mastermind 4/10</text>
+  <text x="114" y="562" font-family="'Courier New', monospace" font-size="22" fill="#dde1f0">🟠🟠⚪⚫  🟠🟠🟠⚫  🟠🟠🟠🟠</text>
+
+  <!-- ── Right: game board ──────────────────────────────────── -->
+
+  <!-- Card -->
+  <rect x="700" y="60" width="410" height="510" rx="18" fill="#0b0e1c" stroke="#181d30" stroke-width="1.5"/>
+
+  <!-- Board label -->
+  <text x="905" y="100" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="11" fill="#2a3050" letter-spacing="2.5" font-weight="600">GUESS BOARD</text>
+
+  <!-- ── Row 1 (done: 1 orange, 1 white) -->
+  <rect x="716" y="112" width="378" height="58" rx="10" fill="#ffffff" fill-opacity="0.03"/>
+  <text x="736" y="147" font-family="monospace" font-size="13" fill="#2a3050" font-weight="700">1</text>
+  <circle cx="790" cy="141" r="20" fill="url(#pR)"/>
+  <circle cx="838" cy="141" r="20" fill="url(#pB)"/>
+  <circle cx="886" cy="141" r="20" fill="url(#pY)"/>
+  <circle cx="934" cy="141" r="20" fill="url(#pG)"/>
+  <!-- feedback 2×2: 1 orange, 1 white, 2 dark -->
+  <circle cx="976" cy="133" r="8" fill="#f59e0b"/>
+  <circle cx="996" cy="133" r="8" fill="#d4d8e8"/>
+  <circle cx="976" cy="153" r="8" fill="#181d30"/>
+  <circle cx="996" cy="153" r="8" fill="#181d30"/>
+
+  <!-- ── Row 2 (done: 2 orange) -->
+  <rect x="716" y="178" width="378" height="58" rx="10" fill="#ffffff" fill-opacity="0.025"/>
+  <text x="736" y="213" font-family="monospace" font-size="13" fill="#2a3050" font-weight="700">2</text>
+  <circle cx="790" cy="207" r="20" fill="url(#pB)"/>
+  <circle cx="838" cy="207" r="20" fill="url(#pV)"/>
+  <circle cx="886" cy="207" r="20" fill="url(#pR)"/>
+  <circle cx="934" cy="207" r="20" fill="url(#pO)"/>
+  <circle cx="976" cy="199" r="8" fill="#f59e0b"/>
+  <circle cx="996" cy="199" r="8" fill="#f59e0b"/>
+  <circle cx="976" cy="219" r="8" fill="#181d30"/>
+  <circle cx="996" cy="219" r="8" fill="#181d30"/>
+
+  <!-- ── Row 3 (done: 3 orange) -->
+  <rect x="716" y="244" width="378" height="58" rx="10" fill="#ffffff" fill-opacity="0.025"/>
+  <text x="736" y="279" font-family="monospace" font-size="13" fill="#2a3050" font-weight="700">3</text>
+  <circle cx="790" cy="273" r="20" fill="url(#pG)"/>
+  <circle cx="838" cy="273" r="20" fill="url(#pV)"/>
+  <circle cx="886" cy="273" r="20" fill="url(#pR)"/>
+  <circle cx="934" cy="273" r="20" fill="url(#pO)"/>
+  <circle cx="976" cy="265" r="8" fill="#f59e0b"/>
+  <circle cx="996" cy="265" r="8" fill="#f59e0b"/>
+  <circle cx="976" cy="285" r="8" fill="#f59e0b"/>
+  <circle cx="996" cy="285" r="8" fill="#181d30"/>
+
+  <!-- ── Row 4 (WIN: 4 orange) — highlighted -->
+  <rect x="716" y="310" width="378" height="58" rx="10" fill="#f59e0b" fill-opacity="0.06" stroke="#f59e0b" stroke-opacity="0.2" stroke-width="1"/>
+  <text x="736" y="345" font-family="monospace" font-size="13" fill="#f59e0b" font-weight="700">4</text>
+  <circle cx="790" cy="339" r="20" fill="url(#pG)" filter="url(#glow)"/>
+  <circle cx="838" cy="339" r="20" fill="url(#pV)" filter="url(#glow)"/>
+  <circle cx="886" cy="339" r="20" fill="url(#pR)" filter="url(#glow)"/>
+  <circle cx="934" cy="339" r="20" fill="url(#pO)" filter="url(#glow)"/>
+  <circle cx="976" cy="331" r="8" fill="#f59e0b" filter="url(#glow)"/>
+  <circle cx="996" cy="331" r="8" fill="#f59e0b" filter="url(#glow)"/>
+  <circle cx="976" cy="351" r="8" fill="#f59e0b" filter="url(#glow)"/>
+  <circle cx="996" cy="351" r="8" fill="#f59e0b" filter="url(#glow)"/>
+
+  <!-- ── Rows 5-8: empty -->
+  <text x="736" y="411" font-family="monospace" font-size="13" fill="#1e2438" font-weight="700">5</text>
+  <circle cx="790" cy="405" r="20" fill="#0d1020" stroke="#181d30" stroke-width="2.5"/>
+  <circle cx="838" cy="405" r="20" fill="#0d1020" stroke="#181d30" stroke-width="2.5"/>
+  <circle cx="886" cy="405" r="20" fill="#0d1020" stroke="#181d30" stroke-width="2.5"/>
+  <circle cx="934" cy="405" r="20" fill="#0d1020" stroke="#181d30" stroke-width="2.5"/>
+
+  <text x="736" y="477" font-family="monospace" font-size="13" fill="#1a1f30" font-weight="700">6</text>
+  <circle cx="790" cy="471" r="20" fill="#0d1020" stroke="#151928" stroke-width="2.5"/>
+  <circle cx="838" cy="471" r="20" fill="#0d1020" stroke="#151928" stroke-width="2.5"/>
+  <circle cx="886" cy="471" r="20" fill="#0d1020" stroke="#151928" stroke-width="2.5"/>
+  <circle cx="934" cy="471" r="20" fill="#0d1020" stroke="#151928" stroke-width="2.5"/>
+
+  <!-- Color palette strip -->
+  <rect x="716" y="516" width="378" height="38" rx="8" fill="#0d1020" stroke="#181d30" stroke-width="1"/>
+  <circle cx="768" cy="535" r="9" fill="url(#pR)"/>
+  <circle cx="798" cy="535" r="9" fill="url(#pO)"/>
+  <circle cx="828" cy="535" r="9" fill="url(#pY)"/>
+  <circle cx="858" cy="535" r="9" fill="url(#pG)"/>
+  <circle cx="888" cy="535" r="9" fill="url(#pB)"/>
+  <circle cx="918" cy="535" r="9" fill="url(#pV)"/>
+  <text x="960" y="540" font-family="-apple-system, sans-serif" font-size="12" fill="#2a3050">pick a color →</text>
+
+</svg>
