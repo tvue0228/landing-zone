@@ -488,10 +488,12 @@ function Breaker({ init }) {
   // Index of the first empty peg in the current row (for active-slot highlight)
   const nextEmpty = current.findIndex(c => !c);
 
-  const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon, window.location.href) : "", [isOver]);
+  const freshUrl = useMemo(() => shareLink({ ...init, guesses: [] }), []);
+
+  const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon, freshUrl) : "", [isOver]);
 
   const shareResult = async () => {
-    const canvas = buildResultCanvas(guesses, nPegs, maxG, isWon, window.location.href);
+    const canvas = buildResultCanvas(guesses, nPegs, maxG, isWon, freshUrl);
     const dataUrl = canvas.toDataURL('image/png');
     const b64 = dataUrl.split(',')[1];
     const bin = atob(b64);
@@ -504,7 +506,7 @@ function Breaker({ init }) {
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text: shareStr });
       } else if (navigator.share) {
-        await navigator.share({ text: shareStr, url: window.location.href });
+        await navigator.share({ text: shareStr, url: freshUrl });
       } else {
         await navigator.clipboard.writeText(shareStr);
         setCopied(true); setTimeout(() => setCopied(false), 2200);
