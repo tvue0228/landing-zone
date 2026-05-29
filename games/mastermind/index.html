@@ -175,10 +175,18 @@ function buildResultCanvas(guesses, nPegs, maxG, isWon, url) {
     });
   });
 
-  // Footer URL
-  const disp = url.length > 54 ? url.slice(0, 51) + '…' : url;
-  ctx.font = '12px monospace'; ctx.fillStyle = '#252c46';
-  ctx.textAlign = 'center'; ctx.fillText('Try it → ' + disp, W / 2, H - 26);
+  // Footer — show clean base URL (full link is in share text)
+  const baseUrl = window.location.origin + window.location.pathname;
+  const footerText = '↗  ' + baseUrl;
+  ctx.font = '13px monospace';
+  const ftw = ctx.measureText(footerText).width;
+  const fty = H - 22;
+  // Pill background
+  rrect(ctx, (W - ftw) / 2 - 14, fty - 17, ftw + 28, 26, 7);
+  ctx.fillStyle = '#0f1420'; ctx.fill();
+  // Text
+  ctx.fillStyle = '#6b7aaa';
+  ctx.textAlign = 'center'; ctx.fillText(footerText, W / 2, fty);
 
   return canvas;
 }
