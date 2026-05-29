@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mastermind</title>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef } = React;
+
+// ─── Colors ───────────────────────────────────────────────────────────────────
+const COLORS = [
+  { id:"R", hex:"#ef4444", hi:"#fca5a5", label:"Red"    },
+  { id:"O", hex:"#f97316", hi:"#fdba74", label:"Orange" },
+  { id:"Y", hex:"#eab308", hi:"#fde047", label:"Yellow" },
+  { id:"G", hex:"#22c55e", hi:"#86efac", label:"Green"  },
+  { id:"B", hex:"#3b82f6", hi:"#93c5fd", label:"Blue"   },
+  { id:"V", hex:"#a855f7", hi:"#d8b4fe", label:"Purple" },
+  { id:"K", hex:"#ec4899", hi:"#f9a8d4", label:"Pink"   },
+  { id:"T", hex:"#14b8a6", hi:"#5eead4", label:"Teal"   },
+];
+
+// ─── Game Logic ───────────────────────────────────────────────────────────────
+function calcFeedback(guess, code) {
+  const c = [...code], g = [...guess];
+  let black = 0, white = 0;
+  for (let i = 0; i < c.length; i++) {
+    if (g[i] === c[i]) { black++; c[i] = g[i] = null; }
+  }
+  for (let i = 0; i < g.length; i++) {
+    if (!g[i]) continue;
+    const j = c.indexOf(g[i]);
+    if (j !== -1) { white++; c[j] = null; }
+  }
+  return { black, white };
+}
+
+// ─── URL Persistence ──────────────────────────────────────────────────────────
+function tryDecode(str) {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(str);
+    return json ? JSON.parse(json) : null;
+  } catch { return null; }
+}
+function encode(obj) {
+  return LZString.compressToEncodedURIComponent(JSON.stringify(obj));
+}
+function resolveState() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash) { const s = tryDecode(hash); if (s?.mode) return s; }
+  return { mode: "creator" };
+}
+function pushHash(obj) {
+  window.history.replaceState(null, "", "#" + encode(obj));
+}
+function shareLink(obj) {
+  return window.location.origin + window.location.pathname + "#" + encode(obj);
+}
+function buildShareText(guesses, numPegs, maxGuesses, won) {
+  const header = won ? `Mastermind ${guesses.length}/${maxGuesses}` : `Mastermind X/${maxGuesses}`;
+  const grid = guesses.map(g =>
+    "🟩".repeat(g.fb.black) + "🟨".repeat(g.fb.white) + "⬛".repeat(numPegs - g.fb.black - g.fb.white)
+  );
+  return [header, "", ...grid].join("\n");
+}
+
+// ─── CSS ──────────────────────────────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  background:#07090f;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 15% 15%, rgba(80,40,160,.09) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 85%, rgba(20,50,140,.08) 0%,transparent 60%);
+  color:#dde1f0;min-height:100vh;
+}
+a{color:inherit;text-decoration:none;}
+.mm{max-width:460px;margin:0 auto;padding:20px 16px 100px;}
+.mm-back{display:inline-flex;align-items:center;gap:4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#303555;margin-bottom:22px;cursor:pointer;transition:color .15s;}
+.mm-back:hover{color:#6b7aaa;}
+.mm-hd{text-align:center;margin-bottom:26px;}
+.mm-logo{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-bottom:2px;}
+.mm-logo em{color:#f59e0b;font-style:normal;}
+.mm-sub{font-size:13px;color:#404870;}
+
+/* Card */
+.mm-card{background:#0b0e1c;border:1px solid #181d30;border-radius:14px;padding:20px;margin-bottom:14px;}
+.mm-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#303555;margin-bottom:12px;}
+
+/* Settings */
+.mm-set-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.mm-set-row:last-child{margin-bottom:0;}
+.mm-set-name{font-size:13px;color:#7b88b0;}
+.mm-opts{display:flex;gap:5px;}
+.mm-opt{padding:5px 12px;border-radius:6px;border:1px solid #181d30;background:transparent;font-family:inherit;font-size:12px;font-weight:600;color:#303555;cursor:pointer;transition:all .14s;}
+.mm-opt:hover{border-color:#2a3050;color:#6b7aaa;}
+.mm-opt.on{background:#162040;border-color:#2d4080;color:#90a8e8;}
+
+/* Pegs */
+.mm-peg-row{display:flex;gap:8px;justify-content:center;}
+.mm-peg{border-radius:50%;flex-shrink:0;cursor:default;transition:transform .1s;}
+.mm-peg.hole{background:#0d1020;border:2.5px solid #181d30;}
+.mm-peg.gem{border:none;box-shadow:inset 0 -4px 8px rgba(0,0,0,.55),0 3px 8px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.07);}
+.mm-peg.clickable{cursor:pointer;}
+.mm-peg.clickable:hover{transform:scale(1.1);}
+.mm-peg.clickable:active{transform:scale(.93);}
+
+/* Palette */
+.mm-palette-wrap{background:#0b0e1c;border:1px solid #181d30;border-radius:14px;padding:16px;margin-bottom:14px;}
+.mm-palette{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.mm-cpeg{border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .14s,border-color .14s,box-shadow .14s;box-shadow:inset 0 -4px 8px rgba(0,0,0,.55),0 3px 8px rgba(0,0,0,.4);}
+.mm-cpeg:hover{transform:scale(1.1);}
+.mm-cpeg.sel{border-color:#fff;transform:scale(1.14);box-shadow:inset 0 -4px 8px rgba(0,0,0,.55),0 3px 8px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.2),0 0 14px rgba(255,255,255,.18);}
+
+/* Board rows */
+.mm-board{display:flex;flex-direction:column;gap:5px;margin-bottom:18px;}
+.mm-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;border:1px solid transparent;transition:background .2s,border-color .2s;}
+.mm-row.live{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.07);}
+.mm-rnum{width:20px;text-align:right;font-size:11px;font-weight:700;color:#1e2438;flex-shrink:0;}
+.mm-row.live .mm-rnum{color:#4a5580;}
+.mm-spacer{flex:1;}
+.mm-fgrid{display:grid;gap:3px;flex-shrink:0;}
+.mm-fgrid.c2{grid-template-columns:1fr 1fr;width:34px;}
+.mm-fgrid.c3{grid-template-columns:1fr 1fr 1fr;width:50px;}
+.mm-fpeg{border-radius:50%;}
+.mm-fpeg.b{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.45);}
+.mm-fpeg.w{background:#d4d8e8;}
+.mm-fpeg.m{background:#181d30;}
+
+/* Buttons */
+.mm-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:9px;border:none;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .17s;}
+.mm-btn-gold{background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a0e00;}
+.mm-btn-gold:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:0 4px 18px rgba(245,158,11,.3);}
+.mm-btn-gold:disabled{opacity:.28;cursor:not-allowed;transform:none;box-shadow:none;filter:none;}
+.mm-btn-ghost{background:transparent;border:1px solid #181d30;color:#404870;}
+.mm-btn-ghost:hover{border-color:#2a3050;color:#7b88b0;}
+.mm-btn-green{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;}
+.mm-btn-green:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 14px rgba(34,197,94,.28);}
+.mm-btn-green:disabled{opacity:.28;cursor:not-allowed;transform:none;box-shadow:none;filter:none;}
+.mm-btn-wide{width:100%;}
+.mm-btn-row{display:flex;gap:8px;}
+
+/* Share box */
+.mm-sbox{background:#050710;border:1px solid #181d30;border-radius:10px;padding:12px 14px;margin-top:12px;}
+.mm-surl{font-size:10px;color:#303555;font-family:monospace;word-break:break-all;line-height:1.6;margin-bottom:8px;}
+.mm-scopy{padding:5px 13px;border-radius:6px;border:1px solid #181d30;background:transparent;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.06em;cursor:pointer;color:#404870;transition:all .14s;}
+.mm-scopy:hover{border-color:#2a3050;color:#7b88b0;}
+.mm-scopy.ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35);color:#22c55e;}
+.mm-hint{font-size:11px;color:#1e2438;text-align:center;margin-top:10px;line-height:1.6;}
+
+/* Result */
+.mm-result{text-align:center;padding:8px 0 16px;}
+.mm-r-icon{font-size:52px;margin-bottom:10px;}
+.mm-r-title{font-size:22px;font-weight:700;margin-bottom:4px;}
+.mm-r-title.won{color:#f59e0b;text-shadow:0 0 28px rgba(245,158,11,.35);}
+.mm-r-title.lost{color:#ef4444;}
+.mm-r-sub{font-size:13px;color:#404870;margin-bottom:18px;}
+.mm-r-code{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
+.mm-sgrid{font-size:15px;line-height:2;background:#050710;border:1px solid #181d30;border-radius:10px;padding:14px 16px;text-align:left;white-space:pre;color:#7b88b0;margin-bottom:14px;overflow-x:auto;}
+.mm-r-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+`;
+
+// ─── Peg ──────────────────────────────────────────────────────────────────────
+function Peg({ id, size = 42, clickable, onClick }) {
+  const c = COLORS.find(x => x.id === id);
+  return (
+    <div
+      className={`mm-peg${c ? " gem" : " hole"}${clickable ? " clickable" : ""}`}
+      style={{
+        width: size, height: size,
+        ...(c ? { background: `radial-gradient(circle at 36% 30%, ${c.hi}, ${c.hex} 52%, rgba(0,0,0,.6))` } : {}),
+      }}
+      onClick={onClick}
+    />
+  );
+}
+
+// ─── FeedbackGrid ─────────────────────────────────────────────────────────────
+function FeedbackGrid({ black, white, total }) {
+  const cols = total <= 4 ? 2 : 3;
+  const sz   = total <= 4 ? 13 : 11;
+  const pegs = [
+    ...Array(black).fill("b"),
+    ...Array(white).fill("w"),
+    ...Array(total - black - white).fill("m"),
+  ];
+  return (
+    <div className={`mm-fgrid c${cols}`}>
+      {pegs.map((t, i) => <div key={i} className={`mm-fpeg ${t}`} style={{ width: sz, height: sz }} />)}
+    </div>
+  );
+}
+
+// ─── Palette ──────────────────────────────────────────────────────────────────
+function Palette({ ids, sel, onSel }) {
+  return (
+    <div className="mm-palette-wrap">
+      <div className="mm-lbl">Pick a color then tap a peg slot</div>
+      <div className="mm-palette">
+        {ids.map(id => {
+          const c = COLORS.find(x => x.id === id);
+          return (
+            <div
+              key={id}
+              className={`mm-cpeg${sel === id ? " sel" : ""}`}
+              style={{
+                width: 46, height: 46,
+                background: `radial-gradient(circle at 36% 30%, ${c.hi}, ${c.hex} 52%, rgba(0,0,0,.6))`,
+              }}
+              title={c.label}
+              onClick={() => onSel(sel === id ? null : id)}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Creator ──────────────────────────────────────────────────────────────────
+function Creator() {
+  const [nColors,     setNC]  = useState(6);
+  const [nPegs,       setNP]  = useState(4);
+  const [maxG,        setMG]  = useState(10);
+  const [code,        setCode] = useState(Array(4).fill(null));
+  const [sel,         setSel]  = useState(null);
+  const [link,        setLink] = useState("");
+  const [copied,      setCopied] = useState(false);
+
+  const ids = COLORS.slice(0, nColors).map(c => c.id);
+
+  useEffect(() => { setCode(Array(nPegs).fill(null)); setSel(null); }, [nPegs]);
+  useEffect(() => { if (sel && !ids.includes(sel)) setSel(null); }, [nColors]);
+
+  const tapPeg = (i) => {
+    if (!sel) return;
+    setCode(p => p.map((c, idx) => idx === i ? sel : c));
+  };
+
+  const randomize = () => setCode(Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)]));
+
+  const generate = () => {
+    setLink(shareLink({ mode: "breaker", code, colors: nColors, pegs: nPegs, maxG, guesses: [] }));
+  };
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(link); } catch { return; }
+    setCopied(true); setTimeout(() => setCopied(false), 2200);
+  };
+
+  const codeReady = code.every(Boolean);
+
+  return (
+    <div>
+      <div className="mm-hd">
+        <div className="mm-logo">Master<em>mind</em></div>
+        <div className="mm-sub">Set a secret code · share the link · let them crack it</div>
+      </div>
+
+      <div className="mm-card">
+        <div className="mm-lbl">Game settings</div>
+        <div className="mm-set-row">
+          <span className="mm-set-name">Available colors</span>
+          <div className="mm-opts">
+            {[6,7,8].map(n => <button key={n} className={`mm-opt${nColors===n?" on":""}`} onClick={() => setNC(n)}>{n}</button>)}
+          </div>
+        </div>
+        <div className="mm-set-row">
+          <span className="mm-set-name">Code length</span>
+          <div className="mm-opts">
+            {[4,5].map(n => <button key={n} className={`mm-opt${nPegs===n?" on":""}`} onClick={() => setNP(n)}>{n} pegs</button>)}
+          </div>
+        </div>
+        <div className="mm-set-row">
+          <span className="mm-set-name">Max guesses</span>
+          <div className="mm-opts">
+            {[8,10,12].map(n => <button key={n} className={`mm-opt${maxG===n?" on":""}`} onClick={() => setMG(n)}>{n}</button>)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mm-card">
+        <div className="mm-lbl">Your secret code</div>
+        <div className="mm-peg-row" style={{ marginBottom: 14 }}>
+          {code.map((c, i) => <Peg key={i} id={c} clickable onClick={() => tapPeg(i)} />)}
+        </div>
+        <div className="mm-btn-row" style={{ justifyContent: "center" }}>
+          <button className="mm-btn mm-btn-ghost" style={{ fontSize: 13 }} onClick={randomize}>🎲 Random</button>
+          <button className="mm-btn mm-btn-ghost" style={{ fontSize: 13 }} onClick={() => setCode(Array(nPegs).fill(null))}>✕ Clear</button>
+        </div>
+      </div>
+
+      <Palette ids={ids} sel={sel} onSel={setSel} />
+
+      <button className="mm-btn mm-btn-gold mm-btn-wide" disabled={!codeReady} onClick={generate}>
+        🔗 Generate Share Link
+      </button>
+
+      {link && (
+        <>
+          <div className="mm-sbox">
+            <div className="mm-surl">{link}</div>
+            <button className={`mm-scopy${copied ? " ok" : ""}`} onClick={copy}>
+              {copied ? "✓ Copied!" : "Copy link"}
+            </button>
+          </div>
+          <div className="mm-hint">
+            Send the link to your code breaker.<br />
+            ⚠️ Don't share your screen — the code is encoded in the URL!
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Breaker ──────────────────────────────────────────────────────────────────
+function Breaker({ init }) {
+  const { code, colors: nColors, pegs: nPegs, maxG } = init;
+  const ids = COLORS.slice(0, nColors).map(c => c.id);
+
+  const [guesses, setGuesses] = useState(init.guesses || []);
+  const [current, setCurrent] = useState(Array(nPegs).fill(null));
+  const [sel,     setSel]     = useState(null);
+  const [copied,  setCopied]  = useState(false);
+  const resultRef = useRef(null);
+
+  const isWon  = guesses.length > 0 && guesses.at(-1).fb.black === nPegs;
+  const isLost = !isWon && guesses.length >= maxG;
+  const isOver = isWon || isLost;
+
+  // Persist progress to URL on each guess
+  useEffect(() => {
+    if (guesses.length === 0) return;
+    pushHash({ ...init, guesses });
+  }, [guesses]);
+
+  // Scroll to result when game ends
+  useEffect(() => {
+    if (isOver) setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+  }, [isOver]);
+
+  const tapPeg = (i) => {
+    if (isOver) return;
+    setCurrent(p => p.map((c, idx) => idx === i ? (sel || null) : c));
+  };
+
+  const clearRow = () => setCurrent(Array(nPegs).fill(null));
+
+  const submit = () => {
+    if (isOver || current.some(c => !c)) return;
+    const fb = calcFeedback(current, code);
+    setGuesses(p => [...p, { colors: current, fb }]);
+    setCurrent(Array(nPegs).fill(null));
+    setSel(null);
+  };
+
+  const canSubmit = !isOver && current.every(Boolean);
+
+  const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon) : "", [isOver]);
+
+  const copyResult = async () => {
+    try { await navigator.clipboard.writeText(shareStr + "\n\n" + window.location.href); } catch { return; }
+    setCopied(true); setTimeout(() => setCopied(false), 2200);
+  };
+
+  const newGame = () => {
+    window.history.replaceState(null, "", window.location.pathname);
+    window.location.reload();
+  };
+
+  return (
+    <div>
+      <div className="mm-hd">
+        <div className="mm-logo">Master<em>mind</em></div>
+        <div className="mm-sub">
+          {isOver
+            ? (isWon ? "🎉 Code cracked!" : "💀 The code wins")
+            : `Guess ${guesses.length + 1} / ${maxG}`}
+          {" · "}{nPegs} pegs · {nColors} colors
+        </div>
+      </div>
+
+      {/* Board */}
+      <div className="mm-board">
+        {Array.from({ length: maxG }, (_, row) => {
+          const done   = guesses[row];
+          const isLive = !isOver && row === guesses.length;
+          const pegs   = done ? done.colors : isLive ? current : Array(nPegs).fill(null);
+          const fb     = done?.fb;
+
+          return (
+            <div key={row} className={`mm-row${isLive ? " live" : ""}`}>
+              <span className="mm-rnum">{row + 1}</span>
+              <div className="mm-peg-row mm-spacer" style={{ justifyContent: "flex-start" }}>
+                {pegs.map((c, pi) => (
+                  <Peg
+                    key={pi} id={c}
+                    clickable={isLive}
+                    onClick={isLive ? () => tapPeg(pi) : undefined}
+                  />
+                ))}
+              </div>
+              {fb
+                ? <FeedbackGrid black={fb.black} white={fb.white} total={nPegs} />
+                : <div style={{ width: nPegs <= 4 ? 34 : 50 }} />
+              }
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Controls while playing */}
+      {!isOver && (
+        <>
+          <Palette ids={ids} sel={sel} onSel={setSel} />
+          <div className="mm-btn-row" style={{ marginBottom: 10 }}>
+            <button className="mm-btn mm-btn-green" style={{ flex: 1 }} disabled={!canSubmit} onClick={submit}>
+              Submit Guess →
+            </button>
+            <button className="mm-btn mm-btn-ghost" onClick={clearRow} title="Clear row">✕</button>
+          </div>
+          <div className="mm-hint">
+            🟩 right place · 🟨 right color, wrong place · ⬛ not in code
+            <br />Tap a filled peg with a new color selected to swap it
+          </div>
+        </>
+      )}
+
+      {/* Result card */}
+      {isOver && (
+        <div className="mm-card" ref={resultRef}>
+          <div className="mm-result">
+            <div className="mm-r-icon">{isWon ? "🎉" : "💀"}</div>
+            <div className={`mm-r-title ${isWon ? "won" : "lost"}`}>
+              {isWon ? "You cracked it!" : "The code wins!"}
+            </div>
+            <div className="mm-r-sub">
+              {isWon
+                ? `Solved in ${guesses.length} of ${maxG} guess${guesses.length !== 1 ? "es" : ""}`
+                : `All ${maxG} guesses used`}
+            </div>
+            <div className="mm-lbl">The secret code was</div>
+            <div className="mm-r-code">
+              {code.map((c, i) => <Peg key={i} id={c} size={46} />)}
+            </div>
+          </div>
+          <div className="mm-sgrid">{shareStr}</div>
+          <div className="mm-r-actions">
+            <button className="mm-btn mm-btn-gold" onClick={copyResult}>
+              {copied ? "✓ Copied!" : "📋 Copy Result"}
+            </button>
+            <button className="mm-btn mm-btn-ghost" onClick={newGame}>+ New Game</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+function App() {
+  const state = useMemo(() => resolveState(), []);
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="mm">
+        <a href="../../" className="mm-back">← Games</a>
+        {state.mode === "creator" && <Creator />}
+        {state.mode === "breaker" && <Breaker init={state} />}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
