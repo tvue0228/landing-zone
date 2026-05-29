@@ -10,8 +10,9 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 <script type="text/babel">
-const { useState, useMemo, useCallback, useRef } = React;
+const { useState, useMemo, useCallback, useRef, useEffect } = React;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const RANK_PTS  = { 1: 4, 2: 3, 3: 2, 4: 1 };
@@ -37,6 +38,44 @@ const shuffle = (arr) => {
 
 const podComplete = (pod) =>
   pod.isBye || pod.players.every((pid) => pod.placements[pid] !== undefined);
+
+// ─── Persistence ──────────────────────────────────────────────────────────────
+const LS_KEY = "ct-current";
+
+function tryDecode(compressed) {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(compressed);
+    return json ? JSON.parse(json) : null;
+  } catch { return null; }
+}
+
+function resolveInitialState() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash) {
+    const state = tryDecode(hash);
+    if (state) {
+      try { localStorage.setItem(LS_KEY, hash); } catch {}
+      return state;
+    }
+  }
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) {
+      const state = tryDecode(saved);
+      if (state) {
+        window.history.replaceState(null, "", "#" + saved);
+        return state;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function encodeToUrl(state) {
+  const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
+  window.history.replaceState(null, "", "#" + compressed);
+  try { localStorage.setItem(LS_KEY, compressed); } catch {}
+}
 
 // ─── Strength of Schedule ─────────────────────────────────────────────────────
 function calculateSoS(playerId, completedPods, playerMap) {
@@ -381,10 +420,36 @@ input[type=number].ct-input{width:70px;flex:none;text-align:center;}
 }
 .ct-back:hover{color:#6a5a40;}
 
+.ct-share{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 14px;background:#0a0e18;border:1px solid #1c2230;border-radius:8px;margin-top:14px;max-width:680px;margin-left:auto;margin-right:auto;}
+.ct-share-url{flex:1;font-size:11px;color:#3e4555;font-family:monospace;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ct-share-copy{display:inline-flex;align-items:center;padding:5px 12px;border-radius:4px;border:1px solid #1c2230;font-size:10px;font-weight:600;font-family:'Cinzel',serif;letter-spacing:0.08em;cursor:pointer;background:transparent;color:#3e4555;transition:all .15s;white-space:nowrap;}
+.ct-share-copy:hover{border-color:rgba(201,168,76,0.35);color:#c9a84c;}
+.ct-share-copy.ok{background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.4);color:#c9a84c;}
+
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:#080c14;}
 ::-webkit-scrollbar-thumb{background:#1c2230;border-radius:2px;}
 `;
+
+// ─── Share Bar ────────────────────────────────────────────────────────────────
+function ShareBar({ urlStamp }) {
+  const [copied, setCopied] = useState(false);
+  const url = window.location.href;
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); } catch { return; }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="ct-share">
+      <span style={{ fontSize:13 }}>🔗</span>
+      <span className="ct-share-url">{url}</span>
+      <button className={`ct-share-copy${copied ? " ok" : ""}`} onClick={copy}>
+        {copied ? "✓ Copied" : "Copy Link"}
+      </button>
+    </div>
+  );
+}
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 function ManaPips() {
@@ -601,14 +666,22 @@ function StandingsTable({ players, completedRounds = [], showDetailed = true }) 
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 function CommanderTournament() {
-  const [phase, setPhase]           = useState("setup");
-  const [players, setPlayers]       = useState([]);
-  const [rounds, setRounds]         = useState([]);
-  const [curRound, setCurRound]     = useState(1);
-  const [totalRounds, setTotalRounds] = useState(4);
-  const [newName, setNewName]       = useState("");
-  const [tab, setTab]               = useState("pods");
+  const saved = useMemo(() => resolveInitialState(), []);
+  const [phase, setPhase]             = useState(saved?.phase ?? "setup");
+  const [players, setPlayers]         = useState(saved?.players ?? []);
+  const [rounds, setRounds]           = useState(saved?.rounds ?? []);
+  const [curRound, setCurRound]       = useState(saved?.curRound ?? 1);
+  const [totalRounds, setTotalRounds] = useState(saved?.totalRounds ?? 4);
+  const [newName, setNewName]         = useState("");
+  const [tab, setTab]                 = useState("pods");
+  const [urlStamp, setUrlStamp]       = useState(0);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (phase === "setup" && players.length === 0) return;
+    encodeToUrl({ phase, players, rounds, curRound, totalRounds });
+    setUrlStamp(n => n + 1);
+  }, [phase, players, rounds, curRound, totalRounds]);
 
   const currentRoundData = rounds.find((r) => r.roundNum === curRound);
   const allPodsComplete  = currentRoundData?.pods.every(podComplete) ?? false;
@@ -699,6 +772,9 @@ function CommanderTournament() {
   };
 
   const restart = () => {
+    if (!window.confirm("Start a new tournament? This one remains accessible via its current URL.")) return;
+    try { localStorage.removeItem(LS_KEY); } catch {}
+    window.history.replaceState(null, "", window.location.pathname);
     setPhase("setup"); setPlayers([]); setRounds([]);
     setCurRound(1); setTotalRounds(4); setNewName(""); setTab("pods");
   };
@@ -713,6 +789,7 @@ function CommanderTournament() {
           <div className="ct-title">Commander Circuit</div>
           <div className="ct-subtitle">Tournament Management</div>
           <div className="ct-rule" />
+          {(players.length > 0 || phase !== "setup") && <ShareBar urlStamp={urlStamp} />}
         </div>
 
         <div className="ct-main">
