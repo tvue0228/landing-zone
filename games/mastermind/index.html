@@ -79,6 +79,110 @@ function buildShareText(guesses, numPegs, maxGuesses, won, url) {
   return [header, "", ...grid, "", "Try it yourself:", url].join("\n");
 }
 
+// ─── Canvas helpers ───────────────────────────────────────────────────────────
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function buildResultCanvas(guesses, nPegs, maxG, isWon, url) {
+  const W = 600, pegR = 15, pegGap = 10;
+  const headerH = 164, rowH = 52, footerH = 72;
+  const H = headerH + guesses.length * rowH + footerH;
+  const DPR = 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  // Background
+  ctx.fillStyle = '#07090f';
+  ctx.fillRect(0, 0, W, H);
+  const glow = ctx.createRadialGradient(W * 0.15, H * 0.1, 0, W * 0.15, H * 0.1, W * 0.55);
+  glow.addColorStop(0, 'rgba(80,40,160,0.14)'); glow.addColorStop(1, 'rgba(7,9,15,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+  // Title "Master" + "mind"
+  const FONT = 'bold 54px system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  ctx.font = FONT; ctx.textBaseline = 'alphabetic';
+  const mw = ctx.measureText('Master').width;
+  const iw = ctx.measureText('mind').width;
+  const tx = (W - mw - iw) / 2;
+  ctx.fillStyle = '#dde1f0'; ctx.fillText('Master', tx, 68);
+  ctx.fillStyle = '#f59e0b'; ctx.fillText('mind', tx + mw, 68);
+
+  // Score line
+  const scoreText = isWon
+    ? `Cracked in ${guesses.length} / ${maxG} guess${guesses.length !== 1 ? 'es' : ''} 🎉`
+    : `Failed — all ${maxG} guesses used 💀`;
+  ctx.font = '19px system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+  ctx.fillStyle = isWon ? '#a07830' : '#6b3a3a';
+  ctx.textAlign = 'center'; ctx.fillText(scoreText, W / 2, 104);
+
+  // Divider
+  ctx.beginPath(); ctx.moveTo(W/2 - 50, 126); ctx.lineTo(W/2 + 50, 126);
+  ctx.strokeStyle = '#1e2438'; ctx.lineWidth = 1; ctx.stroke();
+
+  // Peg rows
+  const ORANGE = '#f59e0b', LITE = '#c8ccd8', DARK = '#181d30';
+  guesses.forEach((g, row) => {
+    const { black, white } = g.fb;
+    const total = nPegs;
+    const pegs = [...Array(black).fill(ORANGE), ...Array(white).fill(LITE), ...Array(total - black - white).fill(DARK)];
+    const rowW = total * pegR * 2 + (total - 1) * pegGap;
+    const sx = (W - rowW) / 2;
+    const cy = headerH + row * rowH + pegR + 2;
+    const isWinRow = isWon && row === guesses.length - 1;
+
+    // Row bg
+    ctx.fillStyle = isWinRow ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.025)';
+    rrect(ctx, sx - 22, cy - pegR - 7, rowW + 44, pegR * 2 + 14, 9); ctx.fill();
+    if (isWinRow) { ctx.strokeStyle = 'rgba(245,158,11,0.2)'; ctx.lineWidth = 1; rrect(ctx, sx - 22, cy - pegR - 7, rowW + 44, pegR * 2 + 14, 9); ctx.stroke(); }
+
+    // Row number
+    ctx.font = 'bold 10px monospace'; ctx.fillStyle = isWinRow ? 'rgba(245,158,11,0.5)' : '#1e2438';
+    ctx.textAlign = 'right'; ctx.fillText(String(row + 1), sx - 30, cy + 4);
+
+    pegs.forEach((color, pi) => {
+      const x = sx + pi * (pegR * 2 + pegGap) + pegR;
+
+      // Glow halo for win row orange pegs
+      if (isWinRow && color === ORANGE) {
+        ctx.beginPath(); ctx.arc(x, cy, pegR + 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(245,158,11,0.18)'; ctx.fill();
+      }
+      // Shadow
+      ctx.beginPath(); ctx.arc(x, cy + 2, pegR, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
+      // Body
+      ctx.beginPath(); ctx.arc(x, cy, pegR, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+      // Highlight
+      if (color !== DARK) {
+        const hl = ctx.createRadialGradient(x - pegR * 0.3, cy - pegR * 0.35, 0, x, cy, pegR);
+        hl.addColorStop(0, 'rgba(255,255,255,0.45)');
+        hl.addColorStop(0.55, 'rgba(255,255,255,0.08)');
+        hl.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath(); ctx.arc(x, cy, pegR, 0, Math.PI * 2);
+        ctx.fillStyle = hl; ctx.fill();
+      }
+    });
+  });
+
+  // Footer URL
+  const disp = url.length > 54 ? url.slice(0, 51) + '…' : url;
+  ctx.font = '12px monospace'; ctx.fillStyle = '#252c46';
+  ctx.textAlign = 'center'; ctx.fillText('Try it → ' + disp, W / 2, H - 26);
+
+  return canvas;
+}
+
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -386,9 +490,30 @@ function Breaker({ init }) {
 
   const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon, window.location.href) : "", [isOver]);
 
-  const copyResult = async () => {
-    try { await navigator.clipboard.writeText(shareStr); } catch { return; }
-    setCopied(true); setTimeout(() => setCopied(false), 2200);
+  const shareResult = async () => {
+    const canvas = buildResultCanvas(guesses, nPegs, maxG, isWon, window.location.href);
+    const dataUrl = canvas.toDataURL('image/png');
+    const b64 = dataUrl.split(',')[1];
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const blob = new Blob([arr], { type: 'image/png' });
+    const file = new File([blob], 'mastermind.png', { type: 'image/png' });
+
+    try {
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: shareStr });
+      } else if (navigator.share) {
+        await navigator.share({ text: shareStr, url: window.location.href });
+      } else {
+        await navigator.clipboard.writeText(shareStr);
+        setCopied(true); setTimeout(() => setCopied(false), 2200);
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        try { await navigator.clipboard.writeText(shareStr); setCopied(true); setTimeout(() => setCopied(false), 2200); } catch {}
+      }
+    }
   };
 
   const newGame = () => {
@@ -458,8 +583,8 @@ function Breaker({ init }) {
           </div>
           <div className="mm-sgrid">{shareStr}</div>
           <div className="mm-r-actions">
-            <button className="mm-btn mm-btn-gold" onClick={copyResult}>
-              {copied ? "✓ Copied!" : "📋 Copy Result"}
+            <button className="mm-btn mm-btn-gold" onClick={shareResult}>
+              {copied ? "✓ Copied!" : "📤 Share Result"}
             </button>
             <button className="mm-btn mm-btn-ghost" onClick={newGame}>+ New Game</button>
           </div>
