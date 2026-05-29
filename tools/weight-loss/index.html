@@ -168,6 +168,16 @@ a{color:inherit;text-decoration:none;}
 .wl-io-bar{display:flex;gap:8px;margin-top:8px;}
 .wl-io-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;background:#fff;color:#64748b;transition:all .15s;white-space:nowrap;}
 .wl-io-btn:hover{border-color:#cbd5e1;color:#0f172a;}
+.wl-pct-th{min-width:180px;}
+@media(max-width:600px){
+  .wl-col-hide{display:none;}
+  .wl-pct-bar{display:none;}
+  .wl-pct-th{min-width:0;}
+  .wl-share-note{display:none;}
+  .wl-tbl td,.wl-tbl th{padding:10px 8px;}
+  .wl-tab{padding:10px 10px;font-size:12px;}
+  .wl-tab-body{padding:0 10px 20px;}
+}
 `;
 
 // ─── Progress Chart ────────────────────────────────────────────────────────────
@@ -398,7 +408,7 @@ function MainApp({ initialData, onNew, source }) {
                 </div>
               </div>
 
-              <div style={{ padding:"0 20px 24px" }}>
+              <div className="wl-tab-body" style={{ padding:"0 20px 24px" }}>
 
                 {tab === "rankings" && (
                   ranked.every(c => c.sortedWeighIns.length === 0) ? (
@@ -409,10 +419,10 @@ function MainApp({ initialData, onNew, source }) {
                         <tr>
                           <th style={{ width:44 }}>#</th>
                           <th>Competitor</th>
-                          <th className="tr">Start</th>
-                          <th className="tr">Current</th>
-                          <th className="tr">Lost</th>
-                          <th style={{ minWidth:180 }}>% Lost</th>
+                          <th className="tr wl-col-hide">Start</th>
+                          <th className="tr wl-col-hide">Current</th>
+                          <th className="tr wl-col-hide">Lost</th>
+                          <th className="wl-pct-th">% Lost</th>
                           <th className="tr">Check-ins</th>
                         </tr>
                       </thead>
@@ -426,14 +436,14 @@ function MainApp({ initialData, onNew, source }) {
                                 <span style={{ fontWeight:500 }}>{c.name}</span>
                               </div>
                             </td>
-                            <td className="tr" style={{ color:"#64748b" }}>{c.startWeight} {unit}</td>
-                            <td className="tr" style={{ fontWeight:500 }}>{c.currentWeight.toFixed(1)} {unit}</td>
-                            <td className="tr" style={{ color: c.lostAbs > 0 ? "#16a34a" : c.lostAbs < 0 ? "#dc2626" : "#64748b" }}>
+                            <td className="tr wl-col-hide" style={{ color:"#64748b" }}>{c.startWeight} {unit}</td>
+                            <td className="tr wl-col-hide" style={{ fontWeight:500 }}>{c.currentWeight.toFixed(1)} {unit}</td>
+                            <td className="tr wl-col-hide" style={{ color: c.lostAbs > 0 ? "#16a34a" : c.lostAbs < 0 ? "#dc2626" : "#64748b" }}>
                               {c.lostAbs.toFixed(1)} {unit}
                             </td>
                             <td>
                               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                                <div style={{ flex:1, height:6, background:"#f1f5f9", borderRadius:3, minWidth:60, overflow:"hidden" }}>
+                                <div className="wl-pct-bar" style={{ flex:1, height:6, background:"#f1f5f9", borderRadius:3, minWidth:60, overflow:"hidden" }}>
                                   <div style={{
                                     height:"100%", borderRadius:3, transition:"width 0.4s",
                                     background: c.pctLost < 0 ? "#dc2626" : "#16a34a",
