@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tools Lab</title>
+</head>
+<body>
+<style>
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-text-success: #15803d;
+  --color-text-warning: #92400e;
+  --color-text-info: #1d4ed8;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f3f4f6;
+  --color-background-success: #dcfce7;
+  --color-background-warning: #fef3c7;
+  --color-background-concept: #f3f4f6;
+  --color-border-tertiary: #e5e7eb;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--color-background-primary); color: var(--color-text-primary); min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+
+.wrap { padding: 3rem 1.5rem; max-width: 720px; margin: 0 auto; }
+
+/* Header */
+.header { margin-bottom: 3rem; }
+.header-eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 0.5rem; }
+.header-title { font-size: 28px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; }
+.header-sub { font-size: 15px; color: var(--color-text-secondary); line-height: 1.5; max-width: 460px; }
+
+/* Section */
+.section-label { font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-border-tertiary); }
+
+/* Tool grid */
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 2.5rem; }
+
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+.tool-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.tool-card.concept {
+  background: var(--color-background-secondary);
+  cursor: default;
+}
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.card-icon { font-size: 20px; line-height: 1; }
+.card-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+.card-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem; }
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Status badges */
+.badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; }
+.badge-live { background: var(--color-background-success); color: var(--color-text-success); }
+.badge-wip { background: var(--color-background-warning); color: var(--color-text-warning); }
+.badge-concept { background: var(--color-background-concept); color: var(--color-text-tertiary); border: 1px solid var(--color-border-tertiary); }
+
+/* Arrow link hint */
+.card-arrow { font-size: 14px; color: var(--color-text-tertiary); }
+.tool-card:hover .card-arrow { color: var(--color-text-secondary); }
+
+@media (max-width: 480px) {
+  .wrap { padding: 2rem 1rem; }
+  .header-title { font-size: 22px; }
+  .tool-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="wrap">
+  <header class="header">
+    <div class="header-eyebrow">R&amp;D Lab</div>
+    <h1 class="header-title">Tools</h1>
+    <p class="header-sub">A collection of micro-tools — each one lives here until it's ready to graduate into its own project.</p>
+  </header>
+
+  <div class="section-label">Live</div>
+  <div class="tool-grid" id="live-grid">
+
+    <a href="tools/time-allocator/" class="tool-card">
+      <div class="card-top">
+        <span class="card-icon">⏱</span>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="card-title">Time Allocator</div>
+      <div class="card-desc">Split the time remaining until a deadline into equal chunks. Useful for pacing meetings, study sessions, or work blocks.</div>
+      <div class="card-footer">
+        <div class="card-tags">
+          <span class="badge badge-live">live</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="section-label" style="margin-top: 1rem;">Concepts</div>
+  <div class="tool-grid" id="concept-grid">
+
+    <div class="tool-card concept">
+      <div class="card-top">
+        <span class="card-icon">💡</span>
+      </div>
+      <div class="card-title">Add a tool</div>
+      <div class="card-desc">Drop a new folder under <code style="font-size:12px; background: var(--color-border-tertiary); padding: 1px 5px; border-radius: 4px;">tools/</code> and add a card here to track it.</div>
+      <div class="card-footer">
+        <div class="card-tags">
+          <span class="badge badge-concept">concept</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
