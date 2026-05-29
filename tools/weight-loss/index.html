@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weight Loss Competition</title>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo, useCallback, useRef, useEffect } = React;
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+const PALETTE = [
+  "#16a34a","#2563eb","#dc2626","#d97706",
+  "#7c3aed","#db2777","#0891b2","#65a30d","#c2410c","#0f766e"
+];
+
+const calcPct = (start, cur) => (start - cur) / start * 100;
+
+const fmtDate = (s) => {
+  const [y, m, d] = s.split("-");
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+function usePersist(key, init) {
+  const [val, setValRaw] = useState(() => {
+    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : init; }
+    catch { return init; }
+  });
+  const set = useCallback((v) => {
+    setValRaw(v);
+    try { localStorage.setItem(key, JSON.stringify(v)); } catch {}
+  }, [key]);
+  return [val, set];
+}
+
+function rankCompetitors(competitors) {
+  return competitors
+    .map(c => {
+      const sorted = [...c.weighIns].sort((a, b) => a.date.localeCompare(b.date));
+      const cur = sorted.length ? sorted[sorted.length - 1].weight : c.startWeight;
+      const pct = calcPct(c.startWeight, cur);
+      return { ...c, currentWeight: cur, pctLost: pct, lostAbs: c.startWeight - cur, sortedWeighIns: sorted };
+    })
+    .sort((a, b) => b.pctLost - a.pctLost)
+    .map((c, i) => ({ ...c, rank: i + 1 }));
+}
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: #0f172a; min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+
+.wl { padding: 0 16px 80px; }
+
+.wl-hd { max-width: 960px; margin: 0 auto; padding: 28px 0 20px; }
+.wl-back { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #64748b; margin-bottom: 14px; transition: color 0.15s; }
+.wl-back:hover { color: #0f172a; }
+.wl-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.wl-sub { font-size: 14px; color: #64748b; margin-top: 3px; }
+
+.wl-main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+.wl-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) { .wl-grid2 { grid-template-columns: 1fr; } }
+
+.wl-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+.wl-card-hd { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; margin-bottom: 16px; }
+
+.wl-field { margin-bottom: 11px; }
+.wl-lbl { display: block; font-size: 12px; font-weight: 500; color: #64748b; margin-bottom: 4px; }
+.wl-inp {
+  width: 100%; padding: 9px 12px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px;
+  font-size: 14px; font-family: inherit; color: #0f172a; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.wl-inp:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+.wl-inp::placeholder { color: #cbd5e1; }
+
+.wl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 16px; border-radius: 7px; border: none;
+  font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s;
+}
+.wl-btn-g { background: #16a34a; color: #fff; }
+.wl-btn-g:hover { background: #15803d; }
+.wl-btn-g:disabled { opacity: 0.35; cursor: not-allowed; }
+.wl-btn-del {
+  padding: 4px 8px; font-size: 12px; border-radius: 5px;
+  background: transparent; border: 1px solid #fecaca; color: #dc2626;
+}
+.wl-btn-del:hover { background: #fef2f2; }
+
+.wl-toggle { display: flex; gap: 2px; background: #f1f5f9; border-radius: 7px; padding: 3px; }
+.wl-toggle-btn {
+  padding: 5px 14px; border-radius: 5px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 500; font-family: inherit; background: transparent; color: #64748b; transition: all 0.15s;
+}
+.wl-toggle-btn.on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+.wl-tabs { display: flex; gap: 2px; border-bottom: 1px solid #e2e8f0; }
+.wl-tab {
+  padding: 12px 18px; background: transparent; border: none; font-family: inherit;
+  font-size: 13px; font-weight: 500; color: #64748b; cursor: pointer; position: relative; transition: color 0.15s;
+}
+.wl-tab:hover { color: #0f172a; }
+.wl-tab.on { color: #16a34a; }
+.wl-tab.on::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+  background: #16a34a; border-radius: 1px;
+}
+
+.wl-tbl { width: 100%; border-collapse: collapse; }
+.wl-tbl th {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  color: #94a3b8; padding: 8px 14px; text-align: left; border-bottom: 1px solid #f1f5f9;
+}
+.wl-tbl th.tr, .wl-tbl td.tr { text-align: right; }
+.wl-tbl td { padding: 12px 14px; border-bottom: 1px solid #f8fafc; font-size: 14px; transition: background 0.1s; }
+.wl-tbl tr:last-child td { border-bottom: none; }
+.wl-tbl tr:hover td { background: #f8fafc; }
+
+.wl-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 700;
+}
+.wl-badge.r1 { background: #fef9c3; color: #a16207; }
+.wl-badge.r2 { background: #f1f5f9; color: #475569; }
+.wl-badge.r3 { background: #fff7ed; color: #c2410c; }
+.wl-badge.rn { background: #f8fafc; color: #94a3b8; font-size: 12px; }
+
+.wl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.wl-dot-lg { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+.wl-preview {
+  font-size: 13px; padding: 8px 12px; border-radius: 7px; margin-bottom: 10px;
+}
+.wl-preview.pos { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.wl-preview.neg { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+
+.wl-clist { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; max-height: 230px; overflow-y: auto; }
+.wl-citem {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px;
+  font-size: 13px; animation: slidein 0.18s ease;
+}
+@keyframes slidein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.wl-empty { text-align: center; padding: 28px; color: #94a3b8; font-size: 14px; font-style: italic; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #f8fafc; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
+`;
+
+// ─── Progress Chart ────────────────────────────────────────────────────────────
+function ProgressChart({ ranked, colorOf }) {
+  const canvasRef = useRef(null);
+  const instRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (instRef.current) { instRef.current.destroy(); instRef.current = null; }
+
+    const withData = ranked.filter(c => c.sortedWeighIns.length > 0);
+    if (!withData.length) return;
+
+    const allDates = [...new Set([
+      ...ranked.map(c => c.startDate),
+      ...ranked.flatMap(c => c.sortedWeighIns.map(w => w.date)),
+    ])].sort();
+
+    const datasets = ranked.map(c => {
+      const color = colorOf(c.id);
+      const dateMap = { [c.startDate]: c.startWeight };
+      c.sortedWeighIns.forEach(w => { dateMap[w.date] = w.weight; });
+
+      return {
+        label: c.name,
+        data: allDates.map(d => dateMap[d] !== undefined ? +calcPct(c.startWeight, dateMap[d]).toFixed(3) : null),
+        borderColor: color,
+        backgroundColor: color + "22",
+        pointBackgroundColor: color,
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.3,
+        spanGaps: true,
+        fill: false,
+      };
+    });
+
+    instRef.current = new window.Chart(canvasRef.current, {
+      type: "line",
+      data: { labels: allDates.map(fmtDate), datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom", labels: { boxWidth: 12, padding: 16, font: { size: 13 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.parsed.y === null ? null : ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}% lost`,
+            },
+          },
+        },
+        scales: {
+          x: { grid: { color: "#f1f5f9" }, ticks: { color: "#94a3b8", font: { size: 12 } } },
+          y: {
+            grid: { color: "#f1f5f9" },
+            ticks: { color: "#94a3b8", font: { size: 12 }, callback: v => v.toFixed(1) + "%" },
+            title: { display: true, text: "% Weight Lost", color: "#94a3b8", font: { size: 12 } },
+          },
+        },
+      },
+    });
+
+    return () => { if (instRef.current) { instRef.current.destroy(); instRef.current = null; } };
+  }, [ranked]);
+
+  const hasData = ranked.some(c => c.sortedWeighIns.length > 0);
+
+  if (!hasData) {
+    return <div className="wl-empty">Log at least one weigh-in to see the chart</div>;
+  }
+
+  return <div style={{ position: "relative", width: "100%", height: 400 }}><canvas ref={canvasRef} /></div>;
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [competitors, setCompetitors] = usePersist("wlc-competitors", []);
+  const [unit, setUnit] = usePersist("wlc-unit", "lbs");
+  const [tab, setTab] = useState("rankings");
+
+  // Add competitor form
+  const [newName, setNewName] = useState("");
+  const [newWt, setNewWt]     = useState("");
+  const [newDate, setNewDate] = useState(() => new Date().toISOString().slice(0, 10));
+
+  // Weigh-in form
+  const [wiId, setWiId]     = useState("");
+  const [wiDate, setWiDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [wiWt, setWiWt]     = useState("");
+
+  const nameRef = useRef(null);
+
+  const idOrder = useMemo(() => competitors.map(c => c.id), [competitors]);
+  const colorOf = useCallback(id => PALETTE[idOrder.indexOf(id) % PALETTE.length], [idOrder]);
+  const ranked  = useMemo(() => rankCompetitors(competitors), [competitors]);
+  const maxPct  = useMemo(() => Math.max(0.01, ...ranked.map(c => Math.max(0, c.pctLost))), [ranked]);
+
+  const addCompetitor = () => {
+    const name = newName.trim();
+    const wt = parseFloat(newWt);
+    if (!name || isNaN(wt) || wt <= 0 || !newDate) return;
+    if (competitors.some(c => c.name.toLowerCase() === name.toLowerCase())) return;
+    setCompetitors([...competitors, { id: uid(), name, startWeight: wt, startDate: newDate, weighIns: [] }]);
+    setNewName(""); setNewWt("");
+    nameRef.current?.focus();
+  };
+
+  const removeCompetitor = id => {
+    setCompetitors(competitors.filter(c => c.id !== id));
+    if (wiId === id) setWiId("");
+  };
+
+  const logWeighIn = () => {
+    const wt = parseFloat(wiWt);
+    if (!wiId || isNaN(wt) || wt <= 0 || !wiDate) return;
+    setCompetitors(competitors.map(c => {
+      if (c.id !== wiId) return c;
+      const idx = c.weighIns.findIndex(w => w.date === wiDate);
+      const weighIns = idx >= 0
+        ? c.weighIns.map((w, i) => i === idx ? { ...w, weight: wt } : w)
+        : [...c.weighIns, { id: uid(), date: wiDate, weight: wt }];
+      return { ...c, weighIns };
+    }));
+    setWiWt(""); // keep competitor + date selected for quick multi-person entry
+  };
+
+  const deleteWeighIn = (cId, wId) =>
+    setCompetitors(competitors.map(c =>
+      c.id !== cId ? c : { ...c, weighIns: c.weighIns.filter(w => w.id !== wId) }
+    ));
+
+  const preview = (() => {
+    if (!wiId || !wiWt) return null;
+    const c = competitors.find(x => x.id === wiId);
+    const wt = parseFloat(wiWt);
+    if (!c || isNaN(wt) || wt <= 0) return null;
+    return { pct: calcPct(c.startWeight, wt), diff: c.startWeight - wt };
+  })();
+
+  const rankIcon = r => ["🥇","🥈","🥉"][r - 1] ?? r;
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="wl">
+
+        {/* Header */}
+        <div className="wl-hd">
+          <a href="../../" className="wl-back">← Tools</a>
+          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+            <div>
+              <h1 className="wl-title">Weight Loss Competition</h1>
+              <p className="wl-sub">Track competitors, log weigh-ins, and rank by percentage lost</p>
+            </div>
+            <div className="wl-toggle">
+              {["lbs","kg"].map(u => (
+                <button key={u} className={`wl-toggle-btn${unit === u ? " on" : ""}`} onClick={() => setUnit(u)}>{u}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="wl-main">
+
+          {/* Setup row */}
+          <div className="wl-grid2">
+
+            {/* Add Competitor */}
+            <div className="wl-card">
+              <div className="wl-card-hd">Competitors</div>
+              <div className="wl-field">
+                <label className="wl-lbl">Name</label>
+                <input ref={nameRef} className="wl-inp" placeholder="Competitor name" maxLength={40}
+                  value={newName} onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addCompetitor()} />
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                <div className="wl-field" style={{ flex:1 }}>
+                  <label className="wl-lbl">Starting weight ({unit})</label>
+                  <input className="wl-inp" type="number" min={1} step={0.1} placeholder="0.0"
+                    value={newWt} onChange={e => setNewWt(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addCompetitor()} />
+                </div>
+                <div className="wl-field" style={{ flex:1 }}>
+                  <label className="wl-lbl">Start date</label>
+                  <input className="wl-inp" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
+                </div>
+              </div>
+              <button className="wl-btn wl-btn-g" style={{ width:"100%" }}
+                disabled={!newName.trim() || !newWt || !newDate} onClick={addCompetitor}>
+                + Add Competitor
+              </button>
+
+              {competitors.length > 0 && (
+                <div className="wl-clist">
+                  {competitors.map(c => (
+                    <div key={c.id} className="wl-citem">
+                      <span style={{ display:"flex", alignItems:"center", gap:8, fontWeight:500 }}>
+                        <span className="wl-dot" style={{ background: colorOf(c.id) }} />
+                        {c.name}
+                      </span>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <span style={{ color:"#64748b" }}>{c.startWeight} {unit}</span>
+                        <button className="wl-btn wl-btn-del" onClick={() => removeCompetitor(c.id)}>✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Log Weigh-In */}
+            <div className="wl-card">
+              <div className="wl-card-hd">Log Weigh-In</div>
+              {competitors.length === 0 ? (
+                <div className="wl-empty">Add competitors to start logging weigh-ins</div>
+              ) : (
+                <>
+                  <div className="wl-field">
+                    <label className="wl-lbl">Competitor</label>
+                    <select className="wl-inp" style={{ cursor:"pointer" }} value={wiId} onChange={e => setWiId(e.target.value)}>
+                      <option value="">Select competitor…</option>
+                      {competitors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <div className="wl-field" style={{ flex:1 }}>
+                      <label className="wl-lbl">Date</label>
+                      <input className="wl-inp" type="date" value={wiDate} onChange={e => setWiDate(e.target.value)} />
+                    </div>
+                    <div className="wl-field" style={{ flex:1 }}>
+                      <label className="wl-lbl">Weight ({unit})</label>
+                      <input className="wl-inp" type="number" min={1} step={0.1} placeholder="0.0"
+                        value={wiWt} onChange={e => setWiWt(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && logWeighIn()} />
+                    </div>
+                  </div>
+                  {preview && (
+                    <div className={`wl-preview ${preview.pct >= 0 ? "pos" : "neg"}`}>
+                      {preview.pct >= 0
+                        ? `${preview.pct.toFixed(2)}% lost — down ${preview.diff.toFixed(1)} ${unit}`
+                        : `${Math.abs(preview.pct).toFixed(2)}% gained — up ${Math.abs(preview.diff).toFixed(1)} ${unit}`}
+                    </div>
+                  )}
+                  <button className="wl-btn wl-btn-g" style={{ width:"100%" }}
+                    disabled={!wiId || !wiWt || !wiDate} onClick={logWeighIn}>
+                    Log Weigh-In
+                  </button>
+                  <p style={{ fontSize:12, color:"#94a3b8", textAlign:"center", marginTop:8 }}>
+                    Logging on an existing date will update that entry
+                  </p>
+                </>
+              )}
+            </div>
+
+          </div>
+
+          {/* Main panel */}
+          {competitors.length > 0 && (
+            <div className="wl-card" style={{ padding:0 }}>
+              <div style={{ padding:"0 4px" }}>
+                <div className="wl-tabs">
+                  {[["rankings","🏆 Rankings"],["chart","📈 Progress Chart"],["history","📋 History"]].map(([t,lbl]) => (
+                    <button key={t} className={`wl-tab${tab === t ? " on" : ""}`} onClick={() => setTab(t)}>{lbl}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding:"0 20px 24px" }}>
+
+                {/* Rankings */}
+                {tab === "rankings" && (
+                  ranked.every(c => c.sortedWeighIns.length === 0) ? (
+                    <div className="wl-empty">Rankings will appear once the first weigh-ins are logged</div>
+                  ) : (
+                    <table className="wl-tbl">
+                      <thead>
+                        <tr>
+                          <th style={{ width:44 }}>#</th>
+                          <th>Competitor</th>
+                          <th className="tr">Start</th>
+                          <th className="tr">Current</th>
+                          <th className="tr">Lost</th>
+                          <th style={{ minWidth:180 }}>% Lost</th>
+                          <th className="tr">Check-ins</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ranked.map(c => {
+                          const badgeCls = c.rank <= 3 ? ` r${c.rank}` : " rn";
+                          return (
+                            <tr key={c.id}>
+                              <td><span className={`wl-badge${badgeCls}`}>{rankIcon(c.rank)}</span></td>
+                              <td>
+                                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                  <span className="wl-dot" style={{ background: colorOf(c.id) }} />
+                                  <span style={{ fontWeight:500 }}>{c.name}</span>
+                                </div>
+                              </td>
+                              <td className="tr" style={{ color:"#64748b" }}>{c.startWeight} {unit}</td>
+                              <td className="tr" style={{ fontWeight:500 }}>{c.currentWeight.toFixed(1)} {unit}</td>
+                              <td className="tr" style={{ color: c.lostAbs > 0 ? "#16a34a" : c.lostAbs < 0 ? "#dc2626" : "#64748b" }}>
+                                {c.lostAbs.toFixed(1)} {unit}
+                              </td>
+                              <td>
+                                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                  <div style={{ flex:1, height:6, background:"#f1f5f9", borderRadius:3, minWidth:60, overflow:"hidden" }}>
+                                    <div style={{
+                                      height:"100%", borderRadius:3, transition:"width 0.4s",
+                                      background: c.pctLost < 0 ? "#dc2626" : "#16a34a",
+                                      width: `${Math.max(0, c.pctLost) / maxPct * 100}%`,
+                                    }} />
+                                  </div>
+                                  <span style={{
+                                    fontWeight:600, fontSize:14, minWidth:58, textAlign:"right",
+                                    color: c.pctLost < 0 ? "#dc2626" : c.pctLost === 0 ? "#94a3b8" : "#16a34a",
+                                  }}>
+                                    {c.pctLost.toFixed(2)}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="tr" style={{ color:"#94a3b8" }}>{c.sortedWeighIns.length}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )
+                )}
+
+                {/* Chart */}
+                {tab === "chart" && <ProgressChart ranked={ranked} colorOf={colorOf} />}
+
+                {/* History */}
+                {tab === "history" && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                    {ranked.map(c => (
+                      <div key={c.id} style={{ border:"1px solid #e2e8f0", borderRadius:10, overflow:"hidden" }}>
+                        {/* Card header */}
+                        <div style={{
+                          display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap",
+                          padding:"12px 16px", background:"#fff", borderBottom:"1px solid #e2e8f0", gap:10,
+                        }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8, fontWeight:600, fontSize:15 }}>
+                            <span className="wl-dot-lg" style={{ background: colorOf(c.id) }} />
+                            {c.name}
+                            <span style={{ fontSize:12, color:"#94a3b8", fontWeight:400 }}>Rank #{c.rank}</span>
+                          </div>
+                          <div style={{ display:"flex", gap:18, fontSize:13, color:"#64748b", flexWrap:"wrap" }}>
+                            <span>Start: <strong style={{ color:"#0f172a" }}>{c.startWeight} {unit}</strong></span>
+                            <span>Now: <strong style={{ color:"#0f172a" }}>{c.currentWeight.toFixed(1)} {unit}</strong></span>
+                            <span>Lost: <strong style={{ color: c.pctLost >= 0 ? "#16a34a" : "#dc2626" }}>{c.pctLost.toFixed(2)}%</strong></span>
+                          </div>
+                        </div>
+                        {/* Weigh-in log */}
+                        <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:6, background:"#f8fafc" }}>
+                          {/* Start row */}
+                          <div style={{
+                            display:"flex", alignItems:"center", gap:10, padding:"8px 12px",
+                            background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:7, fontSize:13,
+                          }}>
+                            <span style={{ color:"#64748b", minWidth:76 }}>{fmtDate(c.startDate)}</span>
+                            <span style={{ fontWeight:600 }}>{c.startWeight} {unit}</span>
+                            <span style={{ fontSize:11, color:"#94a3b8", background:"#dcfce7", borderRadius:4, padding:"1px 6px" }}>start</span>
+                            <span style={{ marginLeft:"auto", fontWeight:600, color:"#94a3b8" }}>0.00%</span>
+                          </div>
+                          {c.sortedWeighIns.length === 0 && (
+                            <div className="wl-empty" style={{ padding:"12px 0" }}>No weigh-ins logged yet</div>
+                          )}
+                          {c.sortedWeighIns.map(wi => {
+                            const pct  = calcPct(c.startWeight, wi.weight);
+                            const diff = c.startWeight - wi.weight;
+                            return (
+                              <div key={wi.id} style={{
+                                display:"flex", alignItems:"center", gap:10, padding:"8px 12px",
+                                background:"#fff", border:"1px solid #e2e8f0", borderRadius:7, fontSize:13,
+                              }}>
+                                <span style={{ color:"#64748b", minWidth:76 }}>{fmtDate(wi.date)}</span>
+                                <span style={{ fontWeight:600 }}>{wi.weight} {unit}</span>
+                                <span style={{ fontSize:12, color: diff >= 0 ? "#16a34a" : "#dc2626" }}>
+                                  {diff >= 0 ? "−" : "+"}{Math.abs(diff).toFixed(1)} {unit}
+                                </span>
+                                <span style={{ marginLeft:"auto", fontWeight:600, color: pct >= 0 ? "#16a34a" : "#dc2626" }}>
+                                  {pct.toFixed(2)}%
+                                </span>
+                                <button className="wl-btn wl-btn-del" onClick={() => deleteWeighIn(c.id, wi.id)}>✕</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
