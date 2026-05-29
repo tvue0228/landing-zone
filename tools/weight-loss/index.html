@@ -11,20 +11,36 @@
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 <script type="text/babel">
 const { useState, useMemo, useCallback, useRef, useEffect } = React;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const BLOB_API = "https://jsonblob.com/api/jsonBlob";
-const PALETTE  = ["#16a34a","#2563eb","#dc2626","#d97706","#7c3aed","#db2777","#0891b2","#65a30d","#c2410c","#0f766e"];
+const PALETTE = ["#16a34a","#2563eb","#dc2626","#d97706","#7c3aed","#db2777","#0891b2","#65a30d","#c2410c","#0f766e"];
+const EMPTY   = { competitors: [], unit: "lbs" };
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
-const uid       = () => Math.random().toString(36).slice(2, 9);
-const calcPct   = (start, cur) => (start - cur) / start * 100;
-const fmtDate   = (s) => { const [y,m,d] = s.split("-"); return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"}); };
-const getBlobId = () => window.location.hash.replace(/^#/, "") || null;
-const setUrlId  = (id) => window.history.replaceState(null, "", `#${id}`);
-const today     = () => new Date().toISOString().slice(0, 10);
+const uid     = () => Math.random().toString(36).slice(2, 9);
+const calcPct = (start, cur) => (start - cur) / start * 100;
+const fmtDate = (s) => { const [y,m,d] = s.split("-"); return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"}); };
+const today   = () => new Date().toISOString().slice(0, 10);
+
+// State lives entirely in the URL hash, compressed with LZ-string.
+// Sharing the URL shares the current snapshot of the competition.
+function decodeState() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash) return null;
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(hash);
+    if (!json) return null;
+    return JSON.parse(json);
+  } catch { return null; }
+}
+
+function encodeToUrl(state) {
+  const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
+  window.history.replaceState(null, "", "#" + compressed);
+}
 
 function rankCompetitors(competitors) {
   return competitors
@@ -38,91 +54,38 @@ function rankCompetitors(competitors) {
     .map((c,i) => ({ ...c, rank: i+1 }));
 }
 
-// ─── API ──────────────────────────────────────────────────────────────────────
-async function apiCreate(data) {
-  const res = await fetch(BLOB_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Accept": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`Failed to create (${res.status})`);
-  const loc = res.headers.get("Location");
-  if (!loc) throw new Error("No location header returned");
-  return loc.split("/").pop();
-}
-
-async function apiLoad(id) {
-  const res = await fetch(`${BLOB_API}/${id}`, { headers: { "Accept": "application/json" } });
-  if (res.status === 404) throw new Error("Competition not found — the link may be invalid or expired.");
-  if (!res.ok) throw new Error(`Failed to load (${res.status})`);
-  return res.json();
-}
-
-async function apiSave(id, data) {
-  const res = await fetch(`${BLOB_API}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "Accept": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`Failed to save (${res.status})`);
-}
-
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',system-ui,sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;}
 a{color:inherit;text-decoration:none;}
-
 .wl{padding:0 16px 80px;}
-
 .wl-hd{max-width:960px;margin:0 auto;padding:24px 0 20px;}
 .wl-back{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#64748b;margin-bottom:14px;transition:color .15s;}
 .wl-back:hover{color:#0f172a;}
 .wl-title{font-size:26px;font-weight:700;letter-spacing:-.02em;}
 .wl-sub{font-size:14px;color:#64748b;margin-top:3px;}
-
-.wl-share{
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  padding:10px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;
-  margin-top:14px;
-}
+.wl-share{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;margin-top:14px;}
 .wl-share-url{flex:1;font-size:12px;color:#475569;font-family:monospace;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.wl-share-copy{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;
-  font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;
-  background:#fff;color:#64748b;transition:all .15s;white-space:nowrap;
-}
+.wl-share-copy{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;background:#fff;color:#64748b;transition:all .15s;white-space:nowrap;}
 .wl-share-copy:hover{border-color:#cbd5e1;color:#0f172a;}
 .wl-share-copy.ok{background:#f0fdf4;border-color:#bbf7d0;color:#16a34a;}
-.wl-save{font-size:12px;white-space:nowrap;}
-.wl-save.saving{color:#d97706;}
-.wl-save.saved{color:#16a34a;}
-.wl-save.error{color:#dc2626;}
-
+.wl-share-note{font-size:11px;color:#94a3b8;}
 .wl-landing{max-width:460px;margin:80px auto;text-align:center;padding:44px 36px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;}
 .wl-landing-icon{font-size:52px;margin-bottom:16px;}
 .wl-landing-title{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px;}
 .wl-landing-desc{font-size:15px;color:#64748b;line-height:1.65;margin-bottom:28px;}
-
-.wl-center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:14px;color:#64748b;font-size:15px;}
-.wl-spinner{width:34px;height:34px;border:3px solid #e2e8f0;border-top-color:#16a34a;border-radius:50%;animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-
 .wl-main{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:18px;}
 .wl-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media(max-width:640px){.wl-grid2{grid-template-columns:1fr;}}
-
 .wl-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;}
 .wl-card-hd{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#64748b;margin-bottom:16px;}
-
 .wl-field{margin-bottom:11px;}
 .wl-lbl{display:block;font-size:12px;font-weight:500;color:#64748b;margin-bottom:4px;}
 .wl-inp{width:100%;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:14px;font-family:inherit;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s;}
 .wl-inp:focus{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.1);}
 .wl-inp::placeholder{color:#cbd5e1;}
-
 .wl-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:7px;border:none;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
 .wl-btn-g{background:#16a34a;color:#fff;}
 .wl-btn-g:hover{background:#15803d;}
@@ -130,43 +93,34 @@ a{color:inherit;text-decoration:none;}
 .wl-btn-lg{font-size:15px;padding:13px 32px;border-radius:9px;}
 .wl-btn-del{padding:4px 8px;font-size:12px;border-radius:5px;background:transparent;border:1px solid #fecaca;color:#dc2626;}
 .wl-btn-del:hover{background:#fef2f2;}
-
 .wl-toggle{display:flex;gap:2px;background:#f1f5f9;border-radius:7px;padding:3px;}
 .wl-toggle-btn{padding:5px 14px;border-radius:5px;border:none;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;background:transparent;color:#64748b;transition:all .15s;}
 .wl-toggle-btn.on{background:#fff;color:#0f172a;box-shadow:0 1px 3px rgba(0,0,0,.1);}
-
 .wl-tabs{display:flex;gap:2px;border-bottom:1px solid #e2e8f0;}
 .wl-tab{padding:12px 18px;background:transparent;border:none;font-family:inherit;font-size:13px;font-weight:500;color:#64748b;cursor:pointer;position:relative;transition:color .15s;}
 .wl-tab:hover{color:#0f172a;}
 .wl-tab.on{color:#16a34a;}
 .wl-tab.on::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:#16a34a;border-radius:1px;}
-
 .wl-tbl{width:100%;border-collapse:collapse;}
 .wl-tbl th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;padding:8px 14px;text-align:left;border-bottom:1px solid #f1f5f9;}
 .wl-tbl th.tr,.wl-tbl td.tr{text-align:right;}
 .wl-tbl td{padding:12px 14px;border-bottom:1px solid #f8fafc;font-size:14px;transition:background .1s;}
 .wl-tbl tr:last-child td{border-bottom:none;}
 .wl-tbl tr:hover td{background:#f8fafc;}
-
 .wl-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:13px;font-weight:700;}
 .wl-badge.r1{background:#fef9c3;color:#a16207;}
 .wl-badge.r2{background:#f1f5f9;color:#475569;}
 .wl-badge.r3{background:#fff7ed;color:#c2410c;}
 .wl-badge.rn{background:#f8fafc;color:#94a3b8;font-size:12px;}
-
 .wl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;}
 .wl-dot-lg{width:12px;height:12px;border-radius:50%;display:inline-block;}
-
 .wl-preview{font-size:13px;padding:8px 12px;border-radius:7px;margin-bottom:10px;}
 .wl-preview.pos{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;}
 .wl-preview.neg{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;}
-
 .wl-clist{margin-top:14px;display:flex;flex-direction:column;gap:6px;max-height:230px;overflow-y:auto;}
 .wl-citem{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;animation:slidein .18s ease;}
 @keyframes slidein{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
-
 .wl-empty{text-align:center;padding:28px;color:#94a3b8;font-size:14px;font-style:italic;}
-
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:#f8fafc;}
 ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px;}
@@ -219,19 +173,18 @@ function ProgressChart({ ranked, colorOf }) {
         },
       },
     });
-
     return () => { if (instRef.current) { instRef.current.destroy(); instRef.current = null; } };
   }, [ranked]);
 
-  if (!ranked.some(c => c.sortedWeighIns.length > 0)) {
+  if (!ranked.some(c => c.sortedWeighIns.length > 0))
     return <div className="wl-empty">Log at least one weigh-in to see the chart</div>;
-  }
   return <div style={{ position:"relative", width:"100%", height:400 }}><canvas ref={canvasRef} /></div>;
 }
 
 // ─── Share Bar ────────────────────────────────────────────────────────────────
-function ShareBar({ saveStatus }) {
+function ShareBar({ urlStamp }) {
   const [copied, setCopied] = useState(false);
+  // Read href at render time — urlStamp changing triggers a re-render
   const url = window.location.href;
 
   const copy = async () => {
@@ -247,19 +200,17 @@ function ShareBar({ saveStatus }) {
       <button className={`wl-share-copy${copied ? " ok" : ""}`} onClick={copy}>
         {copied ? "✓ Copied" : "Copy link"}
       </button>
-      {saveStatus === "saving" && <span className="wl-save saving">Saving…</span>}
-      {saveStatus === "saved"  && <span className="wl-save saved">Saved ✓</span>}
-      {saveStatus === "error"  && <span className="wl-save error">Save failed</span>}
+      <span className="wl-share-note">URL updates with every change — share it to share the latest results</span>
     </div>
   );
 }
 
-// ─── Main Competition UI ───────────────────────────────────────────────────────
-function MainApp({ blobId, initialData }) {
+// ─── Main App ─────────────────────────────────────────────────────────────────
+function MainApp({ initialData }) {
   const [competitors, setCompetitorsRaw] = useState(initialData.competitors || []);
   const [unit, setUnitRaw]               = useState(initialData.unit || "lbs");
   const [tab, setTab]                    = useState("rankings");
-  const [saveStatus, setSaveStatus]      = useState("idle");
+  const [urlStamp, setUrlStamp]          = useState(0); // incremented to force ShareBar re-render
 
   const [newName, setNewName] = useState("");
   const [newWt, setNewWt]     = useState("");
@@ -269,80 +220,56 @@ function MainApp({ blobId, initialData }) {
   const [wiWt, setWiWt]       = useState("");
   const nameRef = useRef(null);
 
-  // Refs so debounced save always reads latest values
-  const pendingRef    = useRef(null);
-  const saveTimerRef  = useRef(null);
-  const clearTimerRef = useRef(null);
+  // Use refs to avoid stale closures in save()
+  const compsRef = useRef(competitors);
+  const unitRef  = useRef(unit);
+  compsRef.current = competitors;
+  unitRef.current  = unit;
 
-  const flushSave = useCallback(async () => {
-    if (!pendingRef.current) return;
-    const data = pendingRef.current;
-    pendingRef.current = null;
-    try {
-      await apiSave(blobId, data);
-      setSaveStatus("saved");
-      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
-      clearTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2500);
-    } catch {
-      setSaveStatus("error");
-    }
-  }, [blobId]);
+  const save = useCallback((comps, u) => {
+    encodeToUrl({ competitors: comps, unit: u });
+    setUrlStamp(n => n + 1);
+  }, []);
 
-  const save = useCallback((data) => {
-    pendingRef.current = data;
-    setSaveStatus("saving");
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(flushSave, 600);
-  }, [flushSave]);
+  const setCompetitors = (c) => { setCompetitorsRaw(c); save(c, unitRef.current); };
+  const setUnit        = (u) => { setUnitRaw(u);         save(compsRef.current, u); };
 
   const idOrder = useMemo(() => competitors.map(c => c.id), [competitors]);
   const colorOf = useCallback(id => PALETTE[idOrder.indexOf(id) % PALETTE.length], [idOrder]);
   const ranked  = useMemo(() => rankCompetitors(competitors), [competitors]);
   const maxPct  = useMemo(() => Math.max(0.01, ...ranked.map(c => Math.max(0, c.pctLost))), [ranked]);
 
-  // Unified setters that also trigger save
-  const updateCompetitors = (comps, currentUnit = unit) => {
-    setCompetitorsRaw(comps);
-    save({ competitors: comps, unit: currentUnit });
-  };
-  const updateUnit = (u) => {
-    setUnitRaw(u);
-    save({ competitors, unit: u });
-  };
-
   const addCompetitor = () => {
     const name = newName.trim();
     const wt = parseFloat(newWt);
     if (!name || isNaN(wt) || wt <= 0 || !newDate) return;
     if (competitors.some(c => c.name.toLowerCase() === name.toLowerCase())) return;
-    const next = [...competitors, { id: uid(), name, startWeight: wt, startDate: newDate, weighIns: [] }];
-    updateCompetitors(next);
+    setCompetitors([...competitors, { id: uid(), name, startWeight: wt, startDate: newDate, weighIns: [] }]);
     setNewName(""); setNewWt("");
     nameRef.current?.focus();
   };
 
   const removeCompetitor = id => {
-    updateCompetitors(competitors.filter(c => c.id !== id));
+    setCompetitors(competitors.filter(c => c.id !== id));
     if (wiId === id) setWiId("");
   };
 
   const logWeighIn = () => {
     const wt = parseFloat(wiWt);
     if (!wiId || isNaN(wt) || wt <= 0 || !wiDate) return;
-    const next = competitors.map(c => {
+    setCompetitors(competitors.map(c => {
       if (c.id !== wiId) return c;
       const idx = c.weighIns.findIndex(w => w.date === wiDate);
       const weighIns = idx >= 0
         ? c.weighIns.map((w, i) => i === idx ? { ...w, weight: wt } : w)
         : [...c.weighIns, { id: uid(), date: wiDate, weight: wt }];
       return { ...c, weighIns };
-    });
-    updateCompetitors(next);
+    }));
     setWiWt("");
   };
 
   const deleteWeighIn = (cId, wId) =>
-    updateCompetitors(competitors.map(c =>
+    setCompetitors(competitors.map(c =>
       c.id !== cId ? c : { ...c, weighIns: c.weighIns.filter(w => w.id !== wId) }
     ));
 
@@ -369,11 +296,11 @@ function MainApp({ blobId, initialData }) {
             </div>
             <div className="wl-toggle">
               {["lbs","kg"].map(u => (
-                <button key={u} className={`wl-toggle-btn${unit === u ? " on" : ""}`} onClick={() => updateUnit(u)}>{u}</button>
+                <button key={u} className={`wl-toggle-btn${unit === u ? " on" : ""}`} onClick={() => setUnit(u)}>{u}</button>
               ))}
             </div>
           </div>
-          <ShareBar saveStatus={saveStatus} />
+          <ShareBar urlStamp={urlStamp} />
         </div>
 
         <div className="wl-main">
@@ -409,8 +336,7 @@ function MainApp({ blobId, initialData }) {
                   {competitors.map(c => (
                     <div key={c.id} className="wl-citem">
                       <span style={{ display:"flex", alignItems:"center", gap:8, fontWeight:500 }}>
-                        <span className="wl-dot" style={{ background: colorOf(c.id) }} />
-                        {c.name}
+                        <span className="wl-dot" style={{ background: colorOf(c.id) }} />{c.name}
                       </span>
                       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                         <span style={{ color:"#64748b" }}>{c.startWeight} {unit}</span>
@@ -468,7 +394,6 @@ function MainApp({ blobId, initialData }) {
 
           </div>
 
-          {/* Rankings / Chart / History panel */}
           {competitors.length > 0 && (
             <div className="wl-card" style={{ padding:0 }}>
               <div style={{ padding:"0 4px" }}>
@@ -608,41 +533,13 @@ function MainApp({ blobId, initialData }) {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 function App() {
-  const [phase,    setPhase]   = useState(() => getBlobId() ? "loading" : "landing");
-  const [blobId,   setBlobIdS] = useState(getBlobId);
-  const [data,     setData]    = useState(null);
-  const [error,    setError]   = useState(null);
-  const [creating, setCreating] = useState(false);
+  const initialState = useMemo(decodeState, []);
+  const hasHash      = Boolean(window.location.hash.replace(/^#/, ""));
+  const [phase, setPhase] = useState(hasHash ? "ready" : "landing");
 
-  useEffect(() => {
-    if (phase !== "loading") return;
-    const id = getBlobId();
-    if (!id) { setPhase("landing"); return; }
-    apiLoad(id)
-      .then(d  => { setData(d); setPhase("ready"); })
-      .catch(e => { setError(e.message); setPhase("error"); });
-  }, [phase]);
-
-  const handleCreate = async () => {
-    setCreating(true);
-    try {
-      const empty = { competitors: [], unit: "lbs" };
-      const id = await apiCreate(empty);
-      setUrlId(id);
-      setBlobIdS(id);
-      setData(empty);
-      setPhase("ready");
-    } catch (e) {
-      setError(e.message);
-      setPhase("error");
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const retry = () => {
-    setError(null);
-    setPhase(getBlobId() ? "loading" : "landing");
+  const handleCreate = () => {
+    encodeToUrl(EMPTY);
+    setPhase("ready");
   };
 
   if (phase === "landing") return (
@@ -657,36 +554,17 @@ function App() {
           <div className="wl-landing-title">Weight Loss Competition</div>
           <div className="wl-landing-desc">
             Track competitors, log weekly weigh-ins, and rank by percentage lost.
-            Each competition gets its own shareable URL — anyone with the link can view and update results in real time.
+            Each competition gets a shareable URL — copy it after any update to share the latest results.
           </div>
-          <button className="wl-btn wl-btn-g wl-btn-lg" disabled={creating} onClick={handleCreate}>
-            {creating ? "Creating…" : "Start a Competition →"}
+          <button className="wl-btn wl-btn-g wl-btn-lg" onClick={handleCreate}>
+            Start a Competition →
           </button>
         </div>
       </div>
     </>
   );
 
-  if (phase === "loading") return (
-    <>
-      <style>{CSS}</style>
-      <div className="wl-center"><div className="wl-spinner" /><span>Loading competition…</span></div>
-    </>
-  );
-
-  if (phase === "error") return (
-    <>
-      <style>{CSS}</style>
-      <div className="wl-center">
-        <div style={{ fontSize:36 }}>⚠️</div>
-        <div style={{ fontWeight:600, color:"#0f172a" }}>Something went wrong</div>
-        <div style={{ color:"#64748b", fontSize:14, maxWidth:340, textAlign:"center" }}>{error}</div>
-        <button className="wl-btn wl-btn-g" onClick={retry}>Try again</button>
-      </div>
-    </>
-  );
-
-  return <MainApp blobId={blobId} initialData={data} />;
+  return <MainApp initialData={initialState || EMPTY} />;
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
