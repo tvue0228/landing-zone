@@ -388,102 +388,6 @@ function MainApp({ initialData, onNew, source }) {
         </div>
 
         <div className="wl-main">
-          <div>
-            <button className="wl-setup-toggle" onClick={() => setSetupOpen(o => !o)}>
-              <span className={`wl-setup-toggle-chevron${setupOpen ? " open" : ""}`}>▶</span>
-              Data Entry
-            </button>
-            {setupOpen && <div className="wl-grid2">
-
-            {/* Add Competitor */}
-            <div className="wl-card">
-              <div className="wl-card-hd">Competitors</div>
-              <div className="wl-field">
-                <label className="wl-lbl">Name</label>
-                <input ref={nameRef} className="wl-inp" placeholder="Competitor name" maxLength={40}
-                  value={newName} onChange={e => setNewName(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addCompetitor()} />
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                <div className="wl-field" style={{ flex:1 }}>
-                  <label className="wl-lbl">Starting weight ({unit})</label>
-                  <input className="wl-inp" type="number" min={1} step={0.1} placeholder="0.0"
-                    value={newWt} onChange={e => setNewWt(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addCompetitor()} />
-                </div>
-                <div className="wl-field" style={{ flex:1 }}>
-                  <label className="wl-lbl">Start date</label>
-                  <input className="wl-inp" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
-                </div>
-              </div>
-              <button className="wl-btn wl-btn-g" style={{ width:"100%" }}
-                disabled={!newName.trim() || !newWt || !newDate} onClick={addCompetitor}>
-                + Add Competitor
-              </button>
-              {competitors.length > 0 && (
-                <div className="wl-clist">
-                  {competitors.map(c => (
-                    <div key={c.id} className="wl-citem">
-                      <span style={{ display:"flex", alignItems:"center", gap:8, fontWeight:500 }}>
-                        <span className="wl-dot" style={{ background: colorOf(c.id) }} />{c.name}
-                      </span>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <span style={{ color:"#64748b" }}>{c.startWeight} {unit}</span>
-                        <button className="wl-btn wl-btn-del" onClick={() => removeCompetitor(c.id)}>✕</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Log Weigh-In */}
-            <div className="wl-card">
-              <div className="wl-card-hd">Log Weigh-In</div>
-              {competitors.length === 0 ? (
-                <div className="wl-empty">Add competitors to start logging weigh-ins</div>
-              ) : (
-                <>
-                  <div className="wl-field">
-                    <label className="wl-lbl">Competitor</label>
-                    <select className="wl-inp" style={{ cursor:"pointer" }} value={wiId} onChange={e => setWiId(e.target.value)}>
-                      <option value="">Select competitor…</option>
-                      {competitors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  <div style={{ display:"flex", gap:8 }}>
-                    <div className="wl-field" style={{ flex:1 }}>
-                      <label className="wl-lbl">Date</label>
-                      <input className="wl-inp" type="date" value={wiDate} onChange={e => setWiDate(e.target.value)} />
-                    </div>
-                    <div className="wl-field" style={{ flex:1 }}>
-                      <label className="wl-lbl">Weight ({unit})</label>
-                      <input className="wl-inp" type="number" min={1} step={0.1} placeholder="0.0"
-                        value={wiWt} onChange={e => setWiWt(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && logWeighIn()} />
-                    </div>
-                  </div>
-                  {preview && (
-                    <div className={`wl-preview ${preview.pct >= 0 ? "pos" : "neg"}`}>
-                      {preview.pct >= 0
-                        ? `${preview.pct.toFixed(2)}% lost — down ${preview.diff.toFixed(1)} ${unit}`
-                        : `${Math.abs(preview.pct).toFixed(2)}% gained — up ${Math.abs(preview.diff).toFixed(1)} ${unit}`}
-                    </div>
-                  )}
-                  <button className="wl-btn wl-btn-g" style={{ width:"100%" }}
-                    disabled={!wiId || !wiWt || !wiDate} onClick={logWeighIn}>
-                    Log Weigh-In
-                  </button>
-                  <p style={{ fontSize:12, color:"#94a3b8", textAlign:"center", marginTop:8 }}>
-                    Logging on an existing date updates that entry
-                  </p>
-                </>
-              )}
-            </div>
-
-            </div>}
-          </div>
-
           {competitors.length > 0 && (
             <div className="wl-card" style={{ padding:0 }}>
               <div style={{ padding:"0 4px" }}>
@@ -615,6 +519,102 @@ function MainApp({ initialData, onNew, source }) {
               </div>
             </div>
           )}
+
+          <div>
+            <button className="wl-setup-toggle" onClick={() => setSetupOpen(o => !o)}>
+              <span className={`wl-setup-toggle-chevron${setupOpen ? " open" : ""}`}>▶</span>
+              Data Entry
+            </button>
+            {setupOpen && <div className="wl-grid2">
+
+            {/* Add Competitor */}
+            <div className="wl-card">
+              <div className="wl-card-hd">Competitors</div>
+              <div className="wl-field">
+                <label className="wl-lbl">Name</label>
+                <input ref={nameRef} className="wl-inp" placeholder="Competitor name" maxLength={40}
+                  value={newName} onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addCompetitor()} />
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                <div className="wl-field" style={{ flex:1 }}>
+                  <label className="wl-lbl">Starting weight ({unit})</label>
+                  <input className="wl-inp" type="number" min={1} step={0.1} placeholder="0.0"
+                    value={newWt} onChange={e => setNewWt(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addCompetitor()} />
+                </div>
+                <div className="wl-field" style={{ flex:1 }}>
+                  <label className="wl-lbl">Start date</label>
+                  <input className="wl-inp" type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
+                </div>
+              </div>
+              <button className="wl-btn wl-btn-g" style={{ width:"100%" }}
+                disabled={!newName.trim() || !newWt || !newDate} onClick={addCompetitor}>
+                + Add Competitor
+              </button>
+              {competitors.length > 0 && (
+                <div className="wl-clist">
+                  {competitors.map(c => (
+                    <div key={c.id} className="wl-citem">
+                      <span style={{ display:"flex", alignItems:"center", gap:8, fontWeight:500 }}>
+                        <span className="wl-dot" style={{ background: colorOf(c.id) }} />{c.name}
+                      </span>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <span style={{ color:"#64748b" }}>{c.startWeight} {unit}</span>
+                        <button className="wl-btn wl-btn-del" onClick={() => removeCompetitor(c.id)}>✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Log Weigh-In */}
+            <div className="wl-card">
+              <div className="wl-card-hd">Log Weigh-In</div>
+              {competitors.length === 0 ? (
+                <div className="wl-empty">Add competitors to start logging weigh-ins</div>
+              ) : (
+                <>
+                  <div className="wl-field">
+                    <label className="wl-lbl">Competitor</label>
+                    <select className="wl-inp" style={{ cursor:"pointer" }} value={wiId} onChange={e => setWiId(e.target.value)}>
+                      <option value="">Select competitor…</option>
+                      {competitors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <div className="wl-field" style={{ flex:1 }}>
+                      <label className="wl-lbl">Date</label>
+                      <input className="wl-inp" type="date" value={wiDate} onChange={e => setWiDate(e.target.value)} />
+                    </div>
+                    <div className="wl-field" style={{ flex:1 }}>
+                      <label className="wl-lbl">Weight ({unit})</label>
+                      <input className="wl-inp" type="number" min={1} step={0.1} placeholder="0.0"
+                        value={wiWt} onChange={e => setWiWt(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && logWeighIn()} />
+                    </div>
+                  </div>
+                  {preview && (
+                    <div className={`wl-preview ${preview.pct >= 0 ? "pos" : "neg"}`}>
+                      {preview.pct >= 0
+                        ? `${preview.pct.toFixed(2)}% lost — down ${preview.diff.toFixed(1)} ${unit}`
+                        : `${Math.abs(preview.pct).toFixed(2)}% gained — up ${Math.abs(preview.diff).toFixed(1)} ${unit}`}
+                    </div>
+                  )}
+                  <button className="wl-btn wl-btn-g" style={{ width:"100%" }}
+                    disabled={!wiId || !wiWt || !wiDate} onClick={logWeighIn}>
+                    Log Weigh-In
+                  </button>
+                  <p style={{ fontSize:12, color:"#94a3b8", textAlign:"center", marginTop:8 }}>
+                    Logging on an existing date updates that entry
+                  </p>
+                </>
+              )}
+            </div>
+
+            </div>}
+          </div>
         </div>
       </div>
     </>
