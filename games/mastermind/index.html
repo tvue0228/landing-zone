@@ -348,7 +348,7 @@ function ColorRow({ ids, sel, onSel, size = 40 }) {
               background: `radial-gradient(circle at 36% 30%, ${c.hi}, ${c.hex} 52%, rgba(0,0,0,.6))`,
             }}
             title={c.label}
-            onClick={() => onSel(sel === id ? null : id)}
+            onClick={() => onSel(id)}
           />
         );
       })}
@@ -361,22 +361,27 @@ function Creator() {
   const [nColors,  setNC]    = useState(6);
   const [nPegs,    setNP]    = useState(4);
   const [maxG,     setMG]    = useState(10);
-  const [code,     setCode]  = useState(Array(4).fill(null));
-  const [sel,      setSel]   = useState(null);
-  const [link,     setLink]  = useState("");
-  const [copied,   setCopied] = useState(false);
+  const [code,      setCode]     = useState(Array(4).fill(null));
+  const [activePeg, setActivePeg] = useState(0);
+  const [link,      setLink]     = useState("");
+  const [copied,    setCopied]   = useState(false);
 
   const ids = COLORS.slice(0, nColors).map(c => c.id);
 
-  useEffect(() => { setCode(Array(nPegs).fill(null)); setSel(null); }, [nPegs]);
-  useEffect(() => { if (sel && !ids.includes(sel)) setSel(null); }, [nColors]);
+  useEffect(() => { setCode(Array(nPegs).fill(null)); setActivePeg(0); }, [nPegs]);
 
-  const tapPeg = (i) => {
-    if (!sel) return;
-    setCode(p => p.map((c, idx) => idx === i ? sel : c));
+  // Tap a peg slot → move cursor there
+  const tapPeg = (i) => setActivePeg(i);
+
+  // Tap a color → fill active slot, advance cursor to next empty
+  const tapColor = (colorId) => {
+    const next = code.map((c, i) => i === activePeg ? colorId : c);
+    setCode(next);
+    const nextEmpty = next.findIndex((c, i) => i > activePeg && c === null);
+    if (nextEmpty !== -1) setActivePeg(nextEmpty);
   };
 
-  const randomize = () => setCode(Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)]));
+  const randomize = () => { setCode(Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)])); setActivePeg(0); };
 
   // Generate a random code and go straight to breaker without ever showing the code
   const playSolo = () => {
@@ -441,13 +446,13 @@ function Creator() {
         <div className="mm-lbl">Set a secret code for them to crack</div>
         <div className="mm-peg-row" style={{ marginBottom: 16 }}>
           {code.map((c, i) => (
-            <Peg key={i} id={c} clickable onClick={() => tapPeg(i)} />
+            <Peg key={i} id={c} clickable active={i === activePeg} onClick={() => tapPeg(i)} />
           ))}
         </div>
-        <ColorRow ids={ids} sel={sel} onSel={setSel} size={38} />
+        <ColorRow ids={ids} sel={null} onSel={tapColor} size={38} />
         <div className="mm-btn-row" style={{ justifyContent: "center", marginTop: 14 }}>
           <button className="mm-btn mm-btn-ghost" style={{ fontSize: 13 }} onClick={randomize}>🎲 Random</button>
-          <button className="mm-btn mm-btn-ghost" style={{ fontSize: 13 }} onClick={() => setCode(Array(nPegs).fill(null))}>✕ Clear</button>
+          <button className="mm-btn mm-btn-ghost" style={{ fontSize: 13 }} onClick={() => { setCode(Array(nPegs).fill(null)); setActivePeg(0); }}>✕ Clear</button>
         </div>
       </div>
 
@@ -482,9 +487,9 @@ function Breaker({ init }) {
   const ids = COLORS.slice(0, nColors).map(c => c.id);
 
   const [guesses,  setGuesses] = useState(init.guesses || []);
-  const [current,  setCurrent] = useState(Array(nPegs).fill(null));
-  const [sel,      setSel]     = useState(null);
-  const [copied,   setCopied]  = useState(false);
+  const [current,   setCurrent]   = useState(Array(nPegs).fill(null));
+  const [activePeg, setActivePeg] = useState(0);
+  const [copied,    setCopied]    = useState(false);
   const resultRef = useRef(null);
 
   const isWon  = guesses.length > 0 && guesses.at(-1).fb.black === nPegs;
@@ -500,25 +505,29 @@ function Breaker({ init }) {
     if (isOver) setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
   }, [isOver]);
 
-  const tapPeg = (i) => {
+  // Tap a peg slot → move cursor there
+  const tapPeg = (i) => { if (!isOver) setActivePeg(i); };
+
+  // Tap a color → fill active slot, advance cursor to next empty
+  const tapColor = (colorId) => {
     if (isOver) return;
-    setCurrent(p => p.map((c, idx) => idx === i ? (sel || null) : c));
+    const next = current.map((c, i) => i === activePeg ? colorId : c);
+    setCurrent(next);
+    const nextEmpty = next.findIndex((c, i) => i > activePeg && c === null);
+    if (nextEmpty !== -1) setActivePeg(nextEmpty);
   };
 
-  const clearRow = () => setCurrent(Array(nPegs).fill(null));
+  const clearRow = () => { setCurrent(Array(nPegs).fill(null)); setActivePeg(0); };
 
   const submit = () => {
     if (isOver || current.some(c => !c)) return;
     const fb = calcFeedback(current, code);
     setGuesses(p => [...p, { colors: current, fb }]);
     setCurrent(Array(nPegs).fill(null));
-    setSel(null);
+    setActivePeg(0);
   };
 
   const canSubmit = !isOver && current.every(Boolean);
-
-  // Index of the first empty peg in the current row (for active-slot highlight)
-  const nextEmpty = current.findIndex(c => !c);
 
   const freshUrl = useMemo(() => shareLink({ ...init, guesses: [] }), []);
 
@@ -583,7 +592,7 @@ function Breaker({ init }) {
                   <Peg
                     key={pi} id={c}
                     clickable={isLive}
-                    active={isLive && pi === nextEmpty && sel !== null}
+                    active={isLive && pi === activePeg}
                     onClick={isLive ? () => tapPeg(pi) : undefined}
                   />
                 ))}
@@ -628,7 +637,7 @@ function Breaker({ init }) {
       {/* Sticky bottom control bar */}
       {!isOver && (
         <div className="mm-ctrl-bar">
-          <ColorRow ids={ids} sel={sel} onSel={setSel} size={40} />
+          <ColorRow ids={ids} sel={null} onSel={tapColor} size={40} />
           <div className="mm-btn-row" style={{ marginTop: 10 }}>
             <button className="mm-btn mm-btn-green" style={{ flex: 1 }} disabled={!canSubmit} onClick={submit}>
               Submit Guess →
