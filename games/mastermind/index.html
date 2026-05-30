@@ -298,6 +298,8 @@ a{color:inherit;text-decoration:none;}
 .mm-r-code{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
 .mm-sgrid{font-size:15px;line-height:2;background:#050710;border:1px solid #181d30;border-radius:10px;padding:14px 16px;text-align:left;white-space:pre;color:#7b88b0;margin-bottom:14px;overflow-x:auto;}
 .mm-r-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.mm-or-div{text-align:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#1e2438;margin:18px 0;display:flex;align-items:center;gap:10px;}
+.mm-or-div::before,.mm-or-div::after{content:"";flex:1;height:1px;background:#181d30;}
 `;
 
 // ─── Peg ──────────────────────────────────────────────────────────────────────
@@ -376,8 +378,21 @@ function Creator() {
 
   const randomize = () => setCode(Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)]));
 
+  // Generate a random code and go straight to breaker without ever showing the code
+  const playSolo = () => {
+    const c = Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)]);
+    window.location.href = window.location.pathname + "#" +
+      encode({ mode: "breaker", code: c, colors: nColors, pegs: nPegs, maxG, guesses: [] });
+  };
+
   const generate = () => {
     setLink(shareLink({ mode: "breaker", code, colors: nColors, pegs: nPegs, maxG, guesses: [] }));
+  };
+
+  // Play the same code you just set (you've already seen it, but useful to test or play together)
+  const playToo = () => {
+    window.location.href = window.location.pathname + "#" +
+      encode({ mode: "breaker", code, colors: nColors, pegs: nPegs, maxG, guesses: [] });
   };
 
   const copy = async () => {
@@ -391,7 +406,7 @@ function Creator() {
     <div>
       <div className="mm-hd">
         <div className="mm-logo">Master<em>mind</em></div>
-        <div className="mm-sub">Set a secret code · share the link · let them crack it</div>
+        <div className="mm-sub">Play solo · challenge a friend · crack the code</div>
       </div>
 
       <div className="mm-card">
@@ -416,8 +431,14 @@ function Creator() {
         </div>
       </div>
 
+      <button className="mm-btn mm-btn-green mm-btn-wide" onClick={playSolo}>
+        🎮 Play Solo — Random Code
+      </button>
+
+      <div className="mm-or-div">or challenge a friend</div>
+
       <div className="mm-card">
-        <div className="mm-lbl">Your secret code — pick a color, tap a slot</div>
+        <div className="mm-lbl">Set a secret code for them to crack</div>
         <div className="mm-peg-row" style={{ marginBottom: 16 }}>
           {code.map((c, i) => (
             <Peg key={i} id={c} clickable onClick={() => tapPeg(i)} />
@@ -431,7 +452,7 @@ function Creator() {
       </div>
 
       <button className="mm-btn mm-btn-gold mm-btn-wide" disabled={!codeReady} onClick={generate}>
-        🔗 Generate Share Link
+        🔗 Generate Challenge Link
       </button>
 
       {link && (
@@ -442,9 +463,12 @@ function Creator() {
               {copied ? "✓ Copied!" : "Copy link"}
             </button>
           </div>
+          <button className="mm-btn mm-btn-green mm-btn-wide" style={{ marginTop: 10 }} onClick={playToo}>
+            ▶ Play This Code Too
+          </button>
           <div className="mm-hint">
-            Send the link to your code breaker.<br />
-            ⚠️ Don't share your screen — the code is encoded in the URL!
+            Send the link above to your challenger — then hit Play to race them.<br />
+            ⚠️ Don't share your screen — the code is in the URL!
           </div>
         </>
       )}
