@@ -175,16 +175,13 @@ function buildResultCanvas(guesses, nPegs, maxG, isWon, url) {
     });
   });
 
-  // Footer — show clean base URL (full link is in share text)
-  const baseUrl = window.location.origin + window.location.pathname;
-  const footerText = '↗  ' + baseUrl;
-  ctx.font = '13px monospace';
+  // Footer — prompt (full link lives in the share text, not here)
+  const footerText = '↗  Tap the link below to play the same puzzle';
+  ctx.font = '13px system-ui,-apple-system,sans-serif';
   const ftw = ctx.measureText(footerText).width;
   const fty = H - 22;
-  // Pill background
   rrect(ctx, (W - ftw) / 2 - 14, fty - 17, ftw + 28, 26, 7);
   ctx.fillStyle = '#0f1420'; ctx.fill();
-  // Text
   ctx.fillStyle = '#6b7aaa';
   ctx.textAlign = 'center'; ctx.fillText(footerText, W / 2, fty);
 
@@ -490,9 +487,10 @@ function Breaker({ init }) {
   const ids = COLORS.slice(0, nColors).map(c => c.id);
 
   const [guesses,  setGuesses] = useState(init.guesses || []);
-  const [current,   setCurrent]   = useState(Array(nPegs).fill(null));
-  const [activePeg, setActivePeg] = useState(0);
-  const [copied,    setCopied]    = useState(false);
+  const [current,    setCurrent]   = useState(Array(nPegs).fill(null));
+  const [activePeg,  setActivePeg] = useState(0);
+  const [copied,     setCopied]    = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const resultRef = useRef(null);
 
   const isWon  = guesses.length > 0 && guesses.at(-1).fb.black === nPegs;
@@ -562,6 +560,11 @@ function Breaker({ init }) {
     }
   };
 
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(freshUrl); } catch { return; }
+    setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2200);
+  };
+
   const newGame = () => {
     window.history.replaceState(null, "", window.location.pathname);
     window.location.reload();
@@ -628,6 +631,16 @@ function Breaker({ init }) {
             </div>
           </div>
           <div className="mm-sgrid">{shareStr}</div>
+
+          {/* Challenge link — tappable on screen, included in share text */}
+          <div className="mm-sbox" style={{ marginBottom: 12 }}>
+            <div className="mm-lbl" style={{ marginBottom: 6 }}>Challenge link — share this so others can try the same puzzle</div>
+            <div className="mm-surl">{freshUrl}</div>
+            <button className={`mm-scopy${linkCopied ? " ok" : ""}`} onClick={copyLink}>
+              {linkCopied ? "✓ Copied!" : "Copy link"}
+            </button>
+          </div>
+
           <div className="mm-r-actions">
             <button className="mm-btn mm-btn-gold" onClick={shareResult}>
               {copied ? "✓ Copied!" : "📤 Share"}
