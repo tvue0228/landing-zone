@@ -383,11 +383,15 @@ function Creator() {
 
   const randomize = () => { setCode(Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)])); setActivePeg(0); };
 
+  const goBreaker = (state) => {
+    history.replaceState(null, '', window.location.pathname + '#' + encode(state));
+    window.location.reload();
+  };
+
   // Generate a random code and go straight to breaker without ever showing the code
   const playSolo = () => {
     const c = Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)]);
-    window.location.href = window.location.pathname + "#" +
-      encode({ mode: "breaker", code: c, colors: nColors, pegs: nPegs, maxG, guesses: [] });
+    goBreaker({ mode: "breaker", code: c, colors: nColors, pegs: nPegs, maxG, guesses: [] });
   };
 
   const generate = () => {
@@ -396,8 +400,7 @@ function Creator() {
 
   // Play the same code you just set (you've already seen it, but useful to test or play together)
   const playToo = () => {
-    window.location.href = window.location.pathname + "#" +
-      encode({ mode: "breaker", code, colors: nColors, pegs: nPegs, maxG, guesses: [] });
+    goBreaker({ mode: "breaker", code, colors: nColors, pegs: nPegs, maxG, guesses: [] });
   };
 
   const copy = async () => {
