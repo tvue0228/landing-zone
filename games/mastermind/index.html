@@ -51,6 +51,10 @@ function calcFeedback(guess, code) {
 }
 
 // ─── URL Persistence ──────────────────────────────────────────────────────────
+// Set this to your Cloudflare Worker URL after deploying mastermind-worker.
+// Leave empty to share direct GitHub Pages links (no dynamic OG images).
+const WORKER_URL = "";
+
 function tryDecode(str) {
   try {
     const json = LZString.decompressFromEncodedURIComponent(str);
@@ -61,15 +65,25 @@ function encode(obj) {
   return LZString.compressToEncodedURIComponent(JSON.stringify(obj));
 }
 function resolveState() {
+  // Read from ?s= query param first, fall back to #hash for old links
+  const params = new URLSearchParams(window.location.search);
+  const qs = params.get("s");
+  if (qs) { const s = tryDecode(qs); if (s?.mode) return s; }
   const hash = window.location.hash.replace(/^#/, "");
   if (hash) { const s = tryDecode(hash); if (s?.mode) return s; }
   return { mode: "creator" };
 }
-function pushHash(obj) {
-  window.history.replaceState(null, "", "#" + encode(obj));
+function pushQuery(obj) {
+  window.history.replaceState(null, "", "?s=" + encode(obj));
 }
+// Direct GitHub Pages link — used for navigation and as the game destination
+function gameLink(obj) {
+  return window.location.origin + window.location.pathname + "?s=" + encode(obj);
+}
+// Share link — goes through Worker for dynamic OG if WORKER_URL is set
 function shareLink(obj) {
-  return window.location.origin + window.location.pathname + "#" + encode(obj);
+  if (WORKER_URL) return WORKER_URL + "?s=" + encode(obj);
+  return gameLink(obj);
 }
 function buildShareText(guesses, numPegs, maxGuesses, won, url) {
   const header = won ? `Mastermind ${guesses.length}/${maxGuesses}` : `Mastermind X/${maxGuesses}`;
@@ -90,7 +104,7 @@ function rrect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function buildResultCanvas(guesses, nPegs, maxG, isWon, url) {
+function buildResultCanvas(guesses, nPegs, maxG, isWon) {
   const W = 600, pegR = 15, pegGap = 10;
   const headerH = 164, rowH = 52, footerH = 72;
   const H = headerH + guesses.length * rowH + footerH;
@@ -381,7 +395,7 @@ function Creator() {
   const randomize = () => { setCode(Array(nPegs).fill(null).map(() => ids[Math.floor(Math.random() * nColors)])); setActivePeg(0); };
 
   const goBreaker = (state) => {
-    history.replaceState(null, '', window.location.pathname + '#' + encode(state));
+    history.replaceState(null, '', window.location.pathname + '?s=' + encode(state));
     window.location.reload();
   };
 
@@ -392,7 +406,7 @@ function Creator() {
   };
 
   const generate = () => {
-    setLink(shareLink({ mode: "breaker", code, colors: nColors, pegs: nPegs, maxG, guesses: [] }));
+    setLink(gameLink({ mode: "breaker", code, colors: nColors, pegs: nPegs, maxG, guesses: [] }));
   };
 
   // Play the same code you just set (you've already seen it, but useful to test or play together)
@@ -499,7 +513,7 @@ function Breaker({ init }) {
 
   useEffect(() => {
     if (guesses.length === 0) return;
-    pushHash({ ...init, guesses });
+    pushQuery({ ...init, guesses });
   }, [guesses]);
 
   useEffect(() => {
@@ -530,12 +544,13 @@ function Breaker({ init }) {
 
   const canSubmit = !isOver && current.every(Boolean);
 
-  const freshUrl = useMemo(() => shareLink({ ...init, guesses: [] }), []);
+  const freshUrl = useMemo(() => gameLink({ ...init, guesses: [] }), []);
+  const ogUrl    = useMemo(() => shareLink({ ...init, guesses }), [isOver]);
 
-  const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon, freshUrl) : "", [isOver]);
+  const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon, ogUrl) : "", [isOver]);
 
   const shareResult = async () => {
-    const canvas = buildResultCanvas(guesses, nPegs, maxG, isWon, freshUrl);
+    const canvas = buildResultCanvas(guesses, nPegs, maxG, isWon);
     const dataUrl = canvas.toDataURL('image/png');
     const b64 = dataUrl.split(',')[1];
     const bin = atob(b64);

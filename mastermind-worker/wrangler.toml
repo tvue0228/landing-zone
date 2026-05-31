@@ -1,0 +1,6 @@
+name = "mastermind-og"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+GAME_BASE = "https://tvue0228.github.io/landing-zone/games/mastermind/"
