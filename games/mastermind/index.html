@@ -438,18 +438,39 @@ function Breaker({ init }) {
 
   const shareStr = useMemo(() => isOver ? buildShareText(guesses, nPegs, maxG, isWon, freshUrl) : "", [isOver]);
 
+  const isMobile = navigator.maxTouchPoints > 0;
+
   const shareResult = async () => {
-    try {
-      if (navigator.share) {
+    // On mobile: use native share sheet (sends text directly to apps, preserving newlines)
+    if (isMobile && navigator.share) {
+      try {
         await navigator.share({ text: shareStr });
-      } else {
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        // Fall through to clipboard on unexpected failure
+      }
+    }
+    // Desktop (or mobile share failed): copy to clipboard
+    const copyToClipboard = async () => {
+      try {
         await navigator.clipboard.writeText(shareStr);
-        setCopied(true); setTimeout(() => setCopied(false), 2200);
+        return true;
+      } catch {
+        // execCommand fallback for Safari / older browsers
+        const el = document.createElement('textarea');
+        el.value = shareStr;
+        el.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+        document.body.appendChild(el);
+        el.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(el);
+        return ok;
       }
-    } catch (e) {
-      if (e.name !== 'AbortError') {
-        try { await navigator.clipboard.writeText(shareStr); setCopied(true); setTimeout(() => setCopied(false), 2200); } catch {}
-      }
+    };
+    if (await copyToClipboard()) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
   };
 
@@ -522,7 +543,7 @@ function Breaker({ init }) {
 
           <div className="mm-r-actions">
             <button className="mm-btn mm-btn-gold" onClick={shareResult}>
-              {copied ? "✓ Copied!" : "📤 Share"}
+              {copied ? "✓ Copied!" : isMobile ? "📤 Share" : "📋 Copy"}
             </button>
             <button className="mm-btn mm-btn-ghost" onClick={newGame}>+ New Game</button>
           </div>
