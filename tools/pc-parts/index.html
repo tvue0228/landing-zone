@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PC Parts Builder — Tools Lab</title>
+<meta property="og:title" content="PC Parts Builder" />
+<meta property="og:description" content="Build a PC parts list, price it out, and find the best deals across PCPartPicker, Amazon, and Newegg." />
+<meta name="twitter:card" content="summary" />
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef } = React;
+
+// ── Categories ────────────────────────────────────────────────────────────────
+const CATS = [
+  { id:"cpu",  label:"CPU",           icon:"⚡", kw:["cpu","processor","ryzen","core i","intel core","amd fx","threadripper","epyc"] },
+  { id:"gpu",  label:"GPU",           icon:"🎮", kw:["gpu","graphics card","rtx","rx 7","rx 6","radeon","geforce","video card","arc a"] },
+  { id:"mobo", label:"Motherboard",   icon:"🔧", kw:["motherboard","mainboard","mobo","b450","b550","b650","x570","x670","z490","z590","z690","z790","a620","h610","h670","h770"] },
+  { id:"ram",  label:"RAM",           icon:"💾", kw:["ram","memory","ddr3","ddr4","ddr5","dimm","sodimm","vengeance","trident z","ripjaws"] },
+  { id:"ssd",  label:"SSD / NVMe",    icon:"💿", kw:["ssd","nvme","m.2","solid state","990 pro","970 evo","980 pro","wd black","firecuda","sn850","sn770"] },
+  { id:"hdd",  label:"Hard Drive",    icon:"🖴",  kw:["hdd","hard drive","hard disk","barracuda","ironwolf","wd red","wd blue","wd purple","wd gold"] },
+  { id:"psu",  label:"PSU",           icon:"🔌", kw:["psu","power supply","watt","850w","750w","650w","550w","450w","modular","rmx","rm850","evga g","seasonic","focus"] },
+  { id:"case", label:"Case",          icon:"📦", kw:["case","chassis","tower","mid tower","full tower","mini itx","matx","fractal","nzxt h","lian li","phanteks","meshify","o11"] },
+  { id:"cool", label:"CPU Cooler",    icon:"🌀", kw:["cooler","aio","liquid cool","heatsink","noctua","dark rock","deepcool","be quiet","arctic","thermalright","hyper 212"] },
+  { id:"mon",  label:"Monitor",       icon:"🖥️", kw:["monitor","display","screen","hz","ips","oled","qled","4k","1440p","1080p","27\"","32\"","24\"","ultrawide"] },
+  { id:"kb",   label:"Keyboard",      icon:"⌨️", kw:["keyboard","mechanical","keychron","corsair k","razer huntsman","das keyboard","ducky","anne pro","wooting"] },
+  { id:"ms",   label:"Mouse",         icon:"🖱️", kw:["mouse","logitech g","razer deathadder","finalmouse","pulsar","glorious","zowie","viper"] },
+  { id:"net",  label:"Networking",    icon:"📡", kw:["wifi","ethernet","network card","pcie wifi","ax200","ax210","intel wifi","tp-link","asus pce"] },
+  { id:"os",   label:"OS / Software", icon:"💻", kw:["windows","ubuntu","linux","macos","office","license","windows 11","windows 10"] },
+  { id:"oth",  label:"Other",         icon:"🔩", kw:[] },
+];
+const CAT_MAP = Object.fromEntries(CATS.map(c => [c.id, c]));
+
+const LABEL_ALIASES = {
+  "graphics card":"gpu","video card":"gpu","processor":"cpu","cpu processor":"cpu",
+  "memory":"ram","ram memory":"ram","storage":"ssd","power supply":"psu","power":"psu",
+  "motherboard":"mobo","cpu cooler":"cool","liquid cooler":"cool","air cooler":"cool",
+  "hard drive":"hdd","hard disk":"hdd","solid state drive":"ssd","solid state":"ssd",
+  "case":"case","chassis":"case","monitor":"mon","display":"mon","screen":"mon",
+  "keyboard":"kb","mouse":"ms","operating system":"os","networking":"net","wifi card":"net",
+};
+
+function guessCat(text) {
+  const lo = text.toLowerCase().trim();
+  if (LABEL_ALIASES[lo]) return LABEL_ALIASES[lo];
+  for (const cat of CATS.slice(0, -1)) {
+    if (lo === cat.label.toLowerCase() || lo === cat.id) return cat.id;
+  }
+  for (const cat of CATS.slice(0, -1)) {
+    if (cat.kw.some(k => lo.includes(k))) return cat.id;
+  }
+  return "oth";
+}
+
+function parsePaste(text) {
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("//") && !l.startsWith("#") && !l.startsWith(";") && !l.startsWith("--"));
+  let counter = 0;
+  return lines.flatMap(line => {
+    let name = line, price = "";
+
+    // Extract trailing price in various formats: "- $199", "— $199.99", "$199", "- 199.99"
+    const pricePatterns = [
+      /\s*[-–—]\s*\$\s*([\d,]+(?:\.\d{1,2})?)\s*$/,
+      /\s+\$\s*([\d,]+(?:\.\d{1,2})?)\s*$/,
+      /\s*[-–—]\s*([\d,]+(?:\.\d{1,2})?)\s*$/,
+    ];
+    for (const rx of pricePatterns) {
+      const m = line.match(rx);
+      if (m) {
+        const val = parseFloat(m[1].replace(/,/g, ""));
+        if (!isNaN(val) && val >= 1 && val <= 50000) {
+          price = val.toFixed(2);
+          name = line.slice(0, line.length - m[0].length).trim();
+          break;
+        }
+      }
+    }
+
+    // Detect "Category: Name" prefix
+    let cat = "oth";
+    const colonIdx = name.indexOf(":");
+    if (colonIdx > 0 && colonIdx <= 28) {
+      const prefix = name.slice(0, colonIdx).trim();
+      const guessed = guessCat(prefix);
+      cat = guessed;
+      // Only strip prefix if it looks like a real category label
+      if (guessed !== "oth" || LABEL_ALIASES[prefix.toLowerCase()] || CATS.find(c => c.id === prefix.toLowerCase() || c.label.toLowerCase() === prefix.toLowerCase())) {
+        name = name.slice(colonIdx + 1).trim();
+      }
+    }
+    if (cat === "oth") cat = guessCat(name);
+
+    name = name.replace(/\s*[-–—]\s*$/, "").trim();
+    if (!name) return [];
+    return [{ id: `p${Date.now()}${counter++}`, cat, name, price }];
+  });
+}
+
+function searchLinks(name) {
+  const q = encodeURIComponent(name);
+  return {
+    pcpp: `https://pcpartpicker.com/search/?q=${q}`,
+    amzn: `https://www.amazon.com/s?k=${q}`,
+    negg: `https://www.newegg.com/p/pl?d=${q}`,
+  };
+}
+
+// ── URL persistence ───────────────────────────────────────────────────────────
+function encode(obj) { return LZString.compressToEncodedURIComponent(JSON.stringify(obj)); }
+function tryDecode(s) { try { return JSON.parse(LZString.decompressFromEncodedURIComponent(s)); } catch { return null; } }
+function loadParts() {
+  const p = new URLSearchParams(window.location.search).get("p");
+  if (p) { const d = tryDecode(p); if (Array.isArray(d)) return d; }
+  return [];
+}
+
+const fmt = n => isNaN(n) || n === 0 ? "" : "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+let _uid = 0;
+const uid = () => `p${Date.now()}${_uid++}`;
+
+// ── CSS ───────────────────────────────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:#07090f;
+  background-image:radial-gradient(ellipse 70% 50% at 15% 20%,rgba(80,40,160,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 85%,rgba(20,50,140,.07) 0%,transparent 60%);
+  color:#dde1f0;min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:880px;margin:0 auto;padding:20px 16px 80px;}
+.back{display:inline-flex;align-items:center;gap:4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#303555;margin-bottom:22px;cursor:pointer;transition:color .15s;}
+.back:hover{color:#6b7aaa;}
+.hd{margin-bottom:26px;}
+.logo{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px;}
+.logo em{color:#3b82f6;font-style:normal;}
+.sub{font-size:13px;color:#404870;}
+
+.card{background:#0b0e1c;border:1px solid #181d30;border-radius:12px;padding:18px;margin-bottom:12px;}
+.lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#303555;margin-bottom:10px;}
+
+.mode-toggle{display:flex;gap:6px;margin-bottom:14px;}
+.mode-btn{padding:7px 16px;border-radius:8px;border:1px solid #181d30;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:#404870;cursor:pointer;transition:all .14s;}
+.mode-btn:hover{border-color:#2a3050;color:#7b88b0;}
+.mode-btn.on{background:#0f1a35;border-color:#1e3a7a;color:#90a8e8;}
+
+.add-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+.add-form select,.add-form input{background:#050710;border:1px solid #181d30;border-radius:8px;font-family:inherit;font-size:13px;color:#dde1f0;padding:8px 10px;outline:none;transition:border-color .14s;}
+.add-form select:focus,.add-form input:focus{border-color:#2d4080;}
+.add-form select{min-width:165px;cursor:pointer;}
+.f-name{flex:1;min-width:200px;}
+.f-price{width:100px;}
+
+.paste-area{width:100%;min-height:190px;background:#050710;border:1px solid #181d30;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;color:#7b88b0;padding:12px;resize:vertical;outline:none;transition:border-color .14s;line-height:1.75;}
+.paste-area:focus{border-color:#2d4080;}
+.paste-area::placeholder{color:#1a2040;}
+.paste-hint{font-size:11px;color:#1e2438;margin-top:8px;line-height:1.65;}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .17s;white-space:nowrap;}
+.btn-blue{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;}
+.btn-blue:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,130,246,.3);}
+.btn-blue:disabled{opacity:.28;cursor:not-allowed;transform:none;box-shadow:none;filter:none;}
+.btn-ghost{background:transparent;border:1px solid #181d30;color:#404870;}
+.btn-ghost:hover{border-color:#2a3050;color:#7b88b0;}
+.btn-ghost.ok{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:#22c55e;}
+.btn-danger{background:transparent;border:1px solid transparent;color:#252c46;padding:5px 8px;font-size:13px;}
+.btn-danger:hover{color:#ef4444;border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.04);}
+
+.parts-table{width:100%;border-collapse:collapse;}
+.parts-table th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#1a2040;text-align:left;padding:0 6px 8px;font-weight:600;}
+.th-right{text-align:right!important;}
+.pt-row{border-top:1px solid #0a0d18;}
+.pt-row:hover{background:rgba(255,255,255,.012);}
+.pt-row td{padding:9px 6px;vertical-align:middle;}
+.pt-icon{font-size:15px;line-height:1;width:24px;}
+.pt-cat{font-size:10px;color:#252c46;letter-spacing:.05em;white-space:nowrap;width:88px;}
+.name-input{background:transparent;border:none;font-family:inherit;font-size:13px;color:#b8bcd0;width:100%;outline:none;padding:2px 0;min-width:120px;}
+.name-input:focus{color:#dde1f0;}
+.name-input::placeholder{color:#1a2040;}
+.price-cell{text-align:right;width:100px;}
+.price-input{background:transparent;border:none;font-family:inherit;font-size:13px;color:#f59e0b;width:96px;text-align:right;outline:none;padding:2px 4px;border-radius:4px;transition:background .12s;}
+.price-input:focus{background:#0f1a2a;color:#fbbf24;}
+.price-input::placeholder{color:#1a2040;}
+.links-cell{width:148px;}
+.pt-links{display:flex;gap:4px;}
+.pt-link{font-size:10px;font-weight:600;padding:3px 7px;border-radius:5px;border:1px solid #0f1626;color:#252c46;transition:all .12s;cursor:pointer;text-decoration:none;display:inline-block;}
+.pt-link.pp:hover{color:#f59e0b;border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.05);}
+.pt-link.az:hover{color:#f97316;border-color:rgba(249,115,22,.35);background:rgba(249,115,22,.05);}
+.pt-link.ng:hover{color:#22c55e;border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.05);}
+.del-cell{width:36px;}
+
+.total-row{border-top:1px solid #181d30;}
+.total-row td{padding:11px 6px;}
+.total-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#252c46;}
+.total-val{font-size:18px;font-weight:700;color:#3b82f6;text-align:right;display:block;}
+
+.action-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid #0a0d18;}
+.action-bar .spacer{flex:1;}
+
+.empty{text-align:center;padding:44px 20px;}
+.empty-icon{font-size:42px;margin-bottom:12px;}
+.empty-title{font-size:15px;font-weight:600;color:#252c46;margin-bottom:6px;}
+.empty-sub{font-size:12px;color:#1a2040;line-height:1.65;}
+
+@media(max-width:640px){
+  .add-form{flex-direction:column;}
+  .add-form select,.f-name,.f-price,.add-form .btn{width:100%;}
+  .pt-cat{display:none;}
+  .links-cell{width:auto;}
+  .pt-links{flex-direction:column;}
+}
+`;
+
+// ── Part Row ──────────────────────────────────────────────────────────────────
+function PartRow({ part, onChange, onRemove }) {
+  const cat = CAT_MAP[part.cat] || CATS[CATS.length - 1];
+  const links = searchLinks(part.name);
+  return (
+    <tr className="pt-row">
+      <td className="pt-icon">{cat.icon}</td>
+      <td className="pt-cat">{cat.label}</td>
+      <td>
+        <input
+          className="name-input"
+          value={part.name}
+          placeholder="Part name…"
+          onChange={e => onChange({ ...part, name: e.target.value })}
+        />
+      </td>
+      <td className="price-cell">
+        <input
+          className="price-input"
+          value={part.price}
+          placeholder="$—"
+          inputMode="decimal"
+          onChange={e => onChange({ ...part, price: e.target.value.replace(/[^0-9.]/g, "") })}
+        />
+      </td>
+      <td className="links-cell">
+        <div className="pt-links">
+          <a className="pt-link pp" href={links.pcpp} target="_blank" rel="noopener noreferrer" title="PCPartPicker">PCpp</a>
+          <a className="pt-link az" href={links.amzn} target="_blank" rel="noopener noreferrer" title="Amazon">Amzn</a>
+          <a className="pt-link ng" href={links.negg} target="_blank" rel="noopener noreferrer" title="Newegg">Negg</a>
+        </div>
+      </td>
+      <td className="del-cell">
+        <button className="btn btn-danger" onClick={onRemove} title="Remove">✕</button>
+      </td>
+    </tr>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [parts,    setParts]  = useState(() => loadParts());
+  const [mode,     setMode]   = useState("build");
+  const [form,     setForm]   = useState({ cat: "cpu", name: "", price: "" });
+  const [paste,    setPaste]  = useState("");
+  const [copied,   setCopied] = useState("");  // "list" | "url" | ""
+  const nameRef = useRef(null);
+
+  useEffect(() => {
+    const encoded = parts.length ? `?p=${encode(parts)}` : window.location.pathname;
+    window.history.replaceState(null, "", encoded);
+  }, [parts]);
+
+  const total = useMemo(() => parts.reduce((sum, p) => {
+    const v = parseFloat(p.price);
+    return sum + (isNaN(v) ? 0 : v);
+  }, 0), [parts]);
+
+  const pricedCount = useMemo(() => parts.filter(p => parseFloat(p.price) > 0).length, [parts]);
+
+  const addPart = () => {
+    if (!form.name.trim()) return;
+    const price = form.price.trim();
+    setParts(prev => [...prev, { id: uid(), cat: form.cat, name: form.name.trim(), price }]);
+    setForm(f => ({ ...f, name: "", price: "" }));
+    nameRef.current?.focus();
+  };
+
+  const importPaste = () => {
+    const parsed = parsePaste(paste);
+    if (!parsed.length) return;
+    setParts(prev => [...prev, ...parsed]);
+    setPaste("");
+    setMode("build");
+  };
+
+  const updatePart = (id, updated) => setParts(prev => prev.map(p => p.id === id ? updated : p));
+  const removePart = (id) => setParts(prev => prev.filter(p => p.id !== id));
+
+  const flash = (key) => { setCopied(key); setTimeout(() => setCopied(""), 2200); };
+
+  const copyList = async () => {
+    const lines = parts.map(p => {
+      const cat = CAT_MAP[p.cat] || CATS[CATS.length - 1];
+      const priceStr = p.price ? ` — $${parseFloat(p.price).toFixed(2)}` : "";
+      return `${cat.label}: ${p.name}${priceStr}`;
+    });
+    if (pricedCount > 0) lines.push(`\nTotal: ${fmt(total)}`);
+    try { await navigator.clipboard.writeText(lines.join("\n")); flash("list"); } catch {}
+  };
+
+  const copyUrl = async () => {
+    try { await navigator.clipboard.writeText(window.location.href); flash("url"); } catch {}
+  };
+
+  const handleKey = e => { if (e.key === "Enter") addPart(); };
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="wrap">
+        <a href="../../" className="back">← Tools</a>
+
+        <div className="hd">
+          <div className="logo">PC Parts <em>Builder</em></div>
+          <div className="sub">Add parts, set prices, find the best deals across PCPartPicker, Amazon &amp; Newegg.</div>
+        </div>
+
+        <div className="mode-toggle">
+          <button className={`mode-btn${mode === "build" ? " on" : ""}`} onClick={() => setMode("build")}>
+            ✏️ Build list
+          </button>
+          <button className={`mode-btn${mode === "paste" ? " on" : ""}`} onClick={() => setMode("paste")}>
+            📋 Paste list
+          </button>
+        </div>
+
+        {/* Add form */}
+        {mode === "build" && (
+          <div className="card">
+            <div className="lbl">Add a component</div>
+            <div className="add-form">
+              <select value={form.cat} onChange={e => setForm(f => ({ ...f, cat: e.target.value }))}>
+                {CATS.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+              </select>
+              <input
+                ref={nameRef}
+                className="f-name"
+                placeholder="e.g. Intel Core i7-13700K"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                onKeyDown={handleKey}
+              />
+              <input
+                className="f-price"
+                placeholder="$Price"
+                value={form.price}
+                onChange={e => setForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, "") }))}
+                onKeyDown={handleKey}
+                inputMode="decimal"
+              />
+              <button className="btn btn-blue" disabled={!form.name.trim()} onClick={addPart}>+ Add</button>
+            </div>
+          </div>
+        )}
+
+        {/* Paste mode */}
+        {mode === "paste" && (
+          <div className="card">
+            <div className="lbl">Paste your parts list</div>
+            <textarea
+              className="paste-area"
+              value={paste}
+              onChange={e => setPaste(e.target.value)}
+              placeholder={
+                "CPU: Intel Core i7-13700K — $299.99\n" +
+                "GPU: NVIDIA RTX 4070 — $559\n" +
+                "Motherboard: ASUS ROG Strix Z790-E\n" +
+                "RAM: Corsair Vengeance 32GB DDR5 6000\n" +
+                "Storage: Samsung 990 Pro 1TB NVMe\n" +
+                "PSU: Corsair RM850x 850W — $129.99\n" +
+                "Case: Fractal Design North — $149"
+              }
+              spellCheck={false}
+            />
+            <div className="paste-hint">
+              Supports "Category: Name — $Price", plain part names, or a mix. Prices are optional.<br />
+              Parts get appended to your existing list.
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button className="btn btn-blue" disabled={!paste.trim()} onClick={importPaste}>Import parts</button>
+              <button className="btn btn-ghost" onClick={() => { setPaste(""); setMode("build"); }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {/* Parts list */}
+        {parts.length > 0 ? (
+          <div className="card">
+            <table className="parts-table">
+              <thead>
+                <tr>
+                  <th colSpan={2}>Type</th>
+                  <th>Component</th>
+                  <th className="th-right">Price</th>
+                  <th>Find deals</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {parts.map(p => (
+                  <PartRow
+                    key={p.id}
+                    part={p}
+                    onChange={updated => updatePart(p.id, updated)}
+                    onRemove={() => removePart(p.id)}
+                  />
+                ))}
+              </tbody>
+              {pricedCount > 0 && (
+                <tfoot>
+                  <tr className="total-row">
+                    <td colSpan={3}>
+                      <span className="total-label">
+                        {pricedCount === parts.length
+                          ? `${parts.length} component${parts.length !== 1 ? "s" : ""}`
+                          : `${pricedCount} of ${parts.length} priced`}
+                      </span>
+                    </td>
+                    <td colSpan={3}>
+                      <span className="total-val">{fmt(total)}</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+
+            <div className="action-bar">
+              <button
+                className={`btn btn-ghost${copied === "list" ? " ok" : ""}`}
+                onClick={copyList}
+              >
+                {copied === "list" ? "✓ Copied!" : "📄 Copy list"}
+              </button>
+              <button
+                className={`btn btn-ghost${copied === "url" ? " ok" : ""}`}
+                onClick={copyUrl}
+              >
+                {copied === "url" ? "✓ Copied!" : "🔗 Share link"}
+              </button>
+              <div className="spacer" />
+              <button
+                className="btn btn-ghost"
+                style={{ color: "#303555" }}
+                onClick={() => { if (confirm("Clear all parts?")) setParts([]); }}
+              >
+                🗑 Clear all
+              </button>
+            </div>
+          </div>
+        ) : mode === "build" && (
+          <div className="card">
+            <div className="empty">
+              <div className="empty-icon">🖥️</div>
+              <div className="empty-title">No parts yet</div>
+              <div className="empty-sub">
+                Add components one by one above,<br />
+                or switch to <strong>Paste list</strong> to import an existing parts list.
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
