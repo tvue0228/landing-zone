@@ -14,28 +14,43 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="text/babel">
-const { useState, useEffect, useRef, useMemo } = React;
+const { useState, useEffect, useMemo } = React;
 
-// ── Config ────────────────────────────────────────────────────────────────────
-const MODELS = [
-  { id: 'claude-haiku-4-5-20251001', label: 'Haiku — Fast & affordable'  },
-  { id: 'claude-sonnet-4-6',         label: 'Sonnet — Balanced (recommended)' },
-  { id: 'claude-opus-4-8',           label: 'Opus — Highest quality'     },
+// ── Model / provider config ───────────────────────────────────────────────────
+const TEXT_MODELS = [
+  // Anthropic
+  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 — Fast',             provider: 'anthropic' },
+  { id: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6 — Balanced ★',      provider: 'anthropic' },
+  { id: 'claude-opus-4-8',           label: 'Claude Opus 4.8 — Highest quality',   provider: 'anthropic' },
+  // Google
+  { id: 'gemini-2.0-flash',          label: 'Gemini 2.0 Flash — Fast',             provider: 'google'    },
+  { id: 'gemini-1.5-pro',            label: 'Gemini 1.5 Pro — Capable',            provider: 'google'    },
+  { id: 'gemini-2.5-flash',          label: 'Gemini 2.5 Flash — Preview',          provider: 'google'    },
+  { id: 'gemini-2.5-pro',            label: 'Gemini 2.5 Pro — Preview',            provider: 'google'    },
 ];
+
+const IMAGE_PROVIDERS = [
+  { id: 'none',   label: 'No illustrations',         key: null          },
+  { id: 'dalle',  label: 'DALL-E 3 (OpenAI key)',    key: 'openaiKey'   },
+  { id: 'imagen', label: 'Imagen 3 (Google key)',     key: 'googleKey'   },
+];
+
 const GENRES = [
   'Fiction','Fantasy','Science Fiction','Romance','Mystery','Thriller','Horror',
   'Historical Fiction',"Children's Book",'Young Adult','Self-Help','Business',
   'Biography / Memoir','Poetry Collection',
 ];
 const TRIM_SIZES = [
-  { id:'5x8',     label:'5" × 8"   Compact',      w:5,   h:8   },
-  { id:'5.5x8.5', label:'5.5" × 8.5"  Standard',  w:5.5, h:8.5 },
-  { id:'6x9',     label:'6" × 9"   Trade (KDP popular)', w:6, h:9 },
-  { id:'8.5x11',  label:'8.5" × 11"  Workbook',   w:8.5, h:11  },
+  { id:'5x8',     label:'5" × 8"   Compact',              w:5,   h:8   },
+  { id:'5.5x8.5', label:'5.5" × 8.5"  Standard',          w:5.5, h:8.5 },
+  { id:'6x9',     label:'6" × 9"   Trade (most popular)',  w:6,   h:9   },
+  { id:'8.5x11',  label:'8.5" × 11"  Workbook',           w:8.5, h:11  },
 ];
 
+const modelProvider = (id) => TEXT_MODELS.find(m => m.id === id)?.provider ?? 'anthropic';
+
 // ── API helpers ───────────────────────────────────────────────────────────────
-async function callClaude(apiKey, model, system, user, maxTokens) {
+async function callClaude(apiKey, modelId, system, user, maxTokens) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -44,19 +59,41 @@ async function callClaude(apiKey, model, system, user, maxTokens) {
       'anthropic-dangerous-direct-browser-access': 'true',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: 'user', content: user }],
-    }),
+    body: JSON.stringify({ model: modelId, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] }),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Anthropic API error ${res.status}`);
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || `Anthropic ${res.status}`);
+  }
+  return (await res.json()).content[0].text;
+}
+
+async function callGemini(apiKey, modelId, system, user, maxTokens) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: { maxOutputTokens: maxTokens },
+      }),
+    }
+  );
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || `Google AI ${res.status}`);
   }
   const data = await res.json();
-  return data.content[0].text;
+  return data.candidates[0].content.parts[0].text;
+}
+
+// Unified text call — routes by model provider
+async function callText(cfg, system, user, maxTokens) {
+  const provider = modelProvider(cfg.textModel);
+  if (provider === 'google') return callGemini(cfg.googleKey, cfg.textModel, system, user, maxTokens);
+  return callClaude(cfg.anthropicKey, cfg.textModel, system, user, maxTokens);
 }
 
 async function callDALLE(apiKey, prompt) {
@@ -66,10 +103,31 @@ async function callDALLE(apiKey, prompt) {
     body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1024x1024', quality: 'standard' }),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `OpenAI API error ${res.status}`);
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || `OpenAI ${res.status}`);
   }
   return (await res.json()).data[0].url;
+}
+
+async function callImagen(apiKey, prompt) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: { sampleCount: 1, aspectRatio: '1:1' },
+      }),
+    }
+  );
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || `Google Imagen ${res.status}`);
+  }
+  const data = await res.json();
+  const { bytesBase64Encoded, mimeType = 'image/png' } = data.predictions[0];
+  return `data:${mimeType};base64,${bytesBase64Encoded}`;
 }
 
 async function urlToBase64(url) {
@@ -83,14 +141,26 @@ async function urlToBase64(url) {
   });
 }
 
+// Unified image call — routes by imageProvider
+async function callImage(cfg, prompt) {
+  if (cfg.imageProvider === 'dalle') {
+    return urlToBase64(await callDALLE(cfg.openaiKey, prompt));
+  }
+  if (cfg.imageProvider === 'imagen') {
+    return callImagen(cfg.googleKey, prompt);
+  }
+  return null;
+}
+
 // ── Generation pipeline ───────────────────────────────────────────────────────
 async function generateBook(cfg, onProgress, onUpdate) {
-  const { anthropicKey, openaiKey, model, prompt, genre, author, chapterCount, wordsPerChapter, includeImages } = cfg;
+  const { prompt, genre, author, chapterCount, wordsPerChapter } = cfg;
+  const hasImages = cfg.imageProvider !== 'none';
 
-  // 1. Outline
   onProgress({ stage: 'outline', msg: 'Generating book outline…', pct: 2, step: 0, steps: 0 });
-  const raw = await callClaude(
-    anthropicKey, model,
+
+  const raw = await callText(
+    cfg,
     `You are a professional ${genre} author who creates compelling, well-structured books.`,
     `Create a detailed book outline for: "${prompt}"
 Genre: ${genre}  |  Chapters: ${chapterCount}
@@ -113,7 +183,7 @@ Return ONLY valid JSON, no markdown, no explanation:
     outline = JSON.parse(m ? m[0] : raw);
     if (!Array.isArray(outline.chapters)) throw new Error();
   } catch {
-    throw new Error('Failed to parse book outline. Try rephrasing your prompt.');
+    throw new Error('Failed to parse book outline — try rephrasing your prompt.');
   }
 
   const book = {
@@ -126,23 +196,21 @@ Return ONLY valid JSON, no markdown, no explanation:
   };
   onUpdate({ ...book });
 
-  // 2. Chapters
   const prevCtx = [];
   for (let i = 0; i < outline.chapters.length; i++) {
     const ch = outline.chapters[i];
-    const pct = 5 + Math.round((i / outline.chapters.length) * (includeImages ? 58 : 88));
+    const pct = 5 + Math.round((i / outline.chapters.length) * (hasImages ? 58 : 88));
     onProgress({ stage: 'chapter', msg: `Writing Chapter ${i + 1}: "${ch.title}"…`, pct, step: i + 1, steps: outline.chapters.length });
 
     const ctx = prevCtx.slice(-2).join('\n---\n');
-    const content = await callClaude(
-      anthropicKey, model,
-      `You are writing a ${genre} book titled "${book.title}". Maintain a consistent voice, tone, and continuity.`,
+    const content = await callText(
+      cfg,
+      `You are writing a ${genre} book titled "${book.title}". Maintain consistent voice, tone, and continuity.`,
       `Write Chapter ${ch.number}: "${ch.title}"
-
 What should happen: ${ch.summary}
 ${ctx ? `\nContext from previous chapters:\n${ctx}\n` : ''}
 Target length: ~${wordsPerChapter} words.
-Start directly with the narrative. Do not include the chapter title or heading. Write polished, publication-ready prose.`,
+Start directly with the narrative. Do not include the chapter title. Write polished, publication-ready prose.`,
       Math.min(8000, Math.max(2048, Math.ceil(wordsPerChapter * 1.5)))
     );
 
@@ -152,15 +220,13 @@ Start directly with the narrative. Do not include the chapter title or heading. 
     onUpdate({ ...book, chapters: [...book.chapters] });
   }
 
-  // 3. Images
-  if (includeImages && openaiKey.trim()) {
+  if (hasImages) {
     for (let i = 0; i < book.chapters.length; i++) {
       const ch = book.chapters[i];
       onProgress({ stage: 'images', msg: `Generating image for Chapter ${i + 1}…`, pct: 65 + Math.round((i / book.chapters.length) * 30), step: i + 1, steps: book.chapters.length });
-      const imgPrompt = `Book illustration for a ${genre} story. "${ch.title}": ${ch.content.substring(0, 180)}. Painterly, cinematic, no text, no letters, no words.`;
+      const imgPrompt = `Book illustration for a ${genre} story. "${ch.title}": ${ch.content.substring(0, 180)}. Painterly, cinematic, no text, no letters.`;
       try {
-        const url = await callDALLE(openaiKey, imgPrompt);
-        book.chapters[i] = { ...ch, imageUrl: await urlToBase64(url) };
+        book.chapters[i] = { ...ch, imageUrl: await callImage(cfg, imgPrompt) };
         onUpdate({ ...book, chapters: [...book.chapters] });
       } catch (e) {
         console.warn(`Image ${i + 1} skipped:`, e.message);
@@ -179,132 +245,96 @@ function buildPDF(book, trimId = '6x9') {
   const W = trim.w, H = trim.h;
   const ML = 0.75, MR = 0.5, MT = 0.75, MB = 0.75;
   const TW = W - ML - MR;
-  const LH = 0.195; // ~14pt leading at 11pt
+  const LH = 0.195;
   let pg = 0;
 
   const doc = new jsPDF({ unit: 'in', format: [W, H], compress: true });
 
   const addPgNum = () => {
-    doc.setFont('times', 'italic');
-    doc.setFontSize(9);
-    doc.setTextColor(130, 130, 130);
+    doc.setFont('times', 'italic'); doc.setFontSize(9); doc.setTextColor(130, 130, 130);
     doc.text(String(pg), W / 2, H - 0.4, { align: 'center' });
     doc.setTextColor(0, 0, 0);
   };
   const np = () => { doc.addPage(); pg++; };
 
-  // ── Title page ──
-  doc.setFont('times', 'bold');
-  doc.setFontSize(30);
+  // Title page
+  doc.setFont('times', 'bold'); doc.setFontSize(30);
   const tLines = doc.splitTextToSize(book.title, TW + 0.3);
   let ty = H * 0.32;
   for (const l of tLines) { doc.text(l, W / 2, ty, { align: 'center' }); ty += 0.52; }
   if (book.subtitle) {
-    doc.setFont('times', 'italic');
-    doc.setFontSize(14);
+    doc.setFont('times', 'italic'); doc.setFontSize(14);
     doc.text(book.subtitle, W / 2, ty + 0.1, { align: 'center' });
   }
-  doc.setFont('times', 'normal');
-  doc.setFontSize(13);
+  doc.setFont('times', 'normal'); doc.setFontSize(13);
   doc.text(book.author, W / 2, H * 0.82, { align: 'center' });
 
-  // ── Copyright page ──
+  // Copyright page
   np();
-  doc.setFont('times', 'normal');
-  doc.setFontSize(9);
+  doc.setFont('times', 'normal'); doc.setFontSize(9);
   const yr = new Date().getFullYear();
   const cLines = [
-    `Copyright © ${yr} ${book.author}`,
-    'All rights reserved.',
-    '',
+    `Copyright © ${yr} ${book.author}`, 'All rights reserved.', '',
     'No part of this publication may be reproduced, distributed, or transmitted',
-    'in any form or by any means without the prior written permission of the author.',
-    '',
-    `Genre: ${book.genre}`,
-    `First Edition, ${yr}`,
-    '',
-    'This work was created with AI assistance.',
+    'in any form or by any means without prior written permission of the author.',
+    '', `Genre: ${book.genre}`, `First Edition, ${yr}`, '', 'Created with AI assistance.',
   ];
   let cy2 = 2;
   for (const line of cLines) { doc.text(line, ML, cy2); cy2 += 0.195; }
 
-  // ── Table of contents ──
+  // Table of contents
   np(); pg = 1;
-  doc.setFont('times', 'bold');
-  doc.setFontSize(18);
+  doc.setFont('times', 'bold'); doc.setFontSize(18);
   doc.text('Contents', W / 2, MT + 0.4, { align: 'center' });
   doc.setFontSize(11);
   let tocy = MT + 1;
   for (const ch of book.chapters) {
     if (tocy > H - MB - 0.3) { addPgNum(); np(); pg++; tocy = MT; }
-    doc.setFont('times', 'bold');
-    doc.text(`${ch.number}.`, ML, tocy);
-    doc.setFont('times', 'normal');
-    doc.text(doc.splitTextToSize(ch.title, TW - 0.5)[0], ML + 0.4, tocy);
+    doc.setFont('times', 'bold'); doc.text(`${ch.number}.`, ML, tocy);
+    doc.setFont('times', 'normal'); doc.text(doc.splitTextToSize(ch.title, TW - 0.5)[0], ML + 0.4, tocy);
     tocy += 0.31;
   }
   addPgNum();
 
-  // ── Chapters ──
+  // Chapters
   for (const ch of book.chapters) {
     np(); pg++;
     let y = MT + 0.5;
 
-    // Chapter label
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(160, 120, 30);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(160, 120, 30);
     doc.text(`CHAPTER ${ch.number}`, W / 2, y, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
-    y += 0.3;
+    doc.setTextColor(0, 0, 0); y += 0.3;
 
-    // Title
-    doc.setFont('times', 'bold');
-    doc.setFontSize(20);
-    const ctLines = doc.splitTextToSize(ch.title, TW);
-    for (const l of ctLines) { doc.text(l, W / 2, y, { align: 'center' }); y += 0.38; }
+    doc.setFont('times', 'bold'); doc.setFontSize(20);
+    for (const l of doc.splitTextToSize(ch.title, TW)) { doc.text(l, W / 2, y, { align: 'center' }); y += 0.38; }
     y += 0.15;
 
-    // Rule
-    doc.setDrawColor(200, 160, 50);
-    doc.setLineWidth(0.012);
+    doc.setDrawColor(200, 160, 50); doc.setLineWidth(0.012);
     doc.line(W / 2 - 0.6, y, W / 2 + 0.6, y);
-    doc.setDrawColor(0, 0, 0);
-    y += 0.35;
+    doc.setDrawColor(0, 0, 0); y += 0.35;
 
-    // Image
     if (ch.imageUrl) {
       const ih = 2.2;
       if (y + ih > H - MB - 1) { addPgNum(); np(); pg++; y = MT; }
-      try { doc.addImage(ch.imageUrl, 'JPEG', ML, y, TW, ih); y += ih + 0.3; } catch { /* skip */ }
+      try { doc.addImage(ch.imageUrl, 'JPEG', ML, y, TW, ih); y += ih + 0.3; } catch { }
     }
 
-    // Body text
-    doc.setFont('times', 'normal');
-    doc.setFontSize(11);
+    doc.setFont('times', 'normal'); doc.setFontSize(11);
     const paras = ch.content.split(/\n\n+/).filter(p => p.trim());
-
     for (let pi = 0; pi < paras.length; pi++) {
-      const ptext = paras[pi].trim().replace(/\n/g, ' ');
-      const lines = doc.splitTextToSize(ptext, TW);
-
+      const lines = doc.splitTextToSize(paras[pi].trim().replace(/\n/g, ' '), TW);
       for (let li = 0; li < lines.length; li++) {
         if (y + LH > H - MB) { addPgNum(); np(); pg++; y = MT; }
-        // First line indent on all paragraphs after the first
-        const xIndent = (pi > 0 && li === 0) ? 0.25 : 0;
-        doc.text(lines[li], ML + xIndent, y);
+        doc.text(lines[li], ML + (pi > 0 && li === 0 ? 0.25 : 0), y);
         y += LH;
       }
-      y += LH * 0.5; // paragraph gap
+      y += LH * 0.5;
     }
-
     addPgNum();
   }
 
-  // ── End page ──
   np(); pg++;
-  doc.setFont('times', 'italic');
-  doc.setFontSize(13);
+  doc.setFont('times', 'italic'); doc.setFontSize(13);
   doc.text('— End —', W / 2, H / 2, { align: 'center' });
   addPgNum();
 
@@ -332,6 +362,7 @@ a{color:inherit;text-decoration:none;}
 .card{background:#0b0e1c;border:1px solid #181d30;border-radius:14px;padding:20px;margin-bottom:14px;}
 .section-title{font-size:12px;font-weight:600;color:#6b7aaa;margin-bottom:16px;display:flex;align-items:center;gap:10px;letter-spacing:.04em;}
 .section-title::after{content:"";flex:1;height:1px;background:#181d30;}
+
 label{display:block;font-size:12px;color:#6b7aaa;margin-bottom:5px;font-weight:500;}
 input,select,textarea{background:#050710;border:1px solid #181d30;border-radius:8px;font-family:inherit;font-size:13px;color:#dde1f0;padding:9px 12px;outline:none;transition:border-color .14s;width:100%;}
 input:focus,select:focus,textarea:focus{border-color:#3d3f80;}
@@ -354,12 +385,20 @@ input[type=checkbox]{width:auto;accent-color:#a78bfa;}
 .btn-ghost:hover{border-color:#2a3050;color:#7b88b0;}
 .btn-wide{width:100%;justify-content:center;}
 
+/* Key rows */
 .key-row{display:flex;gap:6px;}
 .key-row input{flex:1;}
 .key-toggle{padding:8px 12px;border-radius:8px;border:1px solid #181d30;background:transparent;font-family:inherit;font-size:12px;color:#404870;cursor:pointer;white-space:nowrap;transition:color .14s;}
 .key-toggle:hover{color:#7b88b0;}
-.key-note{font-size:11px;color:#252c46;margin-top:8px;line-height:1.65;}
+.key-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:middle;}
+.kb-anthropic{background:rgba(245,158,11,.1);color:#f59e0b;}
+.kb-google{background:rgba(34,197,94,.1);color:#22c55e;}
+.kb-openai{background:rgba(59,130,246,.1);color:#3b82f6;}
+.key-note{font-size:11px;color:#252c46;margin-top:10px;line-height:1.65;border-top:1px solid #0f1420;padding-top:10px;}
 .key-note a{color:#404870;text-decoration:underline;}
+
+/* Provider group headers in select */
+optgroup{background:#0b0e1c;color:#404870;}
 
 .err-card{border-color:rgba(239,68,68,.3)!important;background:rgba(239,68,68,.04)!important;}
 .err-msg{font-size:13px;color:#ef4444;}
@@ -380,8 +419,6 @@ input[type=checkbox]{width:auto;accent-color:#a78bfa;}
 .gen-row.active .dot{background:#a78bfa;animation:pulse 1s infinite;}
 .gen-row.wait .dot{background:#1e2438;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-.gen-label{flex:1;}
-.gen-badge{font-size:10px;opacity:.7;}
 
 /* Book preview */
 .bk-meta{text-align:center;padding:16px 0 20px;border-bottom:1px solid #0f1420;margin-bottom:20px;}
@@ -390,7 +427,6 @@ input[type=checkbox]{width:auto;accent-color:#a78bfa;}
 .bk-author{font-size:13px;color:#404870;}
 .bk-desc{font-size:12px;color:#404870;margin-top:10px;line-height:1.65;max-width:460px;margin-inline:auto;}
 .bk-stats{font-size:11px;color:#252c46;margin-top:8px;}
-
 .export-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
 .export-bar select{width:auto;padding:7px 10px;font-size:12px;}
 .kdp-note{font-size:11px;color:#252c46;margin-top:10px;line-height:1.65;border-top:1px solid #0a0d18;padding-top:10px;}
@@ -412,10 +448,7 @@ input[type=checkbox]{width:auto;accent-color:#a78bfa;}
 .edit-btns{display:flex;gap:6px;margin-top:8px;}
 .edit-btns .btn{font-size:12px;padding:6px 12px;}
 
-@media(max-width:580px){
-  .row2,.row3{grid-template-columns:1fr;}
-  .export-bar{flex-direction:column;align-items:stretch;}
-}
+@media(max-width:580px){.row2,.row3{grid-template-columns:1fr;}.export-bar{flex-direction:column;align-items:stretch;}}
 `;
 
 // ── ChapterItem ────────────────────────────────────────────────────────────────
@@ -473,39 +506,54 @@ function App() {
   const [book, setBook] = useState(null);
   const [exportTrim, setExportTrim] = useState('6x9');
   const [buildingPdf, setBuildingPdf] = useState(false);
-  const [showK1, setShowK1] = useState(false);
-  const [showK2, setShowK2] = useState(false);
+  const [showK, setShowK] = useState({ a: false, g: false, o: false });
 
   const [cfg, setCfg] = useState({
     anthropicKey:    lsGet('bc_ak', ''),
+    googleKey:       lsGet('bc_gk', ''),
     openaiKey:       lsGet('bc_ok', ''),
-    model:           'claude-sonnet-4-6',
+    textModel:       'claude-sonnet-4-6',
+    imageProvider:   'none',
     prompt:          '',
     genre:           'Fiction',
     author:          '',
     chapterCount:    8,
     wordsPerChapter: 1200,
-    includeImages:   true,
   });
 
   const set = (k, v) => setCfg(c => ({ ...c, [k]: v }));
   useEffect(() => { lsSet('bc_ak', cfg.anthropicKey); }, [cfg.anthropicKey]);
+  useEffect(() => { lsSet('bc_gk', cfg.googleKey); }, [cfg.googleKey]);
   useEffect(() => { lsSet('bc_ok', cfg.openaiKey); }, [cfg.openaiKey]);
 
-  const canStart = cfg.anthropicKey.trim().length > 10 && cfg.prompt.trim().length > 10;
+  const provider = modelProvider(cfg.textModel);
+  const imgProv = IMAGE_PROVIDERS.find(p => p.id === cfg.imageProvider);
+
+  const hasTextKey = provider === 'google'
+    ? cfg.googleKey.trim().length > 5
+    : cfg.anthropicKey.trim().length > 10;
+
+  const hasImageKey = cfg.imageProvider === 'none' ? true
+    : cfg.imageProvider === 'dalle' ? cfg.openaiKey.trim().length > 10
+    : cfg.imageProvider === 'imagen' ? cfg.googleKey.trim().length > 5
+    : false;
+
+  const canStart = hasTextKey && hasImageKey && cfg.prompt.trim().length > 10;
 
   const totalWords = cfg.chapterCount * cfg.wordsPerChapter;
-  const estMins = Math.ceil(cfg.chapterCount * (cfg.model.includes('opus') ? 2.5 : cfg.model.includes('haiku') ? 0.5 : 1.2));
-  const estImgCost = (cfg.includeImages && cfg.openaiKey.trim()) ? ` · ~$${(cfg.chapterCount * 0.04).toFixed(2)} images` : '';
+  const estMins = Math.ceil(cfg.chapterCount * (cfg.textModel.includes('opus') ? 2.5 : cfg.textModel.includes('haiku') || cfg.textModel.includes('flash') ? 0.5 : 1.2));
+
+  const missingKey = !hasTextKey
+    ? (provider === 'google' ? 'Google AI key' : 'Anthropic key')
+    : !hasImageKey
+    ? (cfg.imageProvider === 'dalle' ? 'OpenAI key' : 'Google AI key')
+    : null;
 
   const start = async () => {
-    setError('');
-    setBook(null);
-    setStep('generating');
+    setError(''); setBook(null); setStep('generating');
     try {
       const result = await generateBook(cfg, setProg, b => setBook({ ...b, chapters: [...(b.chapters || [])] }));
-      setBook(result);
-      setStep('done');
+      setBook(result); setStep('done');
     } catch (e) {
       setError(e.message || 'Generation failed — check your API key and try again.');
       setStep('setup');
@@ -519,9 +567,10 @@ function App() {
     setBuildingPdf(false);
   };
 
-  const updateChapter = (idx, updated) => {
+  const updateChapter = (idx, updated) =>
     setBook(b => { const chapters = [...b.chapters]; chapters[idx] = updated; return { ...b, chapters }; });
-  };
+
+  const toggleK = (k) => setShowK(s => ({ ...s, [k]: !s[k] }));
 
   // ── Setup ─────────────────────────────────────────────────────────────────
   if (step === 'setup') return (
@@ -534,50 +583,94 @@ function App() {
           <div className="sub">Generate a full book with AI, then download a print-ready PDF formatted for Amazon KDP.</div>
         </div>
 
-        {error && (
-          <div className="card err-card" style={{ marginBottom: 14 }}>
-            <div className="err-msg">⚠ {error}</div>
-          </div>
-        )}
+        {error && <div className="card err-card" style={{ marginBottom: 14 }}><div className="err-msg">⚠ {error}</div></div>}
 
         {/* API Keys */}
         <div className="card">
           <div className="section-title">API Keys</div>
 
           <div className="field">
-            <label>Anthropic API Key <span style={{ color: '#ef4444' }}>*</span></label>
+            <label>
+              Anthropic API Key
+              <span className="key-badge kb-anthropic">Claude models</span>
+            </label>
             <div className="key-row">
-              <input
-                type={showK1 ? 'text' : 'password'}
-                placeholder="sk-ant-…"
-                value={cfg.anthropicKey}
-                onChange={e => set('anthropicKey', e.target.value)}
-                autoComplete="off" spellCheck={false}
-              />
-              <button className="key-toggle" onClick={() => setShowK1(v => !v)}>{showK1 ? 'Hide' : 'Show'}</button>
+              <input type={showK.a ? 'text' : 'password'} placeholder="sk-ant-…" value={cfg.anthropicKey}
+                onChange={e => set('anthropicKey', e.target.value)} autoComplete="off" spellCheck={false} />
+              <button className="key-toggle" onClick={() => toggleK('a')}>{showK.a ? 'Hide' : 'Show'}</button>
             </div>
           </div>
 
           <div className="field">
             <label>
-              OpenAI API Key&nbsp;
-              <span style={{ color: '#303555' }}>(optional — needed for chapter illustrations)</span>
+              Google AI API Key
+              <span className="key-badge kb-google">Gemini models + Imagen</span>
             </label>
             <div className="key-row">
-              <input
-                type={showK2 ? 'text' : 'password'}
-                placeholder="sk-…"
-                value={cfg.openaiKey}
-                onChange={e => set('openaiKey', e.target.value)}
-                autoComplete="off" spellCheck={false}
-              />
-              <button className="key-toggle" onClick={() => setShowK2(v => !v)}>{showK2 ? 'Hide' : 'Show'}</button>
+              <input type={showK.g ? 'text' : 'password'} placeholder="AIza…" value={cfg.googleKey}
+                onChange={e => set('googleKey', e.target.value)} autoComplete="off" spellCheck={false} />
+              <button className="key-toggle" onClick={() => toggleK('g')}>{showK.g ? 'Hide' : 'Show'}</button>
+            </div>
+          </div>
+
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>
+              OpenAI API Key
+              <span className="key-badge kb-openai">DALL-E 3 only</span>
+            </label>
+            <div className="key-row">
+              <input type={showK.o ? 'text' : 'password'} placeholder="sk-…" value={cfg.openaiKey}
+                onChange={e => set('openaiKey', e.target.value)} autoComplete="off" spellCheck={false} />
+              <button className="key-toggle" onClick={() => toggleK('o')}>{showK.o ? 'Hide' : 'Show'}</button>
             </div>
           </div>
 
           <div className="key-note">
-            Keys are saved in your browser's localStorage and sent directly to Anthropic/OpenAI — they never pass through any server.<br />
-            Get keys: <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>
+            Keys are saved in your browser's localStorage and sent directly to each API — they never pass through any server.<br />
+            <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic Console</a> ·{' '}
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> ·{' '}
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a>
+          </div>
+        </div>
+
+        {/* Model & image settings */}
+        <div className="card">
+          <div className="section-title">AI Models</div>
+
+          <div className="row2">
+            <div className="field">
+              <label>Text model</label>
+              <select value={cfg.textModel} onChange={e => set('textModel', e.target.value)}>
+                <optgroup label="── Anthropic (Claude) ──">
+                  {TEXT_MODELS.filter(m => m.provider === 'anthropic').map(m =>
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  )}
+                </optgroup>
+                <optgroup label="── Google (Gemini) ──">
+                  {TEXT_MODELS.filter(m => m.provider === 'google').map(m =>
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  )}
+                </optgroup>
+              </select>
+              {provider === 'anthropic' && !cfg.anthropicKey.trim() && (
+                <div style={{ fontSize:11, color:'#f59e0b', marginTop:4 }}>↑ Add Anthropic key above</div>
+              )}
+              {provider === 'google' && !cfg.googleKey.trim() && (
+                <div style={{ fontSize:11, color:'#22c55e', marginTop:4 }}>↑ Add Google AI key above</div>
+              )}
+            </div>
+            <div className="field">
+              <label>Chapter illustrations</label>
+              <select value={cfg.imageProvider} onChange={e => set('imageProvider', e.target.value)}>
+                {IMAGE_PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+              {cfg.imageProvider === 'dalle' && !cfg.openaiKey.trim() && (
+                <div style={{ fontSize:11, color:'#3b82f6', marginTop:4 }}>↑ Add OpenAI key above</div>
+              )}
+              {cfg.imageProvider === 'imagen' && !cfg.googleKey.trim() && (
+                <div style={{ fontSize:11, color:'#22c55e', marginTop:4 }}>↑ Add Google AI key above</div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -587,11 +680,8 @@ function App() {
 
           <div className="field">
             <label>Prompt — describe your book</label>
-            <textarea
-              value={cfg.prompt}
-              onChange={e => set('prompt', e.target.value)}
-              placeholder="E.g. A retired detective in 1940s Chicago discovers her long-lost sister is the prime suspect in a high-profile murder. A story of loyalty, betrayal, and the price of truth."
-            />
+            <textarea value={cfg.prompt} onChange={e => set('prompt', e.target.value)}
+              placeholder="E.g. A retired detective in 1940s Chicago discovers her long-lost sister is the prime suspect in a high-profile murder. A story of loyalty, betrayal, and the price of truth." />
           </div>
 
           <div className="row2">
@@ -603,51 +693,38 @@ function App() {
             </div>
             <div className="field">
               <label>Author / Pen Name</label>
-              <input
-                type="text"
-                placeholder="Your name"
-                value={cfg.author}
-                onChange={e => set('author', e.target.value)}
-              />
+              <input type="text" placeholder="Your name" value={cfg.author} onChange={e => set('author', e.target.value)} />
             </div>
           </div>
 
-          <div className="row3">
+          <div className="row2">
             <div className="field">
               <label>Chapters: {cfg.chapterCount}</label>
               <input type="range" min={3} max={20} value={cfg.chapterCount} onChange={e => set('chapterCount', +e.target.value)} />
             </div>
             <div className="field">
-              <label>Words/chapter: ~{cfg.wordsPerChapter.toLocaleString()}</label>
+              <label>Words / chapter: ~{cfg.wordsPerChapter.toLocaleString()}</label>
               <input type="range" min={400} max={4000} step={100} value={cfg.wordsPerChapter} onChange={e => set('wordsPerChapter', +e.target.value)} />
             </div>
-            <div className="field">
-              <label>AI Model</label>
-              <select value={cfg.model} onChange={e => set('model', e.target.value)}>
-                {MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="field" style={{ display:'flex', alignItems:'center', gap:10, marginBottom:0 }}>
-            <input id="imgs" type="checkbox" checked={cfg.includeImages} onChange={e => set('includeImages', e.target.checked)} />
-            <label htmlFor="imgs" style={{ margin:0, cursor:'pointer', fontWeight:400, fontSize:13, color:'#8898c0' }}>
-              Generate chapter illustrations (DALL-E 3){!cfg.openaiKey.trim() && <span style={{ color:'#303555' }}> — add OpenAI key above</span>}
-            </label>
           </div>
         </div>
 
-        {/* Estimate */}
         <div style={{ fontSize:12, color:'#252c46', textAlign:'center', marginBottom:14, lineHeight:1.7 }}>
-          ~{totalWords.toLocaleString()} words · ~{estMins} min to generate{estImgCost}
+          ~{totalWords.toLocaleString()} words · ~{estMins} min to generate
+          {cfg.imageProvider === 'dalle' && ' · ~$' + (cfg.chapterCount * 0.04).toFixed(2) + ' for DALL-E images'}
         </div>
 
         <button className="btn btn-purple btn-wide" disabled={!canStart} onClick={start}>
           ✨ Generate Book
         </button>
-        {!canStart && (
+        {missingKey && (
           <div style={{ fontSize:11, color:'#252c46', textAlign:'center', marginTop:8 }}>
-            {!cfg.anthropicKey.trim() ? 'Enter your Anthropic API key to start.' : 'Enter a prompt (at least a sentence) to start.'}
+            Add your {missingKey} to start.
+          </div>
+        )}
+        {!missingKey && cfg.prompt.trim().length <= 10 && (
+          <div style={{ fontSize:11, color:'#252c46', textAlign:'center', marginTop:8 }}>
+            Enter a prompt to start.
           </div>
         )}
       </div>
@@ -663,24 +740,17 @@ function App() {
           <div className="logo">AI Book <em>Creator</em></div>
           <div className="sub">Generating your book — this takes a few minutes.</div>
         </div>
-
         <div className="card">
           <div className="prog-stage">
             {prog.stage === 'outline' ? 'Building outline'
               : prog.stage === 'chapter' ? 'Writing chapters'
               : prog.stage === 'images' ? 'Generating illustrations'
-              : prog.stage === 'done' ? 'Done!'
-              : 'Starting…'}
+              : prog.stage === 'done' ? 'Done!' : 'Starting…'}
           </div>
           <div className="prog-msg">{prog.msg || '…'}</div>
-          <div className="prog-bar-wrap">
-            <div className="prog-bar" style={{ width: `${prog.pct}%` }} />
-          </div>
-          {prog.steps > 0 && (
-            <div className="prog-steps">{prog.step} of {prog.steps}</div>
-          )}
+          <div className="prog-bar-wrap"><div className="prog-bar" style={{ width: `${prog.pct}%` }} /></div>
+          {prog.steps > 0 && <div className="prog-steps">{prog.step} of {prog.steps}</div>}
         </div>
-
         {book && (
           <div className="card">
             {book.title && (
@@ -693,20 +763,14 @@ function App() {
               {(book.chapters || []).map((ch, i) => (
                 <div key={i} className="gen-row done">
                   <div className="dot" />
-                  <span className="gen-label">Ch {ch.number}: {ch.title}</span>
-                  {ch.imageUrl && <span className="gen-badge">🖼 image</span>}
+                  <span style={{ flex: 1 }}>Ch {ch.number}: {ch.title}</span>
+                  {ch.imageUrl && <span style={{ fontSize: 10, opacity: .6 }}>🖼 image</span>}
                 </div>
               ))}
-              {prog.stage === 'chapter' && (
+              {(prog.stage === 'chapter' || prog.stage === 'images') && (
                 <div className="gen-row active">
                   <div className="dot" />
-                  <span className="gen-label">Writing chapter {prog.step}…</span>
-                </div>
-              )}
-              {prog.stage === 'images' && (
-                <div className="gen-row active">
-                  <div className="dot" />
-                  <span className="gen-label">Illustrating chapter {prog.step}…</span>
+                  <span>{prog.stage === 'images' ? `Illustrating Ch ${prog.step}…` : `Writing Ch ${prog.step}…`}</span>
                 </div>
               )}
             </div>
@@ -722,19 +786,12 @@ function App() {
       <style>{CSS}</style>
       <div className="wrap">
         <a href="../../" className="back">← Tools</a>
-        <div className="hd">
-          <div className="logo">AI Book <em>Creator</em></div>
-        </div>
+        <div className="hd"><div className="logo">AI Book <em>Creator</em></div></div>
 
-        {error && (
-          <div className="card err-card" style={{ marginBottom: 14 }}>
-            <div className="err-msg">⚠ {error}</div>
-          </div>
-        )}
+        {error && <div className="card err-card" style={{ marginBottom: 14 }}><div className="err-msg">⚠ {error}</div></div>}
 
         {book && (
           <>
-            {/* Meta + export */}
             <div className="card">
               <div className="bk-meta">
                 <div className="bk-title">{book.title}</div>
@@ -748,7 +805,6 @@ function App() {
               </div>
 
               <div className="section-title">Export PDF</div>
-
               <div className="export-bar">
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:12, color:'#6b7aaa', whiteSpace:'nowrap' }}>Trim size:</span>
@@ -757,19 +813,17 @@ function App() {
                   </select>
                 </div>
                 <button className="btn btn-green" onClick={downloadPDF} disabled={buildingPdf}>
-                  {buildingPdf ? '⏳ Building PDF…' : '📥 Download PDF'}
+                  {buildingPdf ? '⏳ Building…' : '📥 Download PDF'}
                 </button>
                 <button className="btn btn-ghost" onClick={() => { setStep('setup'); setBook(null); }}>↺ New Book</button>
               </div>
-
               <div className="kdp-note">
-                PDF includes: title page · copyright · table of contents · formatted chapters · page numbers.<br />
-                For Amazon KDP print: upload to <a href="https://kdp.amazon.com" target="_blank" rel="noopener" style={{ color:'#404870' }}>kdp.amazon.com</a>, check interior file requirements for your trim size, and use their online previewer before publishing.<br />
-                AI-generated images are 1024px (~216 DPI at 4.75" wide) — sufficient for digital; for print books upgrade to 300+ DPI artwork.
+                PDF includes: title page · copyright · table of contents · formatted chapters with page numbers.<br />
+                Upload to <a href="https://kdp.amazon.com" target="_blank" rel="noopener" style={{ color:'#404870' }}>kdp.amazon.com</a> → use their interior file checker and online previewer before publishing.<br />
+                Images from DALL-E/Imagen are ~216 DPI at full text width — suitable for ebook; for print, 300+ DPI is ideal.
               </div>
             </div>
 
-            {/* Chapter list */}
             <div className="card">
               <div className="section-title">Chapters — click to read or edit</div>
               <div className="ch-list">
