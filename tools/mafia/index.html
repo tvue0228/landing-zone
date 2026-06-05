@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>Mafia</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root {
+  --bg: #000;
+  --surface: #1c1c1e;
+  --surface2: #2c2c2e;
+  --border: #3a3a3c;
+  --mafia: #ff453a;
+  --mafia-dim: #3d0f0d;
+  --sheriff: #ffd60a;
+  --sheriff-dim: #3a2e00;
+  --doctor: #30d158;
+  --doctor-dim: #0a2e14;
+  --civilian: #0a84ff;
+  --accent: #bf5af2;
+  --text: #fff;
+  --text2: #ebebf5cc;
+  --text3: #ebebf566;
+  --bubble-in: #262628;
+  --bubble-self: #2563eb;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+html, body { height: 100%; background: var(--bg); overscroll-behavior: none; }
+body { font-family: var(--font); color: var(--text); }
+#root { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Feed (chat view) ─────── */
+.feed { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.feed::-webkit-scrollbar { display: none; }
+
+.msg-row { display: flex; flex-direction: column; max-width: 80%; }
+.msg-row.center { align-self: center; max-width: 90%; }
+.msg-row.left { align-self: flex-start; }
+.msg-row.right { align-self: flex-end; }
+
+.bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; }
+.bubble-in { background: var(--bubble-in); color: var(--text); border-bottom-left-radius: 4px; }
+.bubble-out { background: var(--bubble-self); color: #fff; border-bottom-right-radius: 4px; }
+.bubble-system { background: transparent; color: var(--text3); font-size: 12px; text-align: center; padding: 4px 0; }
+.bubble-event { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; font-size: 14px; text-align: left; }
+
+.sender-name { font-size: 11px; color: var(--text3); margin-bottom: 3px; padding-left: 4px; }
+
+/* ── Input bar ─────────────── */
+.input-bar { background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.input-row { display: flex; align-items: center; gap: 8px; }
+.text-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 16px; color: var(--text); font-size: 15px; outline: none; font-family: var(--font); }
+.text-input::placeholder { color: var(--text3); }
+.send-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.send-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Buttons ───────────────── */
+.btn { border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; padding: 13px 20px; transition: opacity 0.15s, transform 0.1s; font-family: var(--font); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.3; cursor: default; }
+.btn-block { width: 100%; display: block; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-red { background: var(--mafia); color: #fff; }
+.btn-ghost { background: var(--surface2); color: var(--text2); }
+.btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
+
+/* ── Quick reply chips ─────── */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 99px; font-size: 14px; font-weight: 500; cursor: pointer; background: transparent; color: var(--text2); font-family: var(--font); transition: all 0.15s; }
+.chip:active { opacity: 0.7; }
+.chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip.mafia { border-color: var(--mafia); color: var(--mafia); }
+.chip.mafia.selected { background: var(--mafia); color: #fff; }
+
+/* ── Full-screen panels ────── */
+.panel { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; text-align: center; gap: 20px; z-index: 10; }
+.panel-mafia { background: radial-gradient(ellipse at 50% 0%, #3a0000 0%, #000 65%); }
+.panel-sheriff { background: radial-gradient(ellipse at 50% 0%, #2d2400 0%, #000 65%); }
+.panel-doctor { background: radial-gradient(ellipse at 50% 0%, #002d14 0%, #000 65%); }
+.panel-civilian { background: #000; }
+.panel-night { background: radial-gradient(ellipse at 50% 20%, #120525 0%, #000 70%); }
+
+/* ── Role card (in panel) ─── */
+.role-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 24px 20px; width: 100%; max-width: 340px; }
+
+/* ── Player list (votes) ──── */
+.player-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; transition: all 0.15s; }
+.player-row:active { opacity: 0.7; }
+.player-row.highlighted { background: #1a0a00; border-color: var(--sheriff); }
+.player-row.selected { background: var(--mafia-dim); border-color: var(--mafia); }
+.player-row.saved { background: var(--doctor-dim); border-color: var(--doctor); }
+.vote-bar { height: 4px; border-radius: 2px; background: var(--surface2); overflow: hidden; margin-top: 3px; }
+.vote-fill { height: 100%; border-radius: 2px; background: var(--sheriff); transition: width 0.3s; }
+
+/* ── Header ─────────────── */
+.app-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+.app-header h1 { font-size: 17px; font-weight: 700; }
+
+/* ── Misc ───────────────── */
+.divider-line { height: 1px; background: var(--border); margin: 8px 0; }
+.tag { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp 0.25s ease; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fadeIn 0.3s ease; }
+</style>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function assignRoles(names, mafiaCount, hasSheriff, hasDoctor) {
+  const roles = [];
+  for (let i = 0; i < mafiaCount; i++) roles.push('mafia');
+  if (hasSheriff) roles.push('sheriff');
+  if (hasDoctor) roles.push('doctor');
+  while (roles.length < names.length) roles.push('civilian');
+  const shuffled = shuffle(roles);
+  return names.map((name, i) => ({ id: i, name, role: shuffled[i], alive: true }));
+}
+
+function suggestMafia(n) { return Math.max(1, Math.floor(n / 4)); }
+
+function checkWin(players) {
+  const alive = players.filter(p => p.alive);
+  const mafiaCount = alive.filter(p => p.role === 'mafia').length;
+  const townCount = alive.filter(p => p.role !== 'mafia').length;
+  if (mafiaCount === 0) return 'town';
+  if (mafiaCount >= townCount) return 'mafia';
+  return null;
+}
+
+const ROLE = {
+  mafia:    { icon: '🔪', label: 'Mafia',    color: 'var(--mafia)',   panelClass: 'panel-mafia',    bg: 'var(--mafia-dim)'    },
+  sheriff:  { icon: '🔍', label: 'Sheriff',  color: 'var(--sheriff)', panelClass: 'panel-sheriff',  bg: 'var(--sheriff-dim)'  },
+  doctor:   { icon: '💊', label: 'Doctor',   color: 'var(--doctor)',  panelClass: 'panel-doctor',   bg: 'var(--doctor-dim)'   },
+  civilian: { icon: '👤', label: 'Civilian', color: 'var(--civilian)',panelClass: 'panel-civilian', bg: 'transparent'         },
+};
+
+// ── Feed messages ──────────────────────────────────────────────────────────────
+let msgId = 0;
+const msg = (type, text, extra = {}) => ({ id: ++msgId, type, text, ...extra });
+
+function useFeed() {
+  const [feed, setFeed] = useState([
+    msg('system', '🎭 Mafia'),
+    msg('narrator', 'Welcome to Mafia! Add everyone playing and I\'ll deal secret roles to each person.'),
+  ]);
+  const add = (...msgs) => setFeed(prev => [...prev, ...msgs]);
+  return [feed, add];
+}
+
+// ── Bubble components ──────────────────────────────────────────────────────────
+function FeedBubble({ m }) {
+  if (m.type === 'system') {
+    return <div className="msg-row center fade-up"><span className="bubble bubble-system">{m.text}</span></div>;
+  }
+  if (m.type === 'narrator') {
+    return (
+      <div className="msg-row left fade-up">
+        <span className="sender-name">🎭 Narrator</span>
+        <div className="bubble bubble-in">{m.text}</div>
+      </div>
+    );
+  }
+  if (m.type === 'event') {
+    return (
+      <div className="msg-row center fade-up" style={{ maxWidth: '90%' }}>
+        <div className="bubble-event">
+          {m.icon && <span style={{ marginRight: 6 }}>{m.icon}</span>}
+          <span style={{ color: m.color || 'var(--text2)' }}>{m.text}</span>
+          {m.sub && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>{m.sub}</div>}
+        </div>
+      </div>
+    );
+  }
+  if (m.type === 'divider') {
+    return (
+      <div className="msg-row center fade-up">
+        <span className="bubble bubble-system" style={{ fontWeight: 600, color: 'var(--text3)' }}>{m.text}</span>
+      </div>
+    );
+  }
+  return null;
+}
+
+function Feed({ feed }) {
+  const endRef = useRef(null);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [feed]);
+  return (
+    <div className="feed">
+      {feed.map(m => <FeedBubble key={m.id} m={m} />)}
+      <div ref={endRef} />
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────────────────────────
+function App() {
+  const [feed, addToFeed] = useFeed();
+  const [phase, setPhase] = useState('setup');
+  // phases: setup | deal | day | vote | elim-reveal | night | gameover
+
+  // Setup
+  const [names, setNames] = useState([]);
+  const [nameInput, setNameInput] = useState('');
+  const [mafiaCount, setMafiaCount] = useState(1);
+  const [hasSheriff, setHasSheriff] = useState(false);
+  const [hasDoctor, setHasDoctor] = useState(false);
+
+  // Game state
+  const [players, setPlayers] = useState([]);
+  const [round, setRound] = useState(1);
+  const [winner, setWinner] = useState(null);
+
+  // Deal phase
+  const [revealIdx, setRevealIdx] = useState(0);
+  const [roleShown, setRoleShown] = useState(false);
+
+  // Day/vote
+  const [votes, setVotes] = useState({});
+  const [elimPlayer, setElimPlayer] = useState(null); // player being eliminated
+
+  // Night
+  const [nightSteps, setNightSteps] = useState([]);
+  const [nightStepIdx, setNightStepIdx] = useState(0);
+  const [nightPassed, setNightPassed] = useState(false);
+  const [nightVictim, setNightVictim] = useState(null);
+  const [nightSaved, setNightSaved] = useState(null);
+  const [sheriffResult, setSheriffResult] = useState(null);
+  const [nightActionDone, setNightActionDone] = useState(false);
+
+  const nameInputRef = useRef(null);
+
+  // ── Setup actions ──
+  const addName = () => {
+    const n = nameInput.trim();
+    if (!n) return;
+    if (names.includes(n)) { setNameInput(''); return; }
+    const newNames = [...names, n];
+    setNames(newNames);
+    setNameInput('');
+    setMafiaCount(suggestMafia(newNames.length));
+    addToFeed(msg('event', `${n} joined the game`, { icon: '👋' }));
+    nameInputRef.current?.focus();
+  };
+
+  const removeName = (n) => {
+    const newNames = names.filter(x => x !== n);
+    setNames(newNames);
+    setMafiaCount(suggestMafia(newNames.length));
+  };
+
+  // ── Start game ──
+  const startGame = () => {
+    const assigned = assignRoles(names, mafiaCount, hasSheriff, hasDoctor);
+    setPlayers(assigned);
+    setRound(1);
+    setRevealIdx(0);
+    setRoleShown(false);
+    setVotes({});
+    setNightVictim(null);
+    setNightSaved(null);
+    setSheriffResult(null);
+    addToFeed(
+      msg('system', `— ${names.length} players · ${mafiaCount} Mafia${hasSheriff ? ' · Sheriff' : ''}${hasDoctor ? ' · Doctor' : ''} —`),
+      msg('narrator', `Roles have been dealt. I'll pass the phone to each player privately. Hold the phone face-down while passing.`),
+      msg('narrator', `Pass to ${names[0]} first.`)
+    );
+    setPhase('deal');
+  };
+
+  // ── Deal actions ──
+  const showRole = () => setRoleShown(true);
+
+  const nextReveal = () => {
+    const nextIdx = revealIdx + 1;
+    if (nextIdx >= players.length) {
+      addToFeed(
+        msg('system', '— All roles revealed —'),
+        msg('narrator', `Game on! Round 1 starts now. Discuss and figure out who the Mafia is. When you're ready, vote someone out.`)
+      );
+      setVotes({});
+      setPhase('day');
+    } else {
+      setRevealIdx(nextIdx);
+      setRoleShown(false);
+      addToFeed(msg('narrator', `Now pass to ${players[nextIdx].name}.`));
+    }
+  };
+
+  // ── Day vote actions ──
+  const addVote = (id) => setVotes(v => ({ ...v, [id]: (v[id] || 0) + 1 }));
+  const removeVote = (id) => setVotes(v => ({ ...v, [id]: Math.max(0, (v[id] || 0) - 1) }));
+
+  const confirmEliminate = (playerId) => {
+    const p = players.find(x => x.id === playerId);
+    setElimPlayer(p);
+    setPhase('elim-reveal');
+  };
+
+  const finishElimination = () => {
+    if (!elimPlayer) { skipElimination(); return; }
+    const p = elimPlayer;
+    const updated = players.map(x => x.id === p.id ? { ...x, alive: false } : x);
+    addToFeed(
+      msg('event', `${p.name} was eliminated by the town.`, { icon: ROLE[p.role].icon, color: ROLE[p.role].color, sub: `They were a ${ROLE[p.role].label}.` })
+    );
+    setPlayers(updated);
+    setElimPlayer(null);
+    const w = checkWin(updated);
+    if (w) { endGame(w, updated); return; }
+    beginNight(updated);
+  };
+
+  const skipElimination = () => {
+    setElimPlayer(null);
+    addToFeed(msg('event', 'No elimination. Night begins.', { icon: '☮️' }));
+    beginNight(players);
+  };
+
+  // ── Night actions ──
+  const beginNight = (currentPlayers) => {
+    const alive = currentPlayers.filter(p => p.alive);
+    const steps = ['narration'];
+    if (alive.some(p => p.role === 'mafia'))   steps.push('mafia-pass', 'mafia');
+    if (alive.some(p => p.role === 'doctor'))  steps.push('doctor-pass', 'doctor');
+    if (alive.some(p => p.role === 'sheriff')) steps.push('sheriff-pass', 'sheriff');
+    steps.push('dawn');
+    setNightSteps(steps);
+    setNightStepIdx(0);
+    setNightPassed(false);
+    setNightVictim(null);
+    setNightSaved(null);
+    setSheriffResult(null);
+    setNightActionDone(false);
+    addToFeed(msg('divider', `🌙 Night ${round}`));
+    setPhase('night');
+  };
+
+  const advanceNight = () => {
+    const nextIdx = nightStepIdx + 1;
+    const nextStep = nightSteps[nextIdx];
+    if (!nextStep || nextStep === 'dawn') {
+      resolveDawn();
+    } else {
+      setNightStepIdx(nextIdx);
+      setNightPassed(nextStep.endsWith('-pass'));
+      setNightActionDone(false);
+    }
+  };
+
+  const resolveDawn = () => {
+    const wasSaved = nightVictim !== null && nightSaved === nightVictim;
+    let updated = [...players];
+    let dawnMsgs = [];
+
+    if (nightVictim !== null && !wasSaved) {
+      const v = updated.find(p => p.id === nightVictim);
+      updated = updated.map(p => p.id === nightVictim ? { ...p, alive: false } : p);
+      dawnMsgs.push(msg('event', `${v.name} was killed by the Mafia overnight.`, { icon: ROLE[v.role].icon, color: 'var(--mafia)', sub: `They were a ${ROLE[v.role].label}.` }));
+    } else if (nightVictim !== null && wasSaved) {
+      const v = updated.find(p => p.id === nightVictim);
+      dawnMsgs.push(msg('event', `${v.name} was targeted but saved by the Doctor!`, { icon: '💊', color: 'var(--doctor)' }));
+    } else {
+      dawnMsgs.push(msg('narrator', 'The town woke peacefully. Nobody died last night.'));
+    }
+
+    setPlayers(updated);
+    const w = checkWin(updated);
+    if (w) {
+      addToFeed(...dawnMsgs);
+      endGame(w, updated);
+      return;
+    }
+
+    const nextRound = round + 1;
+    setRound(nextRound);
+    addToFeed(
+      ...dawnMsgs,
+      msg('divider', `☀️ Day ${nextRound}`),
+      msg('narrator', `${updated.filter(p => p.alive).length} players remain. Discuss and vote.`)
+    );
+    setVotes({});
+    setPhase('day');
+  };
+
+  const endGame = (w, finalPlayers) => {
+    setWinner(w);
+    setPlayers(finalPlayers || players);
+    addToFeed(
+      msg('system', w === 'mafia' ? '🔪 Mafia wins!' : '⚖️ Town wins!'),
+      msg('narrator', w === 'mafia'
+        ? 'The Mafia has taken over the town. The remaining Mafia members reveal themselves...'
+        : 'All Mafia members have been eliminated. The town is safe!')
+    );
+    setPhase('gameover');
+  };
+
+  // ── Computed ──
+  const alive = players.filter(p => p.alive);
+  const aliveMafia = alive.filter(p => p.role === 'mafia');
+  const nightStep = nightSteps[nightStepIdx] || '';
+
+  const maxVote = Math.max(0, ...alive.map(p => votes[p.id] || 0));
+  const topVoters = alive.filter(p => (votes[p.id] || 0) === maxVote && maxVote > 0);
+  const totalVotes = alive.reduce((s, p) => s + (votes[p.id] || 0), 0);
+  const civilians = names.length - mafiaCount - (hasSheriff ? 1 : 0) - (hasDoctor ? 1 : 0);
+  const canStart = names.length >= 4 && mafiaCount >= 1 && civilians >= 1;
+
+  return (
+    <>
+      {/* ── App header ── */}
+      <div className="app-header">
+        <div>
+          <h1>🔪 Mafia</h1>
+          {players.length > 0 && phase !== 'setup' && phase !== 'deal' && phase !== 'gameover' && (
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
+              Round {round} · {alive.length} alive
+            </div>
+          )}
+        </div>
+        {phase !== 'setup' && phase !== 'deal' && (
+          <button className="btn btn-sm btn-ghost" onClick={() => {
+            if (window.confirm('End game and return to setup?')) {
+              setPhase('setup'); setPlayers([]); setNames([]); setRound(1);
+            }
+          }}>New Game</button>
+        )}
+      </div>
+
+      {/* ── Feed ── */}
+      <Feed feed={feed} />
+
+      {/* ── Full-screen overlays ── */}
+      {phase === 'deal' && <DealOverlay
+        player={players[revealIdx]}
+        allMafia={players.filter(p => p.role === 'mafia')}
+        roleShown={roleShown}
+        isLast={revealIdx === players.length - 1}
+        onShow={showRole}
+        onNext={nextReveal}
+      />}
+
+      {phase === 'elim-reveal' && <EliminationReveal
+        player={elimPlayer}
+        onContinue={finishElimination}
+      />}
+
+      {phase === 'night' && <NightOverlay
+        players={players}
+        step={nightStep}
+        passed={nightPassed}
+        victim={nightVictim}
+        saved={nightSaved}
+        sheriffResult={sheriffResult}
+        actionDone={nightActionDone}
+        onPassDone={() => setNightPassed(false)}
+        onSelectVictim={id => { setNightVictim(id); setNightActionDone(true); }}
+        onSelectSave={id => { setNightSaved(id); setNightActionDone(true); }}
+        onInvestigate={id => {
+          const p = players.find(x => x.id === id);
+          setSheriffResult({ name: p.name, isMafia: p.role === 'mafia' });
+          setNightActionDone(true);
+        }}
+        onAdvance={advanceNight}
+      />}
+
+      {phase === 'gameover' && <GameOverOverlay
+        players={players}
+        winner={winner}
+        onRestart={() => {
+          setPhase('setup'); setPlayers([]); setNames([]); setRound(1); setWinner(null);
+          addToFeed(msg('divider', '— New Game —'));
+        }}
+      />}
+
+      {/* ── Bottom action bar ── */}
+      {phase === 'setup' && (
+        <SetupBar
+          names={names}
+          nameInput={nameInput}
+          setNameInput={setNameInput}
+          nameInputRef={nameInputRef}
+          onAdd={addName}
+          onRemove={removeName}
+          mafiaCount={mafiaCount}
+          setMafiaCount={setMafiaCount}
+          hasSheriff={hasSheriff}
+          setHasSheriff={setHasSheriff}
+          hasDoctor={hasDoctor}
+          setHasDoctor={setHasDoctor}
+          civilians={civilians}
+          canStart={canStart}
+          onStart={startGame}
+        />
+      )}
+
+      {phase === 'day' && (
+        <DayBar
+          alive={alive}
+          dead={players.filter(p => !p.alive)}
+          votes={votes}
+          maxVote={maxVote}
+          topVoters={topVoters}
+          totalVotes={totalVotes}
+          onVote={addVote}
+          onUnvote={removeVote}
+          onEliminate={confirmEliminate}
+          onSkip={skipElimination}
+        />
+      )}
+    </>
+  );
+}
+
+// ── Setup Bar ──────────────────────────────────────────────────────────────────
+function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemove,
+                    mafiaCount, setMafiaCount, hasSheriff, setHasSheriff,
+                    hasDoctor, setHasDoctor, civilians, canStart, onStart }) {
+  const [showConfig, setShowConfig] = useState(false);
+  const maxMafia = Math.max(1, names.length - (hasSheriff ? 1 : 0) - (hasDoctor ? 1 : 0) - 1);
+
+  return (
+    <div className="input-bar">
+      {/* Name chips */}
+      {names.length > 0 && (
+        <div className="chips">
+          {names.map(n => (
+            <button key={n} className="chip" onClick={() => onRemove(n)}>
+              {n} ×
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Role config toggle */}
+      {names.length >= 4 && (
+        <div>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowConfig(v => !v)}>
+            {showConfig ? '▲ Hide roles' : `⚙ Configure roles · ${mafiaCount} Mafia${hasSheriff ? ' · Sheriff' : ''}${hasDoctor ? ' · Doctor' : ''}`}
+          </button>
+          {showConfig && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ color: 'var(--mafia)', fontWeight: 600, fontSize: 14, minWidth: 80 }}>🔪 Mafia</span>
+                <button onClick={() => setMafiaCount(m => Math.max(1, m - 1))}
+                  style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 18, cursor: 'pointer' }}>−</button>
+                <span style={{ fontWeight: 700, fontSize: 18, minWidth: 24, textAlign: 'center', color: 'var(--mafia)' }}>{mafiaCount}</span>
+                <button onClick={() => setMafiaCount(m => Math.min(maxMafia, m + 1))}
+                  style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 18, cursor: 'pointer' }}>+</button>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <Toggle checked={hasSheriff} color="var(--sheriff)" onChange={setHasSheriff} />
+                <div>
+                  <span style={{ fontWeight: 600, color: 'var(--sheriff)' }}>🔍 Sheriff</span>
+                  <span style={{ color: 'var(--text3)', fontSize: 13 }}> — investigates one player per night</span>
+                </div>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <Toggle checked={hasDoctor} color="var(--doctor)" onChange={setHasDoctor} />
+                <div>
+                  <span style={{ fontWeight: 600, color: 'var(--doctor)' }}>💊 Doctor</span>
+                  <span style={{ color: 'var(--text3)', fontSize: 13 }}> — saves one player per night</span>
+                </div>
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <RoleBadge n={mafiaCount} label="Mafia" color="var(--mafia)" />
+                {hasSheriff && <RoleBadge n={1} label="Sheriff" color="var(--sheriff)" />}
+                {hasDoctor && <RoleBadge n={1} label="Doctor" color="var(--doctor)" />}
+                <RoleBadge n={Math.max(0, civilians)} label="Civilian" color="var(--civilian)" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add name row */}
+      <div className="input-row">
+        <input
+          ref={nameInputRef}
+          className="text-input"
+          value={nameInput}
+          onChange={e => setNameInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && onAdd()}
+          placeholder="Type a player name..."
+          autoComplete="off"
+        />
+        <button className="send-btn" onClick={onAdd} disabled={!nameInput.trim()}>↑</button>
+      </div>
+
+      {names.length >= 4 && (
+        <button className="btn btn-block btn-primary" onClick={onStart} disabled={!canStart}>
+          Deal Roles to {names.length} Players →
+        </button>
+      )}
+      {names.length > 0 && names.length < 4 && (
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text3)' }}>Need at least 4 players ({4 - names.length} more)</div>
+      )}
+    </div>
+  );
+}
+
+function Toggle({ checked, color, onChange }) {
+  return (
+    <div onClick={() => onChange(!checked)} style={{
+      width: 44, height: 26, borderRadius: 13, background: checked ? color : 'var(--surface2)',
+      border: `1px solid ${checked ? color : 'var(--border)'}`, position: 'relative',
+      transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer',
+    }}>
+      <div style={{
+        width: 20, height: 20, borderRadius: 10, background: '#fff',
+        position: 'absolute', top: 2, left: checked ? 20 : 2, transition: 'left 0.2s',
+      }} />
+    </div>
+  );
+}
+
+function RoleBadge({ n, label, color }) {
+  return (
+    <div style={{ flex: 1, textAlign: 'center', background: 'var(--surface2)', borderRadius: 8, padding: '6px 4px' }}>
+      <div style={{ fontWeight: 800, color, fontSize: 16 }}>{n}</div>
+      <div style={{ fontSize: 11, color: 'var(--text3)' }}>{label}</div>
+    </div>
+  );
+}
+
+// ── Deal Overlay ───────────────────────────────────────────────────────────────
+function DealOverlay({ player, allMafia, roleShown, isLast, onShow, onNext }) {
+  if (!player) return null;
+  const info = ROLE[player.role];
+
+  if (!roleShown) {
+    return (
+      <div className="panel panel-night fade-in" style={{ justifyContent: 'center' }}>
+        <div style={{ fontSize: 64 }}>📵</div>
+        <div>
+          <p style={{ color: 'var(--text3)', fontSize: 14, marginBottom: 8 }}>Pass face-down to</p>
+          <div style={{ fontSize: 36, fontWeight: 800 }}>{player.name}</div>
+        </div>
+        <p style={{ color: 'var(--text3)', maxWidth: 280, fontSize: 14 }}>
+          Only {player.name} should look at the screen.
+        </p>
+        <button className="btn btn-primary" style={{ width: '100%', maxWidth: 320 }} onClick={onShow}>
+          I'm {player.name} — Show My Role
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`panel ${info.panelClass} fade-in`}>
+      <div style={{ fontSize: 72 }}>{info.icon}</div>
+      <div>
+        <p style={{ color: info.color, fontWeight: 600, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Your role is</p>
+        <div style={{ fontSize: 48, fontWeight: 900, color: info.color, marginTop: 4 }}>{info.label}</div>
+      </div>
+
+      <div className="role-card">
+        {player.role === 'mafia' && (
+          <>
+            <p style={{ color: 'var(--text2)', lineHeight: 1.55, fontSize: 15 }}>
+              You are Mafia. Each night, your team silently eliminates one Town member.
+              During the day, blend in and vote out Town players.
+            </p>
+            {allMafia.length > 1 && (
+              <div style={{ marginTop: 14, padding: '10px 12px', background: 'rgba(255,69,58,0.15)', borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: 'var(--mafia)', fontWeight: 700, marginBottom: 6, letterSpacing: '0.08em' }}>YOUR TEAM</div>
+                {allMafia.map(m => (
+                  <div key={m.id} style={{ fontWeight: 700, color: 'var(--mafia)', fontSize: 16 }}>🔪 {m.name}</div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+        {player.role === 'sheriff' && (
+          <p style={{ color: 'var(--text2)', lineHeight: 1.55, fontSize: 15 }}>
+            You are the Sheriff. Each night you secretly investigate one player
+            and learn whether they are Mafia or innocent. Use your knowledge wisely —
+            revealing yourself makes you a Mafia target!
+          </p>
+        )}
+        {player.role === 'doctor' && (
+          <p style={{ color: 'var(--text2)', lineHeight: 1.55, fontSize: 15 }}>
+            You are the Doctor. Each night you choose one player to protect.
+            If the Mafia targets that player, they survive. You can protect yourself too!
+          </p>
+        )}
+        {player.role === 'civilian' && (
+          <p style={{ color: 'var(--text2)', lineHeight: 1.55, fontSize: 15 }}>
+            You are a Civilian. Discuss, observe, and convince the town to vote
+            out the Mafia during the day. Trust carefully!
+          </p>
+        )}
+      </div>
+
+      <button className="btn btn-ghost" style={{ width: '100%', maxWidth: 320 }} onClick={onNext}>
+        {isLast ? 'Start the Game →' : 'Got it — Pass Phone Back'}
+      </button>
+    </div>
+  );
+}
+
+// ── Elimination Reveal ─────────────────────────────────────────────────────────
+function EliminationReveal({ player, onContinue }) {
+  if (!player) return null;
+  const info = ROLE[player.role];
+  return (
+    <div className={`panel ${info.panelClass} fade-in`}>
+      <div style={{ fontSize: 64 }}>⚖️</div>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ color: 'var(--text3)', fontSize: 15 }}>The town voted to eliminate</p>
+        <div style={{ fontSize: 40, fontWeight: 900, marginTop: 4 }}>{player.name}</div>
+      </div>
+      <div className="role-card" style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 40 }}>{info.icon}</div>
+        <div style={{ fontSize: 24, fontWeight: 800, color: info.color, marginTop: 8 }}>
+          {player.name} was a {info.label}
+        </div>
+        {player.role === 'mafia'    && <p style={{ color: 'var(--text3)', fontSize: 13, marginTop: 8 }}>The town got one! 🎉</p>}
+        {player.role !== 'mafia'    && <p style={{ color: 'var(--text3)', fontSize: 13, marginTop: 8 }}>An innocent was eliminated 😢</p>}
+      </div>
+      <button className="btn btn-primary" style={{ width: '100%', maxWidth: 320 }} onClick={onContinue}>
+        Night Begins →
+      </button>
+    </div>
+  );
+}
+
+// ── Night Overlay ──────────────────────────────────────────────────────────────
+function NightOverlay({ players, step, passed, victim, saved, sheriffResult,
+                        actionDone, onPassDone, onSelectVictim, onSelectSave,
+                        onInvestigate, onAdvance }) {
+  const alive = players.filter(p => p.alive);
+
+  // Narration step
+  if (step === 'narration') {
+    return (
+      <div className="panel panel-night fade-in" style={{ justifyContent: 'center' }}>
+        <div style={{ fontSize: 72 }}>🌙</div>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: 32, fontWeight: 800 }}>Night Falls</h2>
+          <p style={{ color: 'var(--text2)', marginTop: 10, maxWidth: 300, lineHeight: 1.5 }}>
+            Everyone close your eyes and stay silent. Special roles will act now.
+          </p>
+        </div>
+        <button className="btn btn-primary" style={{ width: '100%', maxWidth: 320 }} onClick={onAdvance}>
+          Continue →
+        </button>
+      </div>
+    );
+  }
+
+  // Dawn step
+  if (step === 'dawn') {
+    const victimPlayer = victim !== null ? players.find(p => p.id === victim) : null;
+    const wasSaved = victimPlayer && saved === victim;
+    return (
+      <div className="panel panel-night fade-in" style={{ justifyContent: 'center' }}>
+        <div style={{ fontSize: 72 }}>🌅</div>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: 32, fontWeight: 800 }}>Dawn Breaks</h2>
+          {victimPlayer && !wasSaved && (
+            <div style={{ marginTop: 12 }}>
+              <p style={{ color: 'var(--text3)', fontSize: 15 }}>The town woke to find...</p>
+              <p style={{ fontSize: 26, fontWeight: 800, color: 'var(--mafia)', marginTop: 8 }}>{victimPlayer.name} was killed!</p>
+              <p style={{ color: 'var(--text3)', fontSize: 14, marginTop: 4 }}>They were a {ROLE[victimPlayer.role].label}</p>
+            </div>
+          )}
+          {victimPlayer && wasSaved && (
+            <div style={{ marginTop: 12 }}>
+              <p style={{ color: 'var(--text3)', fontSize: 15 }}>The Mafia struck, but...</p>
+              <p style={{ fontSize: 26, fontWeight: 800, color: 'var(--doctor)', marginTop: 8 }}>{victimPlayer.name} was saved!</p>
+              <p style={{ color: 'var(--text3)', fontSize: 14, marginTop: 4 }}>The Doctor stepped in just in time</p>
+            </div>
+          )}
+          {!victimPlayer && (
+            <div style={{ marginTop: 12 }}>
+              <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--text2)' }}>Nobody died tonight</p>
+            </div>
+          )}
+        </div>
+        <button className="btn btn-primary" style={{ width: '100%', maxWidth: 320 }} onClick={onAdvance}>
+          Begin Day →
+        </button>
+      </div>
+    );
+  }
+
+  // Pass-to screens
+  const PASS_INFO = {
+    'mafia-pass':   { icon: '🔪', label: 'Mafia',   color: 'var(--mafia)',   panelClass: 'panel-mafia',   passName: 'any Mafia member' },
+    'doctor-pass':  { icon: '💊', label: 'Doctor',  color: 'var(--doctor)',  panelClass: 'panel-doctor',  passName: 'the Doctor' },
+    'sheriff-pass': { icon: '🔍', label: 'Sheriff', color: 'var(--sheriff)', panelClass: 'panel-sheriff', passName: 'the Sheriff' },
+  };
+
+  if (step in PASS_INFO) {
+    const info = PASS_INFO[step];
+    const roleName = step.replace('-pass', '');
+    const rolePlayers = alive.filter(p => p.role === roleName);
+    const displayName = rolePlayers.length === 1 ? rolePlayers[0].name : info.passName;
+    return (
+      <div className={`panel ${info.panelClass} fade-in`} style={{ justifyContent: 'center' }}>
+        <div style={{ fontSize: 56 }}>{info.icon}</div>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: info.color, fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{info.label} — open your eyes</p>
+          <div style={{ fontSize: 30, fontWeight: 800, marginTop: 8 }}>Pass to {displayName}</div>
+          <p style={{ color: 'var(--text3)', marginTop: 8, maxWidth: 280, fontSize: 14 }}>
+            Hold face-down while passing. Everyone else stays quiet with eyes closed.
+          </p>
+        </div>
+        <button className="btn" style={{ width: '100%', maxWidth: 320, background: info.color, color: '#000', fontWeight: 700 }} onClick={onPassDone}>
+          I'm the {info.label} — Show My Action
+        </button>
+      </div>
+    );
+  }
+
+  // Action screens
+  if (step === 'mafia') {
+    const targets = alive.filter(p => p.role !== 'mafia');
+    return (
+      <div className="panel panel-mafia fade-in" style={{ justifyContent: 'flex-start', paddingTop: 40, overflowY: 'auto' }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          <p style={{ color: 'var(--mafia)', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em' }}>🔪 MAFIA NIGHT ACTION</p>
+          <h2 style={{ fontSize: 26, fontWeight: 800, marginTop: 6, marginBottom: 4 }}>Choose your target</h2>
+          <p style={{ color: 'var(--text3)', fontSize: 14, marginBottom: 20 }}>Select one Town member to eliminate tonight.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {targets.map(p => (
+              <div key={p.id} className={`player-row${victim === p.id ? ' selected' : ''}`} onClick={() => !actionDone && onSelectVictim(p.id)}>
+                <span style={{ flex: 1, fontWeight: 600, fontSize: 16 }}>{p.name}</span>
+                {victim === p.id && <span style={{ color: 'var(--mafia)', fontWeight: 700 }}>✓ Target</span>}
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-red btn-block" style={{ marginTop: 20 }} disabled={!actionDone} onClick={onAdvance}>
+            Confirm — Close Eyes & Pass Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'doctor') {
+    return (
+      <div className="panel panel-doctor fade-in" style={{ justifyContent: 'flex-start', paddingTop: 40, overflowY: 'auto' }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          <p style={{ color: 'var(--doctor)', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em' }}>💊 DOCTOR NIGHT ACTION</p>
+          <h2 style={{ fontSize: 26, fontWeight: 800, marginTop: 6, marginBottom: 4 }}>Choose who to save</h2>
+          <p style={{ color: 'var(--text3)', fontSize: 14, marginBottom: 20 }}>Select one player to protect tonight. You can save yourself!</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {alive.map(p => (
+              <div key={p.id} className={`player-row${saved === p.id ? ' saved' : ''}`} onClick={() => !actionDone && onSelectSave(p.id)}>
+                <span style={{ flex: 1, fontWeight: 600, fontSize: 16 }}>{p.name}</span>
+                {saved === p.id && <span style={{ color: 'var(--doctor)', fontWeight: 700 }}>✓ Protected</span>}
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-block" style={{ marginTop: 20, background: 'var(--doctor)', color: '#000', fontWeight: 700 }} disabled={!actionDone} onClick={onAdvance}>
+            Confirm — Close Eyes & Pass Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'sheriff') {
+    const targets = alive.filter(p => p.role !== 'sheriff');
+    return (
+      <div className="panel panel-sheriff fade-in" style={{ justifyContent: 'flex-start', paddingTop: 40, overflowY: 'auto' }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          <p style={{ color: 'var(--sheriff)', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em' }}>🔍 SHERIFF NIGHT ACTION</p>
+          {!sheriffResult ? (
+            <>
+              <h2 style={{ fontSize: 26, fontWeight: 800, marginTop: 6, marginBottom: 4 }}>Investigate a player</h2>
+              <p style={{ color: 'var(--text3)', fontSize: 14, marginBottom: 20 }}>Tap a player to learn if they are Mafia or innocent.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {targets.map(p => (
+                  <div key={p.id} className="player-row" onClick={() => onInvestigate(p.id)}>
+                    <span style={{ fontWeight: 600, fontSize: 16 }}>{p.name}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 style={{ fontSize: 26, fontWeight: 800, marginTop: 6, marginBottom: 20 }}>Investigation Result</h2>
+              <div className="role-card fade-in" style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{ fontSize: 56 }}>{sheriffResult.isMafia ? '🔪' : '✅'}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, marginTop: 10 }}>{sheriffResult.name}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8, color: sheriffResult.isMafia ? 'var(--mafia)' : 'var(--doctor)' }}>
+                  {sheriffResult.isMafia ? 'IS MAFIA' : 'is NOT Mafia'}
+                </div>
+              </div>
+              <button className="btn btn-block" style={{ background: 'var(--sheriff)', color: '#000', fontWeight: 700 }} onClick={onAdvance}>
+                Close Eyes & Pass Back
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ── Day Bar ────────────────────────────────────────────────────────────────────
+function DayBar({ alive, dead, votes, maxVote, topVoters, totalVotes, onVote, onUnvote, onEliminate, onSkip }) {
+  const [showDead, setShowDead] = useState(false);
+  const tied = topVoters.length > 1 && maxVote > 0;
+
+  return (
+    <div className="input-bar" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+      <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600 }}>
+        TAP TO VOTE · {alive.length} alive
+        {dead.length > 0 && (
+          <button onClick={() => setShowDead(v => !v)}
+            style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', marginLeft: 8 }}>
+            {showDead ? 'hide' : `+${dead.length} eliminated`}
+          </button>
+        )}
+      </div>
+
+      {showDead && dead.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {dead.map(p => (
+            <span key={p.id} style={{ padding: '4px 10px', background: 'var(--surface2)', borderRadius: 99, fontSize: 13, color: 'var(--text3)', textDecoration: 'line-through' }}>
+              {ROLE[p.role].icon} {p.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {alive.map(p => {
+          const v = votes[p.id] || 0;
+          const isTop = v === maxVote && v > 0;
+          const pct = totalVotes > 0 ? (v / totalVotes) * 100 : 0;
+          return (
+            <div key={p.id} className={`player-row${isTop ? ' highlighted' : ''}`} onClick={() => onVote(p.id)}>
+              <span style={{ flex: 1, fontWeight: 600, fontSize: 16 }}>{p.name}</span>
+              {v > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 18, color: isTop ? 'var(--sheriff)' : 'var(--text2)', textAlign: 'right' }}>{v}</div>
+                    <div className="vote-bar" style={{ width: 60 }}>
+                      <div className="vote-fill" style={{ width: `${pct}%`, background: isTop ? 'var(--sheriff)' : 'var(--text3)' }} />
+                    </div>
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); onUnvote(p.id); }}
+                    style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text3)', cursor: 'pointer', padding: '2px 8px', fontSize: 14 }}>−</button>
+                </div>
+              )}
+              {v === 0 && <span style={{ color: 'var(--text3)', fontSize: 13 }}>tap</span>}
+            </div>
+          );
+        })}
+      </div>
+
+      {tied && (
+        <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '4px 0' }}>
+          Tie — revote or skip
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        {topVoters.length === 1 && maxVote > 0 && (
+          <button className="btn btn-red" style={{ flex: 1 }} onClick={() => onEliminate(topVoters[0].id)}>
+            Eliminate {topVoters[0].name}
+          </button>
+        )}
+        <button className="btn btn-ghost" style={{ flex: topVoters.length === 1 && maxVote > 0 ? 0 : 1 }} onClick={onSkip}>
+          {topVoters.length === 1 && maxVote > 0 ? 'Skip' : 'Skip (no elimination)'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Game Over Overlay ──────────────────────────────────────────────────────────
+function GameOverOverlay({ players, winner, onRestart }) {
+  const [showRoles, setShowRoles] = useState(false);
+  return (
+    <div className={`panel ${winner === 'mafia' ? 'panel-mafia' : 'panel-doctor'} fade-in`} style={{ justifyContent: 'center', overflowY: 'auto' }}>
+      <div style={{ fontSize: 72 }}>{winner === 'mafia' ? '🔪' : '⚖️'}</div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Game Over</div>
+        <h2 style={{ fontSize: 42, fontWeight: 900, marginTop: 4, color: winner === 'mafia' ? 'var(--mafia)' : 'var(--doctor)' }}>
+          {winner === 'mafia' ? 'Mafia Wins!' : 'Town Wins!'}
+        </h2>
+        <p style={{ color: 'var(--text3)', marginTop: 8, fontSize: 15 }}>
+          {winner === 'mafia' ? 'The Mafia seized control of the town.' : 'All Mafia were rooted out!'}
+        </p>
+      </div>
+
+      <button className="btn btn-ghost" onClick={() => setShowRoles(v => !v)} style={{ maxWidth: 320, width: '100%' }}>
+        {showRoles ? 'Hide' : 'Reveal All Roles'}
+      </button>
+
+      {showRoles && (
+        <div className="role-card fade-in" style={{ width: '100%', maxWidth: 360, textAlign: 'left' }}>
+          {players.map(p => {
+            const info = ROLE[p.role];
+            return (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', opacity: p.alive ? 1 : 0.5 }}>
+                <span style={{ fontSize: 18 }}>{info.icon}</span>
+                <span style={{ flex: 1, fontWeight: 600, textDecoration: p.alive ? 'none' : 'line-through' }}>{p.name}</span>
+                <span style={{ fontSize: 12, color: info.color, fontWeight: 700 }}>{info.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <button className="btn btn-primary" style={{ width: '100%', maxWidth: 320 }} onClick={onRestart}>
+        Play Again
+      </button>
+    </div>
+  );
+}
+
+// ── Mount ──────────────────────────────────────────────────────────────────────
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</head>
+<body><div id="root"></div></body>
+</html>
