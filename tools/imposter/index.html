@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>Imposter</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root {
+  --bg: #000;
+  --surface: #1c1c1e;
+  --surface2: #2c2c2e;
+  --border: #3a3a3c;
+  --imposter: #ff6b35;
+  --imposter-dim: #2d1400;
+  --town: #30d158;
+  --town-dim: #0a2e14;
+  --accent: #0a84ff;
+  --accent2: #5e5ce6;
+  --sheriff: #ffd60a;
+  --text: #fff;
+  --text2: #ebebf5cc;
+  --text3: #ebebf566;
+  --bubble-in: #262628;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+html, body { height: 100%; background: var(--bg); overscroll-behavior: none; }
+body { font-family: var(--font); color: var(--text); }
+#root { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+.feed { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.feed::-webkit-scrollbar { display: none; }
+.msg-row { display: flex; flex-direction: column; }
+.msg-row.left { align-self: flex-start; max-width: 82%; }
+.msg-row.center { align-self: center; max-width: 92%; }
+.bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; }
+.bubble-in { background: var(--bubble-in); color: var(--text); border-bottom-left-radius: 4px; }
+.bubble-system { background: transparent; color: var(--text3); font-size: 12px; text-align: center; padding: 4px 0; }
+.bubble-event { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; font-size: 14px; }
+.sender-name { font-size: 11px; color: var(--text3); margin-bottom: 3px; padding-left: 4px; }
+
+.input-bar { background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px 22px; display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; }
+.input-row { display: flex; align-items: center; gap: 8px; }
+.text-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 16px; color: var(--text); font-size: 15px; outline: none; font-family: var(--font); }
+.text-input::placeholder { color: var(--text3); }
+.send-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+.send-btn:disabled { opacity: 0.3; cursor: default; }
+
+.btn { border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; padding: 13px 20px; transition: opacity 0.15s, transform 0.1s; font-family: var(--font); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.3; cursor: default; }
+.btn-block { width: 100%; display: block; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-imposter { background: var(--imposter); color: #fff; }
+.btn-ghost { background: var(--surface2); color: var(--text2); }
+.btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
+.btn-town { background: var(--town); color: #000; }
+
+.chip { padding: 8px 16px; border: 1.5px solid var(--border); border-radius: 99px; font-size: 14px; cursor: pointer; background: transparent; color: var(--text2); font-family: var(--font); transition: all 0.15s; }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.player-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; transition: all 0.15s; }
+.player-row:active { opacity: 0.8; }
+.player-row.highlighted { background: #1a1200; border-color: var(--sheriff); }
+.player-row.selected-imp { background: var(--imposter-dim); border-color: var(--imposter); }
+
+.panel { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; text-align: center; gap: 20px; z-index: 10; overflow-y: auto; }
+.panel-imposter { background: radial-gradient(ellipse at 50% 0%, #3a1800 0%, #000 65%); }
+.panel-town { background: radial-gradient(ellipse at 50% 0%, #002d1a 0%, #000 65%); }
+.panel-neutral { background: radial-gradient(ellipse at 50% 20%, #0d0d20 0%, #000 70%); }
+.panel-vote { background: #000; }
+
+.role-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px 20px; width: 100%; max-width: 340px; }
+
+.app-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.app-header h1 { font-size: 17px; font-weight: 700; }
+
+.vote-bar-wrap { height: 4px; border-radius: 2px; background: var(--surface2); overflow: hidden; margin-top: 3px; }
+.vote-bar-fill { height: 100%; border-radius: 2px; background: var(--sheriff); transition: width 0.3s; }
+
+.timer-ring { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--accent) 0%, var(--surface2) 0%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* Category grid */
+.cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.cat-btn { padding: 10px 8px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 13px; cursor: pointer; background: var(--surface2); color: var(--text2); font-family: var(--font); text-align: center; line-height: 1.3; transition: all 0.15s; }
+.cat-btn.active { border-color: var(--accent); color: var(--text); background: rgba(10,132,255,0.15); }
+.cat-btn.random-btn { grid-column: span 2; font-weight: 700; }
+.cat-btn.random-btn.active { border-color: var(--accent2); background: rgba(94,92,230,0.2); color: var(--text); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: fadeIn 0.3s ease; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.pulse { animation: pulse 1.5s infinite; }
+</style>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── Categories ─────────────────────────────────────────────────────────────────
+const CATEGORIES = {
+  '🏖️ Places':       ['Airport','Beach','Hospital','Casino','School','Library','Museum','Restaurant','Hotel','Gym','Theater','Stadium','Zoo','Prison','Space Station'],
+  '🍕 Food':          ['Pizza','Sushi','Burger','Ice Cream','Taco','Pasta','Sandwich','Steak','Fried Chicken','Hot Dog','Donut','Cake','Ramen','Pancakes','BBQ Ribs'],
+  '🐘 Animals':       ['Dog','Cat','Elephant','Tiger','Penguin','Dolphin','Eagle','Snake','Rabbit','Lion','Giraffe','Shark','Gorilla','Panda','Horse'],
+  '💼 Jobs':          ['Doctor','Teacher','Chef','Pilot','Police Officer','Firefighter','Lawyer','Nurse','Engineer','Artist','Astronaut','Scientist','Surgeon','Athlete','Musician'],
+  '⚽ Sports':        ['Soccer','Basketball','Tennis','Golf','Swimming','Boxing','Baseball','Football','Hockey','Volleyball','Skiing','Cycling','Wrestling','Gymnastics','Surfing'],
+  '🎬 Movies':        ['Titanic','The Lion King','Harry Potter','Star Wars','Jurassic Park','The Dark Knight','Forrest Gump','Home Alone','Shrek','Toy Story','Frozen','Finding Nemo','The Avengers','The Godfather','Gladiator'],
+  '🌍 Countries':     ['France','Japan','Brazil','Australia','Mexico','Canada','Italy','India','Egypt','Russia','Germany','China','Spain','South Korea','Argentina'],
+  '🦸 Superheroes':   ['Spider-Man','Batman','Superman','Wonder Woman','Iron Man','Captain America','Thor','Black Panther','The Flash','Hulk','Black Widow','Doctor Strange','Wolverine','Aquaman','Deadpool'],
+  '🚗 Vehicles':      ['Car','Airplane','Motorcycle','Bicycle','Train','Bus','Ship','Helicopter','Submarine','Rocket','Hot Air Balloon','Skateboard','Yacht','Tank','Ambulance'],
+  '🎶 Music':         ['Pop','Hip-Hop','Rock','Jazz','Classical','EDM','Country','R&B','Reggae','Metal','Folk','Latin','Blues','K-Pop','Gospel'],
+  '📱 Apps & Games':  ['Minecraft','Roblox','Fortnite','TikTok','Instagram','Spotify','Netflix','YouTube','Snapchat','WhatsApp','Chess','Poker','Monopoly','Among Us','GTA'],
+  '🌟 Famous People': ['Albert Einstein','Michael Jordan','Taylor Swift','Elon Musk','Barack Obama','Beyoncé','LeBron James','Cristiano Ronaldo','Oprah Winfrey','Leonardo DiCaprio','Serena Williams','Lady Gaga','Steve Jobs','Kobe Bryant','Marilyn Monroe'],
+};
+
+const CAT_KEYS = Object.keys(CATEGORIES);
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── Feed helpers ───────────────────────────────────────────────────────────────
+let msgId = 0;
+const msg = (type, text, extra = {}) => ({ id: ++msgId, type, text, ...extra });
+
+function FeedBubble({ m }) {
+  if (m.type === 'system') return <div className="msg-row center fade-up"><span className="bubble bubble-system">{m.text}</span></div>;
+  if (m.type === 'narrator') return (
+    <div className="msg-row left fade-up">
+      <span className="sender-name">🕵️ Narrator</span>
+      <div className="bubble bubble-in">{m.text}</div>
+    </div>
+  );
+  if (m.type === 'event') return (
+    <div className="msg-row center fade-up">
+      <div className="bubble-event">
+        {m.icon && <span style={{ marginRight: 6 }}>{m.icon}</span>}
+        <span style={{ color: m.color || 'var(--text2)' }}>{m.text}</span>
+        {m.sub && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>{m.sub}</div>}
+      </div>
+    </div>
+  );
+  if (m.type === 'divider') return (
+    <div className="msg-row center fade-up">
+      <span className="bubble bubble-system" style={{ fontWeight: 600, color: 'var(--text3)' }}>{m.text}</span>
+    </div>
+  );
+  return null;
+}
+
+function Feed({ feed }) {
+  const endRef = useRef(null);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [feed]);
+  return (
+    <div className="feed">
+      {feed.map(m => <FeedBubble key={m.id} m={m} />)}
+      <div ref={endRef} />
+    </div>
+  );
+}
+
+// ── Timer hook ─────────────────────────────────────────────────────────────────
+function useTimer(initialSecs, active) {
+  const [secs, setSecs] = useState(initialSecs);
+  useEffect(() => {
+    setSecs(initialSecs);
+  }, [initialSecs]);
+  useEffect(() => {
+    if (!active || secs <= 0) return;
+    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [active, secs]);
+  return secs;
+}
+
+// ── App ────────────────────────────────────────────────────────────────────────
+function App() {
+  const [feed, setFeed] = useState([
+    msg('system', '🕵️ Imposter'),
+    msg('narrator', "Everyone gets a secret word — except the Imposter! Ask questions, find the fake. Add players to begin."),
+  ]);
+  const addToFeed = (...msgs) => setFeed(prev => [...prev, ...msgs]);
+
+  const [phase, setPhase] = useState('setup');
+  // phases: setup | deal | discuss | vote | guess | gameover
+
+  // Setup
+  const [names, setNames] = useState([]);
+  const [nameInput, setNameInput] = useState('');
+  const [selectedCats, setSelectedCats] = useState(['__random__']); // '__random__' or specific keys
+  const [imposterCount, setImposterCount] = useState(1);
+  const [timerMins, setTimerMins] = useState(3); // 0 = no timer
+
+  // Game
+  const [players, setPlayers] = useState([]);
+  const [category, setCategory] = useState('');
+  const [word, setWord] = useState('');
+  const [round, setRound] = useState(1);
+  const [winner, setWinner] = useState(null); // 'town' | 'imposter'
+  const [winReason, setWinReason] = useState('');
+
+  // Deal
+  const [revealIdx, setRevealIdx] = useState(0);
+  const [roleShown, setRoleShown] = useState(false);
+
+  // Discuss
+  const [timerActive, setTimerActive] = useState(false);
+  const [timerSecs, setTimerSecs] = useState(0);
+  const [imposterRevealMode, setImposterRevealMode] = useState(false);
+
+  // Vote
+  const [votes, setVotes] = useState({});
+
+  // Guess
+  const [accusedId, setAccusedId] = useState(null);
+  const [guessInput, setGuessInput] = useState('');
+
+  const nameInputRef = useRef(null);
+
+  // ── Setup ──────────────────────────────────────────────────────────────────
+  const toggleCat = (key) => {
+    if (key === '__random__') {
+      setSelectedCats(['__random__']);
+      return;
+    }
+    const withoutRandom = selectedCats.filter(c => c !== '__random__');
+    if (withoutRandom.includes(key)) {
+      const next = withoutRandom.filter(c => c !== key);
+      setSelectedCats(next.length ? next : ['__random__']);
+    } else {
+      setSelectedCats([...withoutRandom, key]);
+    }
+  };
+
+  const addName = () => {
+    const n = nameInput.trim();
+    if (!n || names.includes(n)) { setNameInput(''); return; }
+    setNames(prev => [...prev, n]);
+    setNameInput('');
+    addToFeed(msg('event', `${n} joined`, { icon: '👋' }));
+    nameInputRef.current?.focus();
+  };
+
+  const removeName = (n) => setNames(prev => prev.filter(x => x !== n));
+
+  const startGame = () => {
+    // Pick category + word
+    const catPool = selectedCats.includes('__random__') ? CAT_KEYS : selectedCats;
+    const cat = pickRandom(catPool);
+    const w = pickRandom(CATEGORIES[cat]);
+
+    // Assign roles
+    const shuffled = shuffle(names);
+    const assigned = shuffled.map((name, i) => ({
+      id: i, name, role: i < imposterCount ? 'imposter' : 'townsfolk', alive: true,
+    }));
+    // Re-shuffle so imposter index isn't predictable
+    const finalPlayers = shuffle(assigned).map((p, i) => ({ ...p, id: i }));
+
+    setPlayers(finalPlayers);
+    setCategory(cat);
+    setWord(w);
+    setRound(1);
+    setWinner(null);
+    setWinReason('');
+    setRevealIdx(0);
+    setRoleShown(false);
+    setVotes({});
+    setGuessInput('');
+    setAccusedId(null);
+    setImposterRevealMode(false);
+
+    const secs = timerMins * 60;
+    setTimerSecs(secs);
+    setTimerActive(false);
+
+    addToFeed(
+      msg('system', `— ${names.length} players · ${imposterCount} Imposter · ${cat} —`),
+      msg('narrator', `Roles are ready. Pass the phone privately to each player — face down while handing off.`),
+      msg('narrator', `Pass to ${finalPlayers[0].name} first.`)
+    );
+    setPhase('deal');
+  };
+
+  // ── Deal ───────────────────────────────────────────────────────────────────
+  const nextReveal = () => {
+    const next = revealIdx + 1;
+    if (next >= players.length) {
+      const secs = timerMins * 60;
+      setTimerSecs(secs);
+      setTimerActive(secs > 0);
+      addToFeed(
+        msg('system', '— All roles revealed —'),
+        msg('narrator', `Everyone knows their role. Start asking each other questions about the word!`),
+        timerMins > 0
+          ? msg('narrator', `You have ${timerMins} minute${timerMins !== 1 ? 's' : ''} to discuss. When time's up or you're ready — vote!`)
+          : msg('narrator', `Take as long as you need. When ready, vote for who you think is the Imposter.`)
+      );
+      setPhase('discuss');
+    } else {
+      setRevealIdx(next);
+      setRoleShown(false);
+      addToFeed(msg('narrator', `Now pass to ${players[next].name}.`));
+    }
+  };
+
+  // ── Discuss ────────────────────────────────────────────────────────────────
+  const startVoting = () => {
+    setTimerActive(false);
+    setVotes({});
+    addToFeed(
+      msg('divider', '🗳️ Voting'),
+      msg('narrator', `Vote for who you think the Imposter is. Most votes = accused.`)
+    );
+    setPhase('vote');
+  };
+
+  const imposterSelfReveal = () => {
+    // Imposter says "I know the word" — goes straight to guess
+    setAccusedId(null); // no specific accused, just imposter guessing
+    setGuessInput('');
+    setImposterRevealMode(true);
+    addToFeed(msg('event', 'The Imposter is making a move — trying to guess the word!', { icon: '⚡', color: 'var(--imposter)' }));
+    setPhase('guess');
+  };
+
+  // ── Vote ───────────────────────────────────────────────────────────────────
+  const addVote = (id) => setVotes(v => ({ ...v, [id]: (v[id] || 0) + 1 }));
+  const removeVote = (id) => setVotes(v => ({ ...v, [id]: Math.max(0, (v[id] || 0) - 1) }));
+
+  const confirmAccuse = (id) => {
+    const accused = players.find(p => p.id === id);
+    setAccusedId(id);
+    const isImposter = accused.role === 'imposter';
+    if (isImposter) {
+      addToFeed(
+        msg('event', `${accused.name} has been accused by the town.`, { icon: '⚖️', color: 'var(--sheriff)' }),
+        msg('narrator', `${accused.name} — you are the accused. You're the Imposter! Guess the word to save yourself.`)
+      );
+      setGuessInput('');
+      setImposterRevealMode(false);
+      setPhase('guess');
+    } else {
+      // Wrong person — imposter wins
+      const imposters = players.filter(p => p.role === 'imposter');
+      addToFeed(
+        msg('event', `${accused.name} was accused — but they were innocent!`, { icon: '😱', color: 'var(--imposter)' }),
+        msg('event', `The Imposters get away: ${imposters.map(p => p.name).join(', ')}`, { icon: '🔪', color: 'var(--imposter)' }),
+        msg('event', `The word was: ${word}`, { icon: '💬', color: 'var(--text2)' })
+      );
+      endGame('imposter', `${accused.name} was wrongly accused`);
+    }
+  };
+
+  const skipVote = () => {
+    const imposters = players.filter(p => p.role === 'imposter');
+    addToFeed(
+      msg('event', `No consensus reached — the Imposter escapes!`, { icon: '🌫️', color: 'var(--imposter)' }),
+      msg('event', `The Imposters: ${imposters.map(p => p.name).join(', ')}`, { icon: '🔪', color: 'var(--imposter)' }),
+      msg('event', `The word was: ${word}`, { icon: '💬', color: 'var(--text2)' })
+    );
+    endGame('imposter', 'Town failed to agree on a suspect');
+  };
+
+  // ── Guess ──────────────────────────────────────────────────────────────────
+  const submitGuess = () => {
+    const g = guessInput.trim().toLowerCase();
+    const w = word.toLowerCase();
+    const correct = g === w || w.includes(g) || g.includes(w);
+
+    if (correct) {
+      addToFeed(
+        msg('event', `Correct! The word was "${word}"`, { icon: '✅', color: 'var(--imposter)' }),
+        msg('event', imposterRevealMode ? 'Imposter guessed before being caught!' : 'Imposter guessed correctly and escapes!', { icon: '🔪', color: 'var(--imposter)' })
+      );
+      endGame('imposter', imposterRevealMode ? 'Self-revealed and guessed the word' : 'Caught but guessed the word correctly');
+    } else {
+      const accused = accusedId !== null ? players.find(p => p.id === accusedId) : null;
+      addToFeed(
+        msg('event', `Wrong! The word was "${word}"`, { icon: '❌', color: 'var(--town)' }),
+        msg('event', accused ? `${accused.name} is eliminated. Town wins!` : 'Town wins!', { icon: '⚖️', color: 'var(--town)' })
+      );
+      endGame('town', accusedId ? 'Imposter was caught and failed to guess the word' : 'Imposter guessed wrong');
+    }
+  };
+
+  const endGame = (w, reason) => {
+    setWinner(w);
+    setWinReason(reason);
+    setPhase('gameover');
+  };
+
+  // ── Computed ───────────────────────────────────────────────────────────────
+  const maxVote = Math.max(0, ...players.map(p => votes[p.id] || 0));
+  const topVoters = players.filter(p => (votes[p.id] || 0) === maxVote && maxVote > 0);
+  const totalVotes = players.reduce((s, p) => s + (votes[p.id] || 0), 0);
+  const tied = topVoters.length > 1;
+  const canStart = names.length >= 3 && imposterCount < names.length;
+
+  return (
+    <>
+      <div className="app-header">
+        <div>
+          <h1>🕵️ Imposter</h1>
+          {players.length > 0 && phase !== 'setup' && phase !== 'deal' && phase !== 'gameover' && (
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>Round {round} · {category}</div>
+          )}
+        </div>
+        {phase !== 'setup' && (
+          <button className="btn btn-sm btn-ghost" onClick={() => {
+            if (window.confirm('End game and return to setup?')) {
+              setPhase('setup'); setTimerActive(false);
+            }
+          }}>New Game</button>
+        )}
+      </div>
+
+      <Feed feed={feed} />
+
+      {/* ── Overlays ── */}
+      {phase === 'deal' && (
+        <DealOverlay
+          player={players[revealIdx]}
+          allPlayers={players}
+          category={category}
+          word={word}
+          roleShown={roleShown}
+          isLast={revealIdx === players.length - 1}
+          onShow={() => setRoleShown(true)}
+          onNext={nextReveal}
+        />
+      )}
+
+      {phase === 'guess' && (
+        <GuessOverlay
+          selfReveal={imposterRevealMode}
+          accused={accusedId !== null ? players.find(p => p.id === accusedId) : null}
+          category={category}
+          guessInput={guessInput}
+          setGuessInput={setGuessInput}
+          onSubmit={submitGuess}
+        />
+      )}
+
+      {phase === 'gameover' && (
+        <GameOverOverlay
+          winner={winner}
+          winReason={winReason}
+          players={players}
+          word={word}
+          category={category}
+          onRestart={() => {
+            setPhase('setup'); setTimerActive(false); setPlayers([]);
+            addToFeed(msg('divider', '— New Game —'));
+          }}
+          onPlayAgainSamePlayers={() => {
+            // Re-deal same players
+            setTimerActive(false);
+            setNames(players.map(p => p.name));
+            addToFeed(msg('divider', '— New Round —'));
+            setPhase('setup');
+          }}
+        />
+      )}
+
+      {/* ── Bottom action bars ── */}
+      {phase === 'setup' && (
+        <SetupBar
+          names={names}
+          nameInput={nameInput}
+          setNameInput={setNameInput}
+          nameInputRef={nameInputRef}
+          onAdd={addName}
+          onRemove={removeName}
+          selectedCats={selectedCats}
+          onToggleCat={toggleCat}
+          imposterCount={imposterCount}
+          setImposterCount={setImposterCount}
+          timerMins={timerMins}
+          setTimerMins={setTimerMins}
+          canStart={canStart}
+          onStart={startGame}
+        />
+      )}
+
+      {phase === 'discuss' && (
+        <DiscussBar
+          players={players}
+          timerSecs={timerSecs}
+          timerMins={timerMins}
+          timerActive={timerActive}
+          setTimerActive={setTimerActive}
+          setTimerSecs={setTimerSecs}
+          onStartVoting={startVoting}
+          onImposterReveal={imposterSelfReveal}
+        />
+      )}
+
+      {phase === 'vote' && (
+        <VoteBar
+          players={players}
+          votes={votes}
+          maxVote={maxVote}
+          topVoters={topVoters}
+          totalVotes={totalVotes}
+          tied={tied}
+          onVote={addVote}
+          onUnvote={removeVote}
+          onAccuse={confirmAccuse}
+          onSkip={skipVote}
+        />
+      )}
+    </>
+  );
+}
+
+// ── SetupBar ───────────────────────────────────────────────────────────────────
+function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemove,
+                    selectedCats, onToggleCat, imposterCount, setImposterCount,
+                    timerMins, setTimerMins, canStart, onStart }) {
+  const [showConfig, setShowConfig] = useState(false);
+  const maxImp = Math.max(1, names.length - 2);
+
+  return (
+    <div className="input-bar">
+      {names.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {names.map(n => (
+            <button key={n} className="chip" onClick={() => onRemove(n)}>{n} ×</button>
+          ))}
+        </div>
+      )}
+
+      {names.length >= 3 && (
+        <div>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowConfig(v => !v)}>
+            {showConfig ? '▲ Hide settings' : `⚙ Settings · ${imposterCount} Imposter${timerMins ? ` · ${timerMins}min` : ''}`}
+          </button>
+          {showConfig && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Imposter count */}
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>IMPOSTERS</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button onClick={() => setImposterCount(n => Math.max(1, n - 1))}
+                    style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 18, cursor: 'pointer' }}>−</button>
+                  <span style={{ fontWeight: 800, fontSize: 20, color: 'var(--imposter)', minWidth: 24, textAlign: 'center' }}>{imposterCount}</span>
+                  <button onClick={() => setImposterCount(n => Math.min(maxImp, n + 1))}
+                    style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 18, cursor: 'pointer' }}>+</button>
+                </div>
+              </div>
+
+              {/* Timer */}
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>DISCUSSION TIMER</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[0, 2, 3, 5].map(m => (
+                    <button key={m} onClick={() => setTimerMins(m)}
+                      style={{ flex: 1, padding: '8px 4px', borderRadius: 8, border: `1.5px solid ${timerMins === m ? 'var(--accent)' : 'var(--border)'}`,
+                        background: timerMins === m ? 'rgba(10,132,255,0.15)' : 'var(--surface2)', color: timerMins === m ? 'var(--text)' : 'var(--text3)',
+                        cursor: 'pointer', fontWeight: 600, fontSize: 13, fontFamily: 'var(--font)' }}>
+                      {m === 0 ? 'None' : `${m}m`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Category picker */}
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>CATEGORY</div>
+                <div className="cat-grid">
+                  <button className={`cat-btn random-btn${selectedCats.includes('__random__') ? ' active' : ''}`} onClick={() => onToggleCat('__random__')}>
+                    🎲 Random (all categories)
+                  </button>
+                  {Object.keys(CATEGORIES).map(k => (
+                    <button key={k} className={`cat-btn${selectedCats.includes(k) && !selectedCats.includes('__random__') ? ' active' : ''}`}
+                      onClick={() => onToggleCat(k)}>
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="input-row">
+        <input ref={nameInputRef} className="text-input" value={nameInput}
+          onChange={e => setNameInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && onAdd()}
+          placeholder="Type a player name..." autoComplete="off" />
+        <button className="send-btn" onClick={onAdd} disabled={!nameInput.trim()}>↑</button>
+      </div>
+
+      {names.length >= 3 && (
+        <button className="btn btn-block btn-primary" onClick={onStart} disabled={!canStart}>
+          Start with {names.length} Players →
+        </button>
+      )}
+      {names.length > 0 && names.length < 3 && (
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text3)' }}>
+          Need at least 3 players ({3 - names.length} more)
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── DealOverlay ────────────────────────────────────────────────────────────────
+function DealOverlay({ player, allPlayers, category, word, roleShown, isLast, onShow, onNext }) {
+  if (!player) return null;
+  const isImposter = player.role === 'imposter';
+
+  if (!roleShown) {
+    return (
+      <div className="panel panel-neutral fade-in">
+        <div style={{ fontSize: 64 }}>📵</div>
+        <div>
+          <p style={{ color: 'var(--text3)', fontSize: 14, marginBottom: 8 }}>Pass face-down to</p>
+          <div style={{ fontSize: 36, fontWeight: 800 }}>{player.name}</div>
+        </div>
+        <p style={{ color: 'var(--text3)', maxWidth: 280, fontSize: 14 }}>Only {player.name} should look.</p>
+        <button className="btn btn-primary" style={{ width: '100%', maxWidth: 320 }} onClick={onShow}>
+          I'm {player.name} — Show My Role
+        </button>
+      </div>
+    );
+  }
+
+  if (isImposter) {
+    return (
+      <div className="panel panel-imposter fade-in">
+        <div style={{ fontSize: 72 }}>🕵️</div>
+        <div>
+          <p style={{ color: 'var(--imposter)', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' }}>You are</p>
+          <div style={{ fontSize: 44, fontWeight: 900, color: 'var(--imposter)', marginTop: 4 }}>THE IMPOSTER</div>
+        </div>
+        <div className="role-card" style={{ textAlign: 'left' }}>
+          <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>CATEGORY</div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 16 }}>{category}</div>
+          <div style={{ padding: '10px 14px', background: 'rgba(255,107,53,0.15)', borderRadius: 12, borderLeft: '3px solid var(--imposter)' }}>
+            <div style={{ fontWeight: 700, color: 'var(--imposter)', marginBottom: 4 }}>⚠️ You do NOT know the word</div>
+            <p style={{ color: 'var(--text2)', fontSize: 13, lineHeight: 1.5 }}>
+              Listen to others' clues and blend in. Try to figure out the word without getting caught.
+              If you're about to be voted out, you can guess the word to win!
+            </p>
+          </div>
+        </div>
+        <button className="btn btn-ghost" style={{ width: '100%', maxWidth: 320 }} onClick={onNext}>
+          {isLast ? 'Start Game →' : 'Got it — Pass Phone Back'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel panel-town fade-in">
+      <div style={{ fontSize: 72 }}>✅</div>
+      <div>
+        <p style={{ color: 'var(--town)', fontWeight: 700, fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase' }}>You are Town</p>
+        <div style={{ fontSize: 40, fontWeight: 900, color: 'var(--town)', marginTop: 4 }}>Townsfolk</div>
+      </div>
+      <div className="role-card" style={{ textAlign: 'left' }}>
+        <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, marginBottom: 6 }}>CATEGORY</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text2)', marginBottom: 12 }}>{category}</div>
+        <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, marginBottom: 6 }}>THE WORD IS</div>
+        <div style={{ fontSize: 36, fontWeight: 900, color: 'var(--town)', letterSpacing: '-0.5px' }}>{word}</div>
+        <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(48,209,88,0.1)', borderRadius: 10, fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
+          Give clues that prove you know the word — without making it too obvious. Find the Imposter!
+        </div>
+      </div>
+      <button className="btn btn-ghost" style={{ width: '100%', maxWidth: 320 }} onClick={onNext}>
+        {isLast ? 'Start Game →' : 'Got it — Pass Phone Back'}
+      </button>
+    </div>
+  );
+}
+
+// ── DiscussBar ─────────────────────────────────────────────────────────────────
+function DiscussBar({ players, timerSecs, timerMins, timerActive, setTimerActive, setTimerSecs, onStartVoting, onImposterReveal }) {
+  const [secs, setSecs] = useState(timerSecs);
+  useEffect(() => { setSecs(timerSecs); }, [timerSecs]);
+  useEffect(() => {
+    if (!timerActive || secs <= 0) return;
+    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [timerActive, secs]);
+
+  const mins = Math.floor(secs / 60);
+  const secPart = secs % 60;
+  const pct = timerMins > 0 ? (secs / (timerMins * 60)) * 100 : 100;
+  const timeUp = timerMins > 0 && secs === 0;
+  const timeColor = secs < 30 && timerMins > 0 ? 'var(--imposter)' : 'var(--accent)';
+
+  return (
+    <div className="input-bar">
+      <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        💬 Discussion Phase
+      </div>
+
+      {timerMins > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Circular timer */}
+          <div style={{ position: 'relative', width: 70, height: 70, flexShrink: 0 }}>
+            <svg width="70" height="70" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="35" cy="35" r="30" fill="none" stroke="var(--surface2)" strokeWidth="5"/>
+              <circle cx="35" cy="35" r="30" fill="none" stroke={timeColor} strokeWidth="5"
+                strokeDasharray={`${2 * Math.PI * 30}`}
+                strokeDashoffset={`${2 * Math.PI * 30 * (1 - pct / 100)}`}
+                style={{ transition: 'stroke-dashoffset 0.5s linear, stroke 0.5s' }}
+              />
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 800, fontSize: 15, color: timeUp ? 'var(--imposter)' : timeColor,
+              ...(timeUp ? { animation: 'pulse 1.5s infinite' } : {}) }}>
+              {timeUp ? '⏰' : `${mins}:${String(secPart).padStart(2, '0')}`}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            {timeUp
+              ? <div style={{ fontWeight: 700, color: 'var(--imposter)', fontSize: 15 }}>Time's up! Vote now.</div>
+              : <div style={{ fontWeight: 600, fontSize: 15 }}>Time remaining</div>
+            }
+            <button onClick={() => setTimerActive(a => !a)}
+              style={{ marginTop: 6, background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 12px', color: 'var(--text3)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font)' }}>
+              {timerActive ? '⏸ Pause' : '▶ Resume'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Players reference */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {players.map(p => (
+          <span key={p.id} style={{ padding: '4px 10px', background: 'var(--surface2)', borderRadius: 99, fontSize: 13, color: 'var(--text2)' }}>
+            {p.name}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn btn-block btn-primary" onClick={onStartVoting}>
+          🗳️ Vote Now
+        </button>
+        <button className="btn btn-imposter btn-sm" onClick={onImposterReveal} title="Imposter: I know the word">
+          ⚡
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'center' }}>
+        ⚡ button = Imposter self-reveal (guess the word to win)
+      </div>
+    </div>
+  );
+}
+
+// ── VoteBar ────────────────────────────────────────────────────────────────────
+function VoteBar({ players, votes, maxVote, topVoters, totalVotes, tied, onVote, onUnvote, onAccuse, onSkip }) {
+  return (
+    <div className="input-bar">
+      <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase' }}>
+        🗳️ TAP TO VOTE — Who is the Imposter?
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {players.map(p => {
+          const v = votes[p.id] || 0;
+          const isTop = v === maxVote && v > 0;
+          const pct = totalVotes > 0 ? (v / totalVotes) * 100 : 0;
+          return (
+            <div key={p.id} className={`player-row${isTop ? ' highlighted' : ''}`} onClick={() => onVote(p.id)}>
+              <span style={{ flex: 1, fontWeight: 600, fontSize: 16 }}>{p.name}</span>
+              {v > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 18, color: isTop ? 'var(--sheriff)' : 'var(--text2)', textAlign: 'right' }}>{v}</div>
+                    <div className="vote-bar-wrap" style={{ width: 60 }}>
+                      <div className="vote-bar-fill" style={{ width: `${pct}%`, background: isTop ? 'var(--sheriff)' : 'var(--text3)' }} />
+                    </div>
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); onUnvote(p.id); }}
+                    style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text3)', cursor: 'pointer', padding: '2px 8px', fontSize: 14 }}>−</button>
+                </div>
+              )}
+              {v === 0 && <span style={{ color: 'var(--text3)', fontSize: 13 }}>tap</span>}
+            </div>
+          );
+        })}
+      </div>
+
+      {tied && maxVote > 0 && (
+        <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
+          Tie — revote to break it or skip
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        {topVoters.length === 1 && maxVote > 0 && (
+          <button className="btn btn-imposter" style={{ flex: 1 }} onClick={() => onAccuse(topVoters[0].id)}>
+            Accuse {topVoters[0].name}
+          </button>
+        )}
+        <button className="btn btn-ghost" style={{ flex: topVoters.length === 1 && maxVote > 0 ? 0 : 1 }} onClick={onSkip}>
+          {topVoters.length === 1 && maxVote > 0 ? 'Skip' : 'No consensus'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── GuessOverlay ───────────────────────────────────────────────────────────────
+function GuessOverlay({ selfReveal, accused, category, guessInput, setGuessInput, onSubmit }) {
+  const inputRef = useRef(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  return (
+    <div className="panel panel-imposter fade-in" style={{ justifyContent: 'flex-start', paddingTop: 60 }}>
+      <div style={{ width: '100%', maxWidth: 380 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 60, marginBottom: 12 }}>🕵️</div>
+          {selfReveal ? (
+            <>
+              <h2 style={{ fontSize: 28, fontWeight: 800 }}>Imposter's Gamble</h2>
+              <p style={{ color: 'var(--text3)', marginTop: 8, fontSize: 14, lineHeight: 1.5 }}>
+                You've revealed yourself! Guess the word to win instantly.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 style={{ fontSize: 28, fontWeight: 800 }}>Last Chance!</h2>
+              <p style={{ color: 'var(--text3)', marginTop: 8, fontSize: 14, lineHeight: 1.5 }}>
+                {accused?.name}, you were caught. Guess the word correctly to escape!
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="role-card" style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, marginBottom: 4 }}>CATEGORY</div>
+          <div style={{ fontSize: 22, fontWeight: 700 }}>{category}</div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <input
+            ref={inputRef}
+            className="text-input"
+            value={guessInput}
+            onChange={e => setGuessInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && guessInput.trim() && onSubmit()}
+            placeholder={`What's the word?`}
+            style={{ borderRadius: 12, padding: '14px 16px', fontSize: 18, textAlign: 'center' }}
+            autoComplete="off"
+          />
+          <button className="btn btn-imposter btn-block" disabled={!guessInput.trim()} onClick={onSubmit}>
+            Submit Guess
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── GameOverOverlay ────────────────────────────────────────────────────────────
+function GameOverOverlay({ winner, winReason, players, word, category, onRestart, onPlayAgainSamePlayers }) {
+  const [showRoles, setShowRoles] = useState(false);
+  const imposters = players.filter(p => p.role === 'imposter');
+  const isImpWin = winner === 'imposter';
+
+  return (
+    <div className={`panel ${isImpWin ? 'panel-imposter' : 'panel-town'} fade-in`} style={{ justifyContent: 'center', overflowY: 'auto', gap: 16 }}>
+      <div style={{ fontSize: 64 }}>{isImpWin ? '🕵️' : '⚖️'}</div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Game Over</div>
+        <h2 style={{ fontSize: 38, fontWeight: 900, marginTop: 4, color: isImpWin ? 'var(--imposter)' : 'var(--town)' }}>
+          {isImpWin ? 'Imposter Wins!' : 'Town Wins!'}
+        </h2>
+        <p style={{ color: 'var(--text3)', marginTop: 6, fontSize: 14 }}>{winReason}</p>
+      </div>
+
+      {/* Word reveal */}
+      <div className="role-card" style={{ width: '100%', maxWidth: 340, textAlign: 'center' }}>
+        <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 4 }}>{category}</div>
+        <div style={{ fontSize: 32, fontWeight: 900 }}>{word}</div>
+        <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 8 }}>
+          Imposters: {imposters.map(p => p.name).join(', ')}
+        </div>
+      </div>
+
+      <button className="btn btn-ghost" onClick={() => setShowRoles(v => !v)} style={{ maxWidth: 320, width: '100%' }}>
+        {showRoles ? 'Hide Roles' : 'Show All Roles'}
+      </button>
+      {showRoles && (
+        <div className="role-card fade-in" style={{ width: '100%', maxWidth: 340, textAlign: 'left' }}>
+          {players.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <span style={{ fontSize: 18 }}>{p.role === 'imposter' ? '🕵️' : '✅'}</span>
+              <span style={{ flex: 1, fontWeight: 600 }}>{p.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: p.role === 'imposter' ? 'var(--imposter)' : 'var(--town)' }}>
+                {p.role === 'imposter' ? 'Imposter' : 'Town'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 340 }}>
+        <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onPlayAgainSamePlayers}>Same Players</button>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={onRestart}>New Game</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Mount ──────────────────────────────────────────────────────────────────────
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</head>
+<body><div id="root"></div></body>
+</html>
