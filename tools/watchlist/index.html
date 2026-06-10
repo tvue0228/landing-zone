@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Daily Watchlist</title>
+<style>
+:root {
+  --bg:       #0a0c10;
+  --surface:  #111318;
+  --surface2: #191c24;
+  --border:   #22262f;
+  --border2:  #2a2f3a;
+  --text:     #e8eaf0;
+  --text2:    #8b92a8;
+  --text3:    #4a5068;
+
+  --bull:     #22c55e;
+  --bull-dim: #0a2416;
+  --bear:     #ef4444;
+  --bear-dim: #2a0b0b;
+  --neut:     #94a3b8;
+  --neut-dim: #161b26;
+
+  --yellow:   #fbbf24;
+  --blue:     #3b82f6;
+  --purple:   #a78bfa;
+
+  --gap:      #f97316;
+  --break:    #22c55e;
+  --mom:      #3b82f6;
+  --bounce:   #a78bfa;
+  --fade:     #ef4444;
+  --hvol:     #fbbf24;
+
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --r: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+/* ── Header ── */
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
+.header-left h1 { font-size: 16px; font-weight: 700; }
+.header-left p  { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.header-right   { display: flex; align-items: center; gap: 10px; }
+.refresh-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-family: var(--font); font-size: 13px; padding: 6px 14px; border-radius: 7px; cursor: pointer; transition: all 0.15s; }
+.refresh-btn:hover { border-color: var(--blue); color: var(--text); }
+.last-updated { font-size: 12px; color: var(--text3); }
+
+/* ── Market bar ── */
+.market-bar { display: flex; gap: 10px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; flex-wrap: nowrap; }
+.market-bar::-webkit-scrollbar { display: none; }
+.mkt-chip { display: flex; align-items: baseline; gap: 8px; padding: 6px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 99px; white-space: nowrap; }
+.mkt-label { font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: 0.05em; }
+.mkt-price { font-size: 14px; font-weight: 700; font-family: var(--mono); }
+.mkt-chg   { font-size: 12px; font-weight: 600; }
+.up   { color: var(--bull); }
+.dn   { color: var(--bear); }
+.flat { color: var(--text3); }
+.mkt-bias { padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.bias-risk-on  { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: var(--bull); }
+.bias-risk-off { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: var(--bear); }
+.bias-mixed    { background: rgba(251,191,36,0.10); border: 1px solid rgba(251,191,36,0.25); color: var(--yellow); }
+
+/* ── Filters ── */
+.filters { padding: 14px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border); }
+.filter-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+.filter-btn { padding: 5px 14px; border-radius: 99px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border); background: transparent; color: var(--text2); font-family: var(--font); transition: all 0.15s; }
+.filter-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.filter-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+/* ── Grid ── */
+.grid { padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+
+/* ── Card ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.card.bull { border-left: 3px solid var(--bull); }
+.card.bear { border-left: 3px solid var(--bear); }
+.card.neutral { border-left: 3px solid var(--text3); }
+
+.card-head { padding: 14px 16px 10px; display: flex; justify-content: space-between; align-items: flex-start; }
+.card-ticker { font-size: 22px; font-weight: 800; font-family: var(--mono); letter-spacing: -0.5px; }
+.card-price-block { text-align: right; }
+.card-price { font-size: 16px; font-weight: 700; font-family: var(--mono); }
+.card-gap   { font-size: 12px; font-weight: 600; margin-top: 2px; }
+
+.setup-row  { padding: 0 16px 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.setup-badge { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.setup-gap      { background: rgba(249,115,22,0.15); color: var(--gap);   border: 1px solid rgba(249,115,22,0.3); }
+.setup-breakout { background: rgba(34,197,94,0.12);  color: var(--break); border: 1px solid rgba(34,197,94,0.25); }
+.setup-momentum { background: rgba(59,130,246,0.12); color: var(--mom);   border: 1px solid rgba(59,130,246,0.25); }
+.setup-bounce   { background: rgba(167,139,250,0.12);color: var(--bounce);border: 1px solid rgba(167,139,250,0.3); }
+.setup-fade     { background: rgba(239,68,68,0.12);  color: var(--fade);  border: 1px solid rgba(239,68,68,0.25); }
+.setup-hvol     { background: rgba(251,191,36,0.10); color: var(--hvol);  border: 1px solid rgba(251,191,36,0.2); }
+.conf-badge { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.05em; }
+.conf-high   { background: rgba(34,197,94,0.15);  color: var(--bull); }
+.conf-medium { background: rgba(251,191,36,0.12); color: var(--yellow); }
+.conf-low    { background: var(--surface2); color: var(--text3); }
+.dir-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+.dir-bull { background: rgba(34,197,94,0.12); color: var(--bull); }
+.dir-bear { background: rgba(239,68,68,0.12); color: var(--bear); }
+.dir-neut { background: var(--surface2); color: var(--text3); }
+
+.notes { padding: 0 16px 10px; font-size: 13px; color: var(--text2); line-height: 1.55; }
+
+.divider { height: 1px; background: var(--border); margin: 0 16px; }
+
+/* Stats row */
+.stats-row { padding: 10px 16px; display: flex; gap: 6px; flex-wrap: wrap; }
+.stat { flex: 1; min-width: 70px; padding: 8px 10px; background: var(--surface2); border-radius: 8px; }
+.stat-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+.stat-val   { font-size: 14px; font-weight: 700; font-family: var(--mono); }
+.stat-val.bull { color: var(--bull); }
+.stat-val.bear { color: var(--bear); }
+.stat-val.yellow { color: var(--yellow); }
+
+/* Levels row */
+.levels-row { padding: 6px 16px 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.level-chip { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-family: var(--mono); font-weight: 600; }
+.level-stop   { background: rgba(239,68,68,0.1);  color: var(--bear);  }
+.level-target { background: rgba(34,197,94,0.1);  color: var(--bull);  }
+.level-rr     { background: rgba(59,130,246,0.1); color: var(--blue);  }
+.level-label  { font-size: 9px; font-weight: 700; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Options strategy */
+.opt-section { background: var(--surface2); margin: 0 12px 12px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); }
+.opt-header  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.opt-name    { font-size: 14px; font-weight: 700; color: var(--purple); }
+.opt-type    { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+.opt-debit   { background: rgba(239,68,68,0.12); color: var(--bear); }
+.opt-credit  { background: rgba(34,197,94,0.12); color: var(--bull); }
+.opt-equity  { background: var(--surface); color: var(--text3); border: 1px solid var(--border); }
+.opt-struct  { font-size: 12.5px; color: var(--yellow); font-weight: 500; margin-bottom: 6px; font-family: var(--mono); }
+.opt-rationale { font-size: 12.5px; color: var(--text2); line-height: 1.5; margin-bottom: 6px; }
+.opt-risk    { font-size: 12px; color: var(--text3); }
+.opt-iv-ctx  { display: inline-block; margin-top: 6px; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+
+/* Empty / loading states */
+.state-center { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 14px; text-align: center; padding: 40px; }
+.state-icon  { font-size: 48px; }
+.state-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.state-sub   { font-size: 14px; color: var(--text3); line-height: 1.6; max-width: 380px; }
+
+/* Footer */
+.footer { padding: 20px; text-align: center; font-size: 12px; color: var(--text3); border-top: 1px solid var(--border); margin-top: 12px; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; padding: 12px; }
+  .filters { padding: 10px 12px; }
+  .market-bar { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>📊 Daily Watchlist</h1>
+    <p id="gen-time" class="last-updated">Loading…</p>
+  </div>
+  <div class="header-right">
+    <span id="screened-count" class="last-updated"></span>
+    <button class="refresh-btn" onclick="loadWatchlist()">↻ Refresh</button>
+    <a href="../../" style="font-size:13px; color:var(--text3);">← Lab</a>
+  </div>
+</div>
+
+<div id="market-bar" class="market-bar" style="display:none;"></div>
+
+<div class="filters">
+  <span class="filter-label">Filter</span>
+  <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+  <button class="filter-btn" data-filter="Gap & Go"        onclick="setFilter('Gap & Go', this)">Gap &amp; Go</button>
+  <button class="filter-btn" data-filter="Breakout"        onclick="setFilter('Breakout', this)">Breakout</button>
+  <button class="filter-btn" data-filter="Momentum"        onclick="setFilter('Momentum', this)">Momentum</button>
+  <button class="filter-btn" data-filter="Oversold Bounce" onclick="setFilter('Oversold Bounce', this)">Bounce</button>
+  <button class="filter-btn" data-filter="Gap Fade"        onclick="setFilter('Gap Fade', this)">Fade</button>
+  <button class="filter-btn" data-filter="bullish"         onclick="setFilter('bullish', this)">🐂 Bullish</button>
+  <button class="filter-btn" data-filter="bearish"         onclick="setFilter('bearish', this)">🐻 Bearish</button>
+</div>
+
+<div id="main"></div>
+
+<div class="footer">
+  Data via Yahoo Finance · Generated by GitHub Actions each weekday at ~8:30 AM ET ·
+  <strong>Not financial advice.</strong> Always manage risk.
+</div>
+
+<script>
+let allPicks = [];
+let activeFilter = 'all';
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+async function loadWatchlist() {
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="state-center"><div class="state-icon">⏳</div><div class="state-title">Loading watchlist…</div></div>`;
+
+  try {
+    const res  = await fetch('../../data/daily-watchlist.json?t=' + Date.now());
+    const data = await res.json();
+
+    if (!data.generated_at) {
+      main.innerHTML = `
+        <div class="state-center">
+          <div class="state-icon">🕐</div>
+          <div class="state-title">No watchlist yet</div>
+          <div class="state-sub">The GitHub Actions workflow hasn't run yet. It runs automatically every weekday at 8:30 AM ET, or you can trigger it manually from the Actions tab in your GitHub repo.</div>
+        </div>`;
+      return;
+    }
+
+    // Render market bar
+    renderMarketBar(data.market_overview);
+
+    // Format generated time
+    const genDate = new Date(data.generated_at);
+    document.getElementById('gen-time').textContent =
+      'Generated ' + genDate.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) +
+      ' at ' + genDate.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', timeZoneName:'short' });
+
+    document.getElementById('screened-count').textContent =
+      `${data.total_candidates} setups from ${data.total_screened} tickers`;
+
+    allPicks = data.picks || [];
+    renderGrid();
+
+  } catch (e) {
+    main.innerHTML = `<div class="state-center"><div class="state-icon">⚠️</div><div class="state-title">Failed to load</div><div class="state-sub">${e.message}</div></div>`;
+  }
+}
+
+// ── Market bar ────────────────────────────────────────────────────────────────
+function renderMarketBar(ov) {
+  if (!ov) return;
+  const bar = document.getElementById('market-bar');
+  bar.style.display = 'flex';
+
+  function chgClass(v)  { return v > 0 ? 'up' : v < 0 ? 'dn' : 'flat'; }
+  function chgSign(v)   { return v > 0 ? '+' + v.toFixed(2) + '%' : v.toFixed(2) + '%'; }
+
+  const biasClass = { 'risk-on': 'bias-risk-on', 'risk-off': 'bias-risk-off', 'mixed': 'bias-mixed' }[ov.bias] || 'bias-mixed';
+  const biasLabel = { 'risk-on': '📈 Risk-On', 'risk-off': '📉 Risk-Off', 'mixed': '⚖️ Mixed' }[ov.bias] || ov.bias;
+
+  bar.innerHTML = `
+    <div class="mkt-chip">
+      <span class="mkt-label">SPY</span>
+      <span class="mkt-price">${ov.spy?.price ?? '—'}</span>
+      <span class="mkt-chg ${chgClass(ov.spy?.change_pct)}">${chgSign(ov.spy?.change_pct ?? 0)}</span>
+    </div>
+    <div class="mkt-chip">
+      <span class="mkt-label">QQQ</span>
+      <span class="mkt-price">${ov.qqq?.price ?? '—'}</span>
+      <span class="mkt-chg ${chgClass(ov.qqq?.change_pct)}">${chgSign(ov.qqq?.change_pct ?? 0)}</span>
+    </div>
+    <div class="mkt-chip">
+      <span class="mkt-label">VIX</span>
+      <span class="mkt-price" style="color:var(--yellow)">${ov.vix ?? '—'}</span>
+      <span class="mkt-chg flat">${ov.vix_regime ?? ''}</span>
+    </div>
+    <div class="mkt-chip">
+      <span class="mkt-label">Trend</span>
+      <span class="mkt-price ${ov.trend === 'bullish' ? 'up' : 'dn'}">${ov.trend?.toUpperCase() ?? '—'}</span>
+    </div>
+    <div class="mkt-bias ${biasClass}">${biasLabel}</div>
+  `;
+}
+
+// ── Filter ────────────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+}
+
+function matchFilter(pick) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'bullish' || activeFilter === 'bearish') return pick.direction === activeFilter;
+  return pick.setup === activeFilter;
+}
+
+// ── Grid ──────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const filtered = allPicks.filter(matchFilter);
+  const main = document.getElementById('main');
+
+  if (!filtered.length) {
+    main.innerHTML = `<div class="state-center"><div class="state-icon">🔍</div><div class="state-title">No picks for this filter</div><div class="state-sub">Try a different filter or check back after the next run.</div></div>`;
+    return;
+  }
+
+  main.innerHTML = `<div class="grid">${filtered.map(renderCard).join('')}</div>`;
+}
+
+// ── Card ──────────────────────────────────────────────────────────────────────
+function setupBadgeClass(setup) {
+  const map = {
+    'Gap & Go': 'setup-gap', 'Gap Fade': 'setup-fade',
+    'Breakout': 'setup-breakout', 'Momentum': 'setup-momentum',
+    'Oversold Bounce': 'setup-bounce', 'Overbought Fade': 'setup-fade',
+    'High Vol Watch': 'setup-hvol',
+  };
+  return map[setup] || 'setup-hvol';
+}
+
+function renderCard(p) {
+  const dirClass = p.direction === 'bullish' ? 'bull' : p.direction === 'bearish' ? 'bear' : 'neutral';
+  const dirBadge = p.direction === 'bullish' ? 'dir-bull' : p.direction === 'bearish' ? 'dir-bear' : 'dir-neut';
+  const dirLabel = p.direction === 'bullish' ? '▲ Bullish' : p.direction === 'bearish' ? '▼ Bearish' : '◆ Neutral';
+  const gapColor = p.gap_pct > 0 ? 'up' : p.gap_pct < 0 ? 'dn' : 'flat';
+  const gapSign  = p.gap_pct > 0 ? '+' : '';
+  const rsiColor = p.rsi < 35 ? 'bull' : p.rsi > 65 ? 'bear' : 'yellow';
+  const opt = p.options_strategy || {};
+  const optTypeClass = opt.type === 'debit' ? 'opt-debit' : opt.type === 'credit' ? 'opt-credit' : 'opt-equity';
+
+  return `
+    <div class="card ${dirClass}">
+      <div class="card-head">
+        <div>
+          <div class="card-ticker">${p.ticker}</div>
+        </div>
+        <div class="card-price-block">
+          <div class="card-price">$${p.price.toFixed(2)}</div>
+          <div class="card-gap ${gapColor}">${gapSign}${p.gap_pct.toFixed(2)}% gap</div>
+        </div>
+      </div>
+
+      <div class="setup-row">
+        <span class="setup-badge ${setupBadgeClass(p.setup)}">${p.setup}</span>
+        <span class="conf-badge conf-${p.confidence}">${p.confidence}</span>
+        <span class="dir-badge ${dirBadge}">${dirLabel}</span>
+      </div>
+
+      <div class="notes">${p.notes}</div>
+
+      <div class="divider"></div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-label">RSI</div>
+          <div class="stat-val ${rsiColor}">${p.rsi}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Vol ×Avg</div>
+          <div class="stat-val ${p.vol_ratio >= 1.5 ? 'bull' : 'yellow'}">${p.vol_ratio}×</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">HV20</div>
+          <div class="stat-val yellow">${p.hv20}%</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">ATR</div>
+          <div class="stat-val">${p.atr.toFixed(2)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">20 MA</div>
+          <div class="stat-val ${p.above_20ma ? 'bull' : 'bear'}">${p.above_20ma ? '↑' : '↓'} ${p.ma20.toFixed(0)}</div>
+        </div>
+      </div>
+
+      <div class="levels-row">
+        <div class="level-chip level-stop">
+          <span class="level-label">Stop</span>
+          $${p.stop.toFixed(2)}
+        </div>
+        <div class="level-chip level-target">
+          <span class="level-label">Target</span>
+          $${p.target.toFixed(2)}
+        </div>
+        <div class="level-chip level-rr">
+          <span class="level-label">R:R</span>
+          1 : ${p.risk_reward}
+        </div>
+      </div>
+
+      <div class="divider" style="margin-bottom:12px;"></div>
+
+      <div class="opt-section">
+        <div class="opt-header">
+          <div class="opt-name">⚡ ${opt.name || 'No strategy'}</div>
+          <span class="opt-type ${optTypeClass}">${(opt.type || '').toUpperCase()}</span>
+        </div>
+        ${opt.structure ? `<div class="opt-struct">${opt.structure}</div>` : ''}
+        ${opt.rationale ? `<div class="opt-rationale">${opt.rationale}</div>` : ''}
+        ${opt.risk      ? `<div class="opt-risk">⚠ ${opt.risk}</div>` : ''}
+        ${opt.iv_context ? `<span class="opt-iv-ctx">IV: ${opt.iv_context}</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+loadWatchlist();
+</script>
+</body>
+</html>
