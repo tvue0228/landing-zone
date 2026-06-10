@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tou Vue — Senior Software Developer</title>
+<meta name="description" content="Senior Software Developer at Entrust specializing in fullstack enterprise identity and security systems with React and Java Spring Boot."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --navy:    #0c1a35;
+  --blue:    #1d4ed8;
+  --blue2:   #2563eb;
+  --blue-bg: #eff6ff;
+  --blue-bd: #bfdbfe;
+  --text:    #0f172a;
+  --text2:   #475569;
+  --text3:   #94a3b8;
+  --bg:      #ffffff;
+  --bg-alt:  #f8fafc;
+  --border:  #e2e8f0;
+  --radius:  10px;
+  --font:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.65; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+
+/* ── Layout ── */
+.wrap { max-width: 780px; margin: 0 auto; padding: 0 28px; }
+
+/* ── Nav ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.88); backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; height: 58px; }
+.nav-name { font-size: 15px; font-weight: 700; color: var(--navy); letter-spacing: -0.3px; }
+.nav-links { display: flex; align-items: center; gap: 26px; }
+.nav-links a { font-size: 13.5px; font-weight: 500; color: var(--text2); transition: color 0.15s; }
+.nav-links a:hover { color: var(--blue); }
+.nav-cta { padding: 6px 16px; background: var(--navy); color: #fff !important; border-radius: 7px; font-weight: 600 !important; transition: background 0.15s !important; }
+.nav-cta:hover { background: var(--blue) !important; }
+
+/* ── Hero ── */
+.hero { padding: 84px 0 72px; }
+.hero-label { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--blue); margin-bottom: 18px; }
+.hero-label::before { content: ''; display: block; width: 20px; height: 2px; background: var(--blue); border-radius: 1px; }
+h1 { font-size: 58px; font-weight: 800; letter-spacing: -2px; line-height: 1.07; color: var(--navy); margin-bottom: 14px; }
+.hero-sub { font-size: 18px; font-weight: 500; color: var(--text2); margin-bottom: 22px; }
+.hero-bio { font-size: 16px; color: var(--text2); line-height: 1.75; max-width: 580px; margin-bottom: 38px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 8px; font-family: var(--font); font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+.btn-solid { background: var(--navy); color: #fff; }
+.btn-solid:hover { background: var(--blue2); }
+.btn-outline { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--navy); color: var(--navy); }
+.hero-bar { width: 48px; height: 3px; background: linear-gradient(90deg, var(--blue), #60a5fa); border-radius: 2px; margin-bottom: 48px; }
+
+/* ── Section chrome ── */
+.section { padding: 64px 0; border-top: 1px solid var(--border); }
+.section-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.section-heading { font-size: 27px; font-weight: 800; letter-spacing: -0.6px; color: var(--navy); margin-bottom: 36px; }
+
+/* ── Experience ── */
+.exp-list { display: flex; flex-direction: column; gap: 0; }
+.exp-item {
+  position: relative;
+  padding: 0 0 40px 28px;
+  border-left: 2px solid var(--border);
+}
+.exp-item:last-child { padding-bottom: 0; border-left-color: transparent; }
+.exp-item::before {
+  content: '';
+  position: absolute; left: -5px; top: 7px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--blue); border: 2px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--blue);
+}
+.exp-item:first-child::before { background: var(--navy); box-shadow: 0 0 0 2px var(--navy); }
+.exp-meta { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 4px; margin-bottom: 2px; }
+.exp-company { font-size: 15px; font-weight: 700; color: var(--navy); }
+.exp-date { font-size: 12.5px; font-weight: 600; color: var(--text3); white-space: nowrap; padding-top: 2px; }
+.exp-role { font-size: 13.5px; font-weight: 600; color: var(--blue); margin-bottom: 12px; }
+.exp-bullets { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.exp-bullets li { font-size: 14px; color: var(--text2); line-height: 1.65; padding-left: 16px; position: relative; }
+.exp-bullets li::before { content: ''; position: absolute; left: 0; top: 10px; width: 5px; height: 1.5px; background: var(--blue2); border-radius: 1px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 11.5px; font-weight: 500; padding: 3px 10px; border-radius: 99px; }
+.tag-gray { background: var(--bg-alt); border: 1px solid var(--border); color: var(--text2); }
+.tag-blue { background: var(--blue-bg); border: 1px solid var(--blue-bd); color: var(--blue); }
+
+/* ── Skills ── */
+.skills-grid { display: flex; flex-direction: column; gap: 22px; }
+.skill-group-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text3); margin-bottom: 10px; }
+.skill-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.skill-pill { font-size: 13.5px; font-weight: 500; padding: 7px 16px; border-radius: 99px; background: var(--bg-alt); border: 1px solid var(--border); color: var(--text); transition: border-color 0.15s, color 0.15s; }
+.skill-pill:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ── Education ── */
+.edu-list { display: flex; flex-direction: column; gap: 14px; }
+.edu-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 22px 24px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: var(--radius); }
+.edu-school { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.edu-degree { font-size: 13.5px; color: var(--text2); }
+.edu-year { font-size: 12.5px; font-weight: 600; color: var(--text3); white-space: nowrap; margin-left: 20px; padding-top: 2px; }
+.edu-badge { display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--blue-bg); border: 1px solid var(--blue-bd); color: var(--blue); }
+
+/* ── Projects ── */
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.project-card { display: block; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius); transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
+.project-card:hover { border-color: var(--blue-bd); box-shadow: 0 4px 20px rgba(0,0,0,0.07); transform: translateY(-2px); }
+.project-icon { font-size: 22px; margin-bottom: 10px; }
+.project-name { font-size: 14.5px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.project-desc { font-size: 13px; color: var(--text2); line-height: 1.55; }
+.project-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--blue); margin-top: 10px; }
+
+/* ── Contact ── */
+.contact-section { padding: 72px 0 80px; border-top: 1px solid var(--border); text-align: center; }
+.contact-headline { font-size: 36px; font-weight: 800; letter-spacing: -0.8px; color: var(--navy); margin-bottom: 12px; }
+.contact-sub { font-size: 16px; color: var(--text2); margin-bottom: 36px; max-width: 420px; margin-left: auto; margin-right: auto; }
+.contact-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.contact-link { display: inline-flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; color: var(--text2); padding: 12px 22px; border: 1.5px solid var(--border); border-radius: 9px; transition: all 0.15s; }
+.contact-link:hover { color: var(--navy); border-color: var(--navy); background: var(--bg-alt); }
+.contact-link svg { flex-shrink: 0; }
+
+/* ── Footer ── */
+footer { padding: 24px 0; border-top: 1px solid var(--border); }
+.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+footer p { font-size: 13px; color: var(--text3); }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { font-size: 13px; color: var(--text3); transition: color 0.15s; }
+.footer-links a:hover { color: var(--text2); }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  h1 { font-size: 38px; letter-spacing: -1px; }
+  .hero { padding: 56px 0 52px; }
+  .nav-links { display: none; }
+  .edu-item { flex-direction: column; }
+  .edu-year { margin-left: 0; margin-top: 6px; }
+  .section { padding: 48px 0; }
+  .contact-headline { font-size: 28px; }
+  .wrap { padding: 0 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="wrap nav-inner">
+    <span class="nav-name">Tou Vue</span>
+    <ul class="nav-links">
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#education">Education</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#contact" class="nav-cta">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-label">Software Developer</div>
+    <h1>Tou Vue</h1>
+    <p class="hero-sub">Senior Software Developer &mdash; Entrust</p>
+    <p class="hero-bio">
+      Fullstack engineer with 10+ years building enterprise-grade identity and security systems.
+      I specialize in React and Java Spring Boot, with deep expertise spanning credential issuance,
+      smartcard personalization, secure messaging protocols, and cloud-based SaaS platforms.
+    </p>
+    <div class="hero-bar"></div>
+    <div class="hero-actions">
+      <a href="mailto:tvue0228@gmail.com" class="btn btn-solid">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        Get In Touch
+      </a>
+      <a href="https://github.com/tvue0228" target="_blank" rel="noopener" class="btn btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ── Experience ────────────────────────────────────────────────────────────── -->
+<section class="section" id="experience">
+  <div class="wrap">
+    <div class="section-eyebrow">Career</div>
+    <h2 class="section-heading">Experience</h2>
+
+    <div class="exp-list">
+
+      <!-- Entrust IIDaaS -->
+      <div class="exp-item">
+        <div class="exp-meta">
+          <span class="exp-company">Entrust</span>
+          <span class="exp-date">2025 &ndash; Present</span>
+        </div>
+        <div class="exp-role">Senior Software Developer &mdash; IIDaaS (Instant ID as a Service)</div>
+        <ul class="exp-bullets">
+          <li>Built and maintained a React + Java Spring Boot SaaS platform enabling organizations to design and issue physical and digital credentials, including government IDs, employee badges, and access cards.</li>
+          <li>Architected RESTful services and React UI components for credential template design, workflow orchestration, and real-time issuance tracking.</li>
+          <li>Managed cloud infrastructure across Linux-based environments using Docker containers and AWS services for deployment, scalability, and reliability.</li>
+        </ul>
+        <div class="tags">
+          <span class="tag tag-blue">React</span>
+          <span class="tag tag-blue">Java</span>
+          <span class="tag tag-blue">Spring Boot</span>
+          <span class="tag tag-gray">AWS</span>
+          <span class="tag tag-gray">Docker</span>
+          <span class="tag tag-gray">Linux</span>
+          <span class="tag tag-gray">REST</span>
+        </div>
+      </div>
+
+      <!-- Entrust DPI -->
+      <div class="exp-item">
+        <div class="exp-meta">
+          <span class="exp-company">Entrust</span>
+          <span class="exp-date">2017 &ndash; 2025</span>
+        </div>
+        <div class="exp-role">Senior Software Developer &mdash; DPI (Desktop Printer Interface)</div>
+        <ul class="exp-bullets">
+          <li>Designed and maintained the Desktop Printer Interface, a Java Spring API serving as the central communication layer between issuance software and enterprise ID card printers, supporting multiple printer vendors and protocols.</li>
+          <li>Developed Trusted Hub and Trusted Endpoint — two complementary Java Vertex services that form a secure MQTT proxy tunnel, enabling applications to communicate across isolated network boundaries without direct connectivity.</li>
+          <li>Authored plugins for Apache ActiveMQ Artemis to implement advanced authentication and authorization strategies, extending the broker to support custom identity and access control requirements for enterprise deployments.</li>
+        </ul>
+        <div class="tags">
+          <span class="tag tag-blue">Java</span>
+          <span class="tag tag-blue">Spring Framework</span>
+          <span class="tag tag-blue">MQTT</span>
+          <span class="tag tag-gray">ActiveMQ Artemis</span>
+          <span class="tag tag-gray">Vertex</span>
+          <span class="tag tag-gray">REST</span>
+        </div>
+      </div>
+
+      <!-- Entrust Datacard AIS -->
+      <div class="exp-item">
+        <div class="exp-meta">
+          <span class="exp-company">Entrust Datacard</span>
+          <span class="exp-date">2015 &ndash; 2017</span>
+        </div>
+        <div class="exp-role">Software Developer &mdash; AIS (Adaptive Issuance Suite)</div>
+        <ul class="exp-bullets">
+          <li>Developed features across the Adaptive Issuance Suite — a multi-language (Java, JavaScript, Python) platform for personalizing smartcard chips across identity and financial verticals, including government IDs and EMV payment cards.</li>
+          <li>Implemented card personalization pipelines for EMV, Multos, and PKCS#12-based standards, handling cryptographic key management and secure data encoding for identity and financial institutions.</li>
+        </ul>
+        <div class="tags">
+          <span class="tag tag-blue">Java</span>
+          <span class="tag tag-blue">JavaScript</span>
+          <span class="tag tag-blue">Python</span>
+          <span class="tag tag-gray">EMV</span>
+          <span class="tag tag-gray">Multos</span>
+          <span class="tag tag-gray">Key Management</span>
+          <span class="tag tag-gray">PCKISv12</span>
+        </div>
+      </div>
+
+      <!-- Datacard Intern -->
+      <div class="exp-item">
+        <div class="exp-meta">
+          <span class="exp-company">Datacard</span>
+          <span class="exp-date">2014 &ndash; 2015</span>
+        </div>
+        <div class="exp-role">Software Engineering Intern &mdash; QA</div>
+        <ul class="exp-bullets">
+          <li>Built a C# .NET automated test suite to verify printed card output quality, reducing manual verification time and improving regression coverage for the printer team.</li>
+          <li>Contributed to testing a printer simulator under active development, identifying edge cases and defects during early-stage QA cycles.</li>
+        </ul>
+        <div class="tags">
+          <span class="tag tag-gray">C#</span>
+          <span class="tag tag-gray">.NET</span>
+          <span class="tag tag-gray">Test Automation</span>
+          <span class="tag tag-gray">QA</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Skills ─────────────────────────────────────────────────────────────────── -->
+<section class="section" id="skills">
+  <div class="wrap">
+    <div class="section-eyebrow">Expertise</div>
+    <h2 class="section-heading">Skills &amp; Technologies</h2>
+
+    <div class="skills-grid">
+      <div>
+        <div class="skill-group-label">Languages</div>
+        <div class="skill-pills">
+          <span class="skill-pill">Java</span>
+          <span class="skill-pill">TypeScript</span>
+          <span class="skill-pill">JavaScript</span>
+          <span class="skill-pill">Python</span>
+          <span class="skill-pill">C++</span>
+          <span class="skill-pill">C#</span>
+        </div>
+      </div>
+      <div>
+        <div class="skill-group-label">Frameworks &amp; Libraries</div>
+        <div class="skill-pills">
+          <span class="skill-pill">React</span>
+          <span class="skill-pill">Spring Boot</span>
+          <span class="skill-pill">Spring Framework</span>
+          <span class="skill-pill">Spring Vertex</span>
+        </div>
+      </div>
+      <div>
+        <div class="skill-group-label">Data &amp; APIs</div>
+        <div class="skill-pills">
+          <span class="skill-pill">REST</span>
+          <span class="skill-pill">MQTT v3.1</span>
+          <span class="skill-pill">SQL</span>
+          <span class="skill-pill">MSSQL</span>
+          <span class="skill-pill">MySQL</span>
+          <span class="skill-pill">SoapUI</span>
+        </div>
+      </div>
+      <div>
+        <div class="skill-group-label">Infrastructure &amp; Tools</div>
+        <div class="skill-pills">
+          <span class="skill-pill">AWS</span>
+          <span class="skill-pill">Docker</span>
+          <span class="skill-pill">Linux</span>
+          <span class="skill-pill">Apache ActiveMQ Artemis</span>
+          <span class="skill-pill">Git</span>
+        </div>
+      </div>
+      <div>
+        <div class="skill-group-label">Security &amp; Standards</div>
+        <div class="skill-pills">
+          <span class="skill-pill">EMV</span>
+          <span class="skill-pill">Multos</span>
+          <span class="skill-pill">PCKISv12</span>
+          <span class="skill-pill">Key Management</span>
+          <span class="skill-pill">Smartcard Personalization</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Education ──────────────────────────────────────────────────────────────── -->
+<section class="section" id="education">
+  <div class="wrap">
+    <div class="section-eyebrow">Academic Background</div>
+    <h2 class="section-heading">Education</h2>
+
+    <div class="edu-list">
+      <div class="edu-item">
+        <div>
+          <div class="edu-school">University of Saint Thomas</div>
+          <div class="edu-degree">Master of Science &mdash; Data Science &amp; Artificial Intelligence</div>
+          <span class="edu-badge">In progress</span>
+        </div>
+        <span class="edu-year">2026</span>
+      </div>
+      <div class="edu-item">
+        <div>
+          <div class="edu-school">University of Minnesota</div>
+          <div class="edu-degree">Bachelor of Science &mdash; Computer Science</div>
+        </div>
+        <span class="edu-year">2015</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Projects ──────────────────────────────────────────────────────────────── -->
+<section class="section" id="projects">
+  <div class="wrap">
+    <div class="section-eyebrow">Personal Work</div>
+    <h2 class="section-heading">Projects</h2>
+
+    <div class="projects-grid">
+      <a class="project-card" href="../games/mastermind/" target="_blank" rel="noopener">
+        <div class="project-icon">🎯</div>
+        <div class="project-name">Mastermind</div>
+        <div class="project-desc">Multiplayer code-breaking game with shareable links and dynamic Open Graph image generation via Cloudflare Workers.</div>
+        <div class="project-link">View project <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+      </a>
+      <a class="project-card" href="../tools/mafia/" target="_blank" rel="noopener">
+        <div class="project-icon">🔪</div>
+        <div class="project-name">Mafia</div>
+        <div class="project-desc">Pass-the-phone party game with secret role assignment, night action sequences, and day-phase voting.</div>
+        <div class="project-link">View project <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+      </a>
+      <a class="project-card" href="../tools/imposter/" target="_blank" rel="noopener">
+        <div class="project-icon">🕵️</div>
+        <div class="project-name">Imposter</div>
+        <div class="project-desc">Spyfall-style deduction game across 12 categories, with a countdown timer and an imposter guess mechanic.</div>
+        <div class="project-link">View project <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+      </a>
+      <a class="project-card" href="../tools/book-creator/" target="_blank" rel="noopener">
+        <div class="project-icon">📖</div>
+        <div class="project-name">AI Book Creator</div>
+        <div class="project-desc">Generates full books with chapters and illustrations using Anthropic and Google AI APIs, then exports KDP-formatted PDFs.</div>
+        <div class="project-link">View project <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+      </a>
+      <a class="project-card" href="../tools/pc-parts/" target="_blank" rel="noopener">
+        <div class="project-icon">🖥️</div>
+        <div class="project-name">PC Parts Builder</div>
+        <div class="project-desc">Build and price a parts list with instant comparison links to PCPartPicker, Amazon, and Newegg. Shareable via URL.</div>
+        <div class="project-link">View project <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+      </a>
+      <a class="project-card" href="../" target="_blank" rel="noopener">
+        <div class="project-icon">🧪</div>
+        <div class="project-name">Tools Lab</div>
+        <div class="project-desc">A growing collection of micro-tools and games — each a self-contained single-page React app.</div>
+        <div class="project-link">See all tools <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Contact ────────────────────────────────────────────────────────────────── -->
+<section class="contact-section" id="contact">
+  <div class="wrap">
+    <h2 class="contact-headline">Let's connect</h2>
+    <p class="contact-sub">Whether it's a new opportunity, a collaboration, or just a conversation — my inbox is open.</p>
+    <div class="contact-links">
+      <a class="contact-link" href="mailto:tvue0228@gmail.com">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        tvue0228@gmail.com
+      </a>
+      <a class="contact-link" href="https://github.com/tvue0228" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844a9.59 9.59 0 012.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        github.com/tvue0228
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="wrap footer-inner">
+    <p>&copy; 2025 Tou Vue</p>
+    <div class="footer-links">
+      <a href="#experience">Experience</a>
+      <a href="#skills">Skills</a>
+      <a href="#education">Education</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
