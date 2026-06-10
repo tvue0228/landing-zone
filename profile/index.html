@@ -445,7 +445,7 @@ footer p { font-size: 13px; color: var(--text3); }
 <!-- ── Footer ─────────────────────────────────────────────────────────────────── -->
 <footer>
   <div class="wrap footer-inner">
-    <p>&copy; 2025 Tou Vue</p>
+    <p>&copy; <span id="yr"></span> Tou Vue</p>
     <div class="footer-links">
       <a href="#experience">Experience</a>
       <a href="#skills">Skills</a>
@@ -455,5 +455,6 @@ footer p { font-size: 13px; color: var(--text3); }
   </div>
 </footer>
 
+<script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
 </body>
 </html>
