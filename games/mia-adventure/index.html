@@ -8,57 +8,20 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#160a32;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:12px;font-family:'Nunito',sans-serif}
-#gm{
-  width:100%;max-width:640px;position:relative;
-  border-radius:20px;overflow:hidden;background:#100828;
-  box-shadow:0 12px 44px rgba(60,20,100,.4);
-}
+#gm{width:100%;max-width:640px;position:relative;border-radius:20px;overflow:hidden;background:#100828;box-shadow:0 12px 44px rgba(60,20,100,.4);}
 #gm svg{width:100%;height:auto;display:block}
-.stag{
-  position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  background:rgba(255,255,255,.85);color:#7040A8;
-  font-size:11px;font-weight:800;padding:4px 14px;
-  border-radius:20px;letter-spacing:.7px;text-transform:uppercase;
-  z-index:5;pointer-events:none;white-space:nowrap;
-}
-.hint{
-  position:absolute;bottom:58px;left:50%;transform:translateX(-50%);
-  color:rgba(255,255,255,.88);font-size:11.5px;font-weight:700;
-  white-space:nowrap;pointer-events:none;animation:bob 2s ease-in-out infinite;
-  text-shadow:0 1px 3px rgba(0,0,0,.3);
-}
-@keyframes bob{
-  0%,100%{transform:translateX(-50%) translateY(0);opacity:.6}
-  50%{transform:translateX(-50%) translateY(-4px);opacity:1}
-}
-.mc{
-  position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);
-  background:rgba(255,255,255,.97);border-radius:18px;
-  padding:18px 26px 16px;max-width:78%;text-align:center;z-index:30;display:none;
-}
+.stag{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.85);color:#7040A8;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:.7px;text-transform:uppercase;z-index:5;pointer-events:none;white-space:nowrap;}
+.hint{position:absolute;bottom:58px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.88);font-size:11.5px;font-weight:700;white-space:nowrap;pointer-events:none;animation:bob 2s ease-in-out infinite;text-shadow:0 1px 3px rgba(0,0,0,.3);}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);opacity:.6}50%{transform:translateX(-50%) translateY(-4px);opacity:1}}
+.mc{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);background:rgba(255,255,255,.97);border-radius:18px;padding:18px 26px 16px;max-width:78%;text-align:center;z-index:30;display:none;}
 .mc.on{display:block;animation:pop .32s cubic-bezier(.175,.885,.32,1.275) forwards}
-@keyframes pop{
-  from{transform:translate(-50%,-50%) scale(.6);opacity:0}
-  to{transform:translate(-50%,-50%) scale(1);opacity:1}
-}
+@keyframes pop{from{transform:translate(-50%,-50%) scale(.6);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
 .mc p{color:#5A3878;font-size:14px;font-weight:600;line-height:1.55}
-.mcx{
-  position:absolute;top:8px;right:13px;font-size:19px;color:#C890E0;
-  cursor:pointer;font-weight:800;background:none;border:none;
-  font-family:'Nunito',sans-serif;line-height:1;
-}
+.mcx{position:absolute;top:8px;right:13px;font-size:19px;color:#C890E0;cursor:pointer;font-weight:800;background:none;border:none;font-family:'Nunito',sans-serif;line-height:1;}
 .mcx:hover{color:#7040A8}
-.nav{
-  position:absolute;bottom:13px;left:0;right:0;
-  display:flex;justify-content:center;gap:10px;z-index:20;
-}
-.btn{
-  font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;
-  padding:7px 18px;border-radius:25px;border:none;cursor:pointer;
-  transition:transform .14s;letter-spacing:.3px;
-}
-.btn:hover{transform:scale(1.07)}
-.btn:active{transform:scale(.96)}
+.nav{position:absolute;bottom:13px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:20;}
+.btn{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;padding:7px 18px;border-radius:25px;border:none;cursor:pointer;transition:transform .14s;letter-spacing:.3px;}
+.btn:hover{transform:scale(1.07)}.btn:active{transform:scale(.96)}
 .btnp{background:rgba(255,255,255,.93);color:#7040A8}
 .btns{background:rgba(255,255,255,.42);color:white}
 .btnbig{font-size:15px;padding:10px 28px;background:rgba(255,255,255,.93);color:#7040A8}
@@ -74,45 +37,43 @@ body{background:#160a32;min-height:100vh;display:flex;align-items:center;justify
 let cur=0;
 
 function mkRand(seed){let s=seed;return()=>{s=(s*1664525+1013904223)&0xFFFFFFFF;return(s>>>0)/4294967296};}
-function starField(n,x0,y0,x1,y1,seed){
-  const r=mkRand(seed||54321);let out='';
-  for(let i=0;i<n;i++){
-    const x=(x0+r()*(x1-x0)).toFixed(1),y=(y0+r()*(y1-y0)).toFixed(1);
-    const rad=(.7+r()*1.8).toFixed(1),op=(.35+r()*.65).toFixed(2);
-    out+=`<circle cx="${x}" cy="${y}" r="${rad}" fill="white" opacity="${op}"/>`;
-  }return out;
-}
 
+// Mia — puppy character (cream, floppy ears)
 function B(x,y,o={}){
   const f=o.flip?`translate(${x},${y}) scale(-1,1)`:`translate(${x},${y})`;
   if(o.top){return `<g transform="translate(${x},${y})">
-<ellipse cx="-11" cy="26" rx="7" ry="10" fill="#FFE0EE" transform="rotate(-18,-11,26)"/>
-<ellipse cx="11" cy="26" rx="7" ry="10" fill="#FFE0EE" transform="rotate(18,11,26)"/>
-<ellipse cx="0" cy="7" rx="19" ry="21" fill="#FFE8F2"/>
-<ellipse cx="-26" cy="2" rx="5.5" ry="9.5" fill="#FFE0EE" transform="rotate(-56,-26,2)"/>
-<ellipse cx="26" cy="2" rx="5.5" ry="9.5" fill="#FFE0EE" transform="rotate(56,26,2)"/>
-<circle cx="0" cy="-18" r="23" fill="#FFF2F7"/>
-<ellipse cx="-12" cy="-44" rx="7" ry="17" fill="#FFF2F7"/><ellipse cx="-12" cy="-44" rx="4.5" ry="11.5" fill="#FFB3C8"/>
-<ellipse cx="12" cy="-44" rx="7" ry="17" fill="#FFF2F7"/><ellipse cx="12" cy="-44" rx="4.5" ry="11.5" fill="#FFB3C8"/>
+<ellipse cx="-11" cy="26" rx="7" ry="10" fill="#FFF0DC" transform="rotate(-18,-11,26)"/>
+<ellipse cx="11" cy="26" rx="7" ry="10" fill="#FFF0DC" transform="rotate(18,11,26)"/>
+<ellipse cx="0" cy="7" rx="19" ry="21" fill="#FFF0DC"/>
+<ellipse cx="-28" cy="-2" rx="10" ry="6" fill="#FFF0DC" transform="rotate(-45,-28,-2)"/>
+<ellipse cx="-28" cy="-2" rx="6" ry="3.5" fill="#FFD8A8" transform="rotate(-45,-28,-2)"/>
+<ellipse cx="28" cy="-2" rx="10" ry="6" fill="#FFF0DC" transform="rotate(45,28,-2)"/>
+<ellipse cx="28" cy="-2" rx="6" ry="3.5" fill="#FFD8A8" transform="rotate(45,28,-2)"/>
+<circle cx="0" cy="-18" r="23" fill="#FFF0DC"/>
 <circle cx="-9" cy="-20" r="5" fill="#1A0F2E"/><circle cx="-7" cy="-23" r="1.8" fill="white"/>
 <circle cx="9" cy="-20" r="5" fill="#1A0F2E"/><circle cx="11" cy="-23" r="1.8" fill="white"/>
-<ellipse cx="-15" cy="-14" rx="5" ry="3.5" fill="#FFB0C8" opacity=".55"/><ellipse cx="15" cy="-14" rx="5" ry="3.5" fill="#FFB0C8" opacity=".55"/>
-<ellipse cx="0" cy="-11" rx="3" ry="2" fill="#FF88A8"/></g>`;}
+<ellipse cx="-15" cy="-14" rx="5" ry="3.5" fill="#FFB0C8" opacity=".55"/>
+<ellipse cx="15" cy="-14" rx="5" ry="3.5" fill="#FFB0C8" opacity=".55"/>
+<ellipse cx="0" cy="-10" rx="9" ry="6.5" fill="#FFE8D0"/>
+<ellipse cx="0" cy="-11" rx="4" ry="3" fill="#FF8866"/></g>`;}
   return `<g transform="${f}">
-<ellipse cx="-8" cy="-8" rx="7" ry="10.5" fill="#FFE0EE"/><ellipse cx="8" cy="-8" rx="7" ry="10.5" fill="#FFE0EE"/>
-<ellipse cx="0" cy="-28" rx="18" ry="20" fill="#FFE8F2"/>
-<ellipse cx="-20" cy="-35" rx="5.5" ry="9.5" fill="#FFE0EE" transform="rotate(-22,-20,-35)"/>
-<ellipse cx="20" cy="-35" rx="5.5" ry="9.5" fill="#FFE0EE" transform="rotate(22,20,-35)"/>
-<circle cx="0" cy="-62" r="24" fill="#FFF2F7"/>
-<ellipse cx="-12" cy="-90" rx="7" ry="18.5" fill="#FFF2F7"/><ellipse cx="-12" cy="-90" rx="4.5" ry="12.5" fill="#FFB3C8"/>
-<ellipse cx="12" cy="-90" rx="7" ry="18.5" fill="#FFF2F7"/><ellipse cx="12" cy="-90" rx="4.5" ry="12.5" fill="#FFB3C8"/>
+<ellipse cx="-8" cy="-8" rx="7" ry="10.5" fill="#FFF0DC"/><ellipse cx="8" cy="-8" rx="7" ry="10.5" fill="#FFF0DC"/>
+<ellipse cx="0" cy="-28" rx="18" ry="20" fill="#FFF0DC"/>
+<ellipse cx="-19" cy="-72" rx="9" ry="18" fill="#FFF0DC" transform="rotate(-14,-19,-72)"/>
+<ellipse cx="-19" cy="-72" rx="5.5" ry="12" fill="#FFD8A8" transform="rotate(-14,-19,-72)"/>
+<ellipse cx="19" cy="-72" rx="9" ry="18" fill="#FFF0DC" transform="rotate(14,19,-72)"/>
+<ellipse cx="19" cy="-72" rx="5.5" ry="12" fill="#FFD8A8" transform="rotate(14,19,-72)"/>
+<circle cx="0" cy="-62" r="24" fill="#FFF0DC"/>
+<ellipse cx="0" cy="-54" rx="13" ry="10" fill="#FFE8D0"/>
 <circle cx="-8.5" cy="-65" r="5.5" fill="#1A0F2E"/><circle cx="-6.5" cy="-68" r="2" fill="white"/>
 <circle cx="8.5" cy="-65" r="5.5" fill="#1A0F2E"/><circle cx="10.5" cy="-68" r="2" fill="white"/>
-<ellipse cx="-14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".55"/><ellipse cx="14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".55"/>
-<ellipse cx="0" cy="-56" rx="3" ry="2" fill="#FF88A8"/>
-<path d="M-4,-52 Q0,-48 4,-52" fill="none" stroke="#FF88A8" stroke-width="1.5" stroke-linecap="round"/></g>`;
+<ellipse cx="-14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".55"/>
+<ellipse cx="14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".55"/>
+<ellipse cx="0" cy="-57" rx="4" ry="3" fill="#FF8866"/>
+<path d="M-4,-52 Q0,-48 4,-52" fill="none" stroke="#FF8866" stroke-width="1.5" stroke-linecap="round"/></g>`;
 }
 
+// Him — bear character
 function BR(x,y,o={}){
   const f=o.flip?`translate(${x},${y}) scale(-1,1)`:`translate(${x},${y})`;
   const mg=o.mug?`<rect x="17" y="-46" width="13" height="11" rx="3" fill="#AAC8FF"/><path d="M30,-42 Q35,-42 35,-37 Q35,-32 30,-32" fill="none" stroke="#AAC8FF" stroke-width="2.5"/>`:'';
@@ -148,65 +109,93 @@ function BR(x,y,o={}){
 ${bd}${mg}</g>`;
 }
 
+// ── Title (spring blossoms) ──────────────────────────────────────────────────
 function rTitle(){return `
 <svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
-<defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EDD5FF"/><stop offset="100%" stop-color="#FFD5F0"/></linearGradient></defs>
+<defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE8F5"/><stop offset="100%" stop-color="#E8F8E0"/></linearGradient></defs>
 <rect width="640" height="420" fill="url(#tg)"/>
-<ellipse cx="112" cy="80" rx="65" ry="27" fill="white" opacity=".32"/><ellipse cx="72" cy="84" rx="46" ry="22" fill="white" opacity=".28"/>
-<ellipse cx="548" cy="85" rx="62" ry="26" fill="white" opacity=".3"/><ellipse cx="598" cy="93" rx="40" ry="20" fill="white" opacity=".25"/>
-<circle cx="82" cy="55" r="3" fill="#C880FF" opacity=".4"/><circle cx="108" cy="38" r="2" fill="#FF80C8" opacity=".5"/>
-<circle cx="562" cy="48" r="3" fill="#C880FF" opacity=".45"/><circle cx="202" cy="33" r="2.5" fill="#FF80C8" opacity=".4"/>
-<circle cx="448" cy="41" r="2.5" fill="#C880FF" opacity=".4"/><circle cx="525" cy="64" r="2" fill="#FF80C8" opacity=".35"/>
-<text x="320" y="114" text-anchor="middle" font-family="Nunito,sans-serif" font-size="34" font-weight="800" fill="#6838A8">A Little Adventure</text>
-<text x="320" y="153" text-anchor="middle" font-family="Nunito,sans-serif" font-size="24" font-weight="700" fill="#B850A0" font-style="italic">for Mia</text>
-<text x="320" y="180" text-anchor="middle" font-family="Nunito,sans-serif" font-size="13" font-weight="600" fill="#9858C8" opacity=".88">a birthday journey through our best memories</text>
-<path d="M320,198 C320,198 309,189 309,181 C309,175 315,172 320,178 C325,172 331,175 331,181 C331,189 320,198 320,198 Z" fill="#FF80C8" opacity=".85"/>
-<rect x="0" y="358" width="640" height="62" fill="#DDBBFF" opacity=".38"/>
-<circle cx="144" cy="356" r="5.5" fill="#FF88C8"/><circle cx="158" cy="353" r="4" fill="#FFAAD8"/><circle cx="172" cy="357" r="5.5" fill="#FF88C8"/>
-<circle cx="83" cy="363" r="3.5" fill="#C880FF"/>
-<circle cx="470" cy="355" r="5.5" fill="#FFD080"/><circle cx="484" cy="353" r="4" fill="#FFE8A0"/><circle cx="498" cy="356" r="5.5" fill="#FFD080"/>
-<circle cx="557" cy="361" r="3.5" fill="#C880FF"/>
-${B(252,360)}${BR(388,360)}
-<ellipse cx="320" cy="347" rx="13" ry="7" fill="#E0B8F8" opacity=".6"/>
+<path d="M0,55 Q80,28 165,62 Q205,78 248,55" fill="none" stroke="#D4A8B8" stroke-width="3"/>
+<path d="M0,55 Q42,18 88,38" fill="none" stroke="#D4A8B8" stroke-width="2.5"/>
+<circle cx="165" cy="62" r="7" fill="#FFB8D0" opacity=".8"/><circle cx="171" cy="56" r="5" fill="#FFC8DC" opacity=".9"/><circle cx="159" cy="57" r="5" fill="#FFB0CC" opacity=".85"/>
+<circle cx="248" cy="55" r="7" fill="#FFB8D0" opacity=".8"/><circle cx="254" cy="49" r="5" fill="#FFC8DC" opacity=".9"/><circle cx="242" cy="50" r="5" fill="#FFB0CC" opacity=".85"/>
+<circle cx="88" cy="38" r="6" fill="#FFB8D0" opacity=".8"/><circle cx="94" cy="33" r="4.5" fill="#FFC8DC" opacity=".9"/>
+<path d="M640,72 Q558,42 475,72 Q435,88 396,68" fill="none" stroke="#D4A8B8" stroke-width="3"/>
+<circle cx="475" cy="72" r="7" fill="#FFB8D0" opacity=".8"/><circle cx="469" cy="66" r="5" fill="#FFC8DC" opacity=".9"/><circle cx="481" cy="67" r="5" fill="#FFB0CC" opacity=".85"/>
+<circle cx="396" cy="68" r="7" fill="#FFB8D0" opacity=".8"/><circle cx="390" cy="62" r="5" fill="#FFC8DC" opacity=".9"/>
+<ellipse cx="190" cy="138" rx="5" ry="3" fill="#FFB8D0" opacity=".6" transform="rotate(25,190,138)"/>
+<ellipse cx="335" cy="88" rx="4" ry="2.5" fill="#FFC0DC" opacity=".5" transform="rotate(-15,335,88)"/>
+<ellipse cx="458" cy="152" rx="5" ry="3" fill="#FFB0CC" opacity=".55" transform="rotate(40,458,152)"/>
+<ellipse cx="112" cy="198" rx="4" ry="2.5" fill="#FFB8D0" opacity=".5" transform="rotate(-30,112,198)"/>
+<ellipse cx="320" cy="420" rx="380" ry="80" fill="#C8E8A0"/>
+<ellipse cx="80" cy="420" rx="160" ry="55" fill="#B8DC8C"/>
+<ellipse cx="560" cy="420" rx="150" ry="50" fill="#B8DC8C"/>
+<circle cx="122" cy="388" r="4" fill="#FF88C8"/><circle cx="128" cy="384" r="3" fill="#FFAADD"/>
+<circle cx="202" cy="394" r="4" fill="#FFE040"/><circle cx="208" cy="390" r="3" fill="#FFE870"/>
+<circle cx="442" cy="386" r="4" fill="#FF88C8"/><circle cx="448" cy="382" r="3" fill="#FFAADD"/>
+<circle cx="522" cy="392" r="4" fill="#A0D840"/><circle cx="528" cy="388" r="3" fill="#C0E860"/>
+<text x="320" y="186" text-anchor="middle" font-family="Nunito,sans-serif" font-size="34" font-weight="800" fill="#6838A8">A Little Adventure</text>
+<text x="320" y="226" text-anchor="middle" font-family="Nunito,sans-serif" font-size="24" font-weight="700" fill="#B850A0" font-style="italic">for Mia</text>
+<text x="320" y="256" text-anchor="middle" font-family="Nunito,sans-serif" font-size="13" font-weight="600" fill="#9858C8" opacity=".88">a birthday journey through our best memories</text>
+<path d="M320,274 C320,274 309,265 309,257 C309,251 315,248 320,254 C325,248 331,251 331,257 C331,265 320,274 320,274 Z" fill="#FF80C8" opacity=".85"/>
+${B(245,382)}${BR(390,382)}
+<ellipse cx="320" cy="370" rx="13" ry="7" fill="#D0E8B0" opacity=".7"/>
 </svg>
 <div class="nav"><button class="btn btnbig" onclick="go(1)">Begin Our Story &#9825;</button></div>`;}
 
-function rS1(){
-  const rail=`<rect x="0" y="274" width="640" height="5" fill="#483828" rx="2"/><rect x="0" y="297" width="640" height="4" fill="#483828" rx="2"/>`+
-    Array.from({length:27},(_,i)=>`<rect x="${8+i*23}" y="274" width="4" height="27" fill="#483828" rx="2"/>`).join('');
-  return `
+// ── Scene 1: Hawaii ──────────────────────────────────────────────────────────
+function rS1(){return `
 <svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
-<defs><linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFD590"/><stop offset="55%" stop-color="#FFAA55"/><stop offset="100%" stop-color="#FF7035"/></linearGradient></defs>
+<defs>
+<linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stop-color="#FF4820"/>
+  <stop offset="45%" stop-color="#FF7E3A"/>
+  <stop offset="80%" stop-color="#FFB858"/>
+  <stop offset="100%" stop-color="#FFC870"/>
+</linearGradient>
+<linearGradient id="sea1" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stop-color="#1868B0"/>
+  <stop offset="100%" stop-color="#0C4880"/>
+</linearGradient>
+</defs>
 <rect width="640" height="420" fill="url(#sky1)"/>
-<circle cx="320" cy="200" r="55" fill="#FFEE70" opacity=".42"/><circle cx="320" cy="200" r="38" fill="#FFE840" opacity=".42"/>
-<rect x="0" y="228" width="640" height="72" fill="#3A2050"/>
-<rect x="12" y="196" width="28" height="84" fill="#3A2050"/><rect x="50" y="183" width="40" height="97" fill="#3A2050"/>
-<rect x="100" y="207" width="24" height="73" fill="#3A2050"/><rect x="135" y="190" width="34" height="90" fill="#3A2050"/>
-<rect x="180" y="174" width="47" height="106" fill="#3A2050"/><rect x="238" y="202" width="27" height="78" fill="#3A2050"/>
-<rect x="350" y="208" width="62" height="72" fill="#3A2050"/><rect x="388" y="190" width="37" height="90" fill="#3A2050"/>
-<rect x="435" y="179" width="50" height="101" fill="#3A2050"/><rect x="498" y="197" width="27" height="83" fill="#3A2050"/>
-<rect x="535" y="185" width="44" height="95" fill="#3A2050"/><rect x="590" y="200" width="50" height="80" fill="#3A2050"/>
-<rect x="57" y="193" width="5" height="5" fill="#FFE090" opacity=".75"/><rect x="69" y="194" width="5" height="5" fill="#FFE090" opacity=".6"/>
-<rect x="57" y="204" width="5" height="5" fill="#FFE090" opacity=".7"/><rect x="188" y="182" width="5" height="5" fill="#FFE090" opacity=".8"/>
-<rect x="200" y="185" width="5" height="5" fill="#FFE090" opacity=".65"/><rect x="443" y="187" width="5" height="5" fill="#FFE090" opacity=".7"/>
-<rect x="456" y="191" width="5" height="5" fill="#FFE090" opacity=".75"/><rect x="542" y="193" width="5" height="5" fill="#FFE090" opacity=".6"/>
-<rect x="0" y="300" width="640" height="120" fill="#EAD8B5"/><rect x="0" y="300" width="640" height="3" fill="#D4C09A"/>
-<line x1="0" y1="317" x2="640" y2="317" stroke="#D5C49A" stroke-width="1.2"/><line x1="0" y1="334" x2="640" y2="334" stroke="#D5C49A" stroke-width=".8"/>
-<line x1="160" y1="300" x2="160" y2="420" stroke="#D5C49A" stroke-width=".8"/><line x1="320" y1="300" x2="320" y2="420" stroke="#D5C49A" stroke-width=".8"/><line x1="480" y1="300" x2="480" y2="420" stroke="#D5C49A" stroke-width=".8"/>
-${B(245,302)}${BR(390,302,{flip:true})}
-${rail}
+<circle cx="320" cy="212" r="52" fill="#FFE040" opacity=".92"/>
+<circle cx="320" cy="212" r="38" fill="#FFCC18" opacity=".88"/>
+<ellipse cx="320" cy="265" rx="28" ry="8" fill="#FFE050" opacity=".3"/>
+<rect x="0" y="255" width="640" height="165" fill="url(#sea1)"/>
+<path d="M300,258 Q310,254 320,258 Q330,254 340,258" fill="none" stroke="#FFDD40" stroke-width="1.8" opacity=".28"/>
+<path d="M0,268 Q80,261 160,268 Q240,275 320,268 Q400,261 480,268 Q560,275 640,268" fill="none" stroke="#4AAAE0" stroke-width="1.5" opacity=".5"/>
+<path d="M0,284 Q100,277 200,284 Q320,291 440,284 Q560,277 640,284" fill="none" stroke="#4AAAE0" stroke-width="1" opacity=".4"/>
+<path d="M0,300 Q120,294 240,300 Q360,306 480,300 Q560,294 640,300" fill="none" stroke="#4AAAE0" stroke-width="1" opacity=".35"/>
+<ellipse cx="320" cy="340" rx="360" ry="50" fill="#DDB848"/>
+<rect x="0" y="352" width="640" height="68" fill="#E8C858"/>
+<path d="M60,368 Q160,362 260,368" fill="none" stroke="#D4AC40" stroke-width="1" opacity=".5"/>
+<path d="M380,366 Q480,360 580,366" fill="none" stroke="#D4AC40" stroke-width="1" opacity=".5"/>
+<ellipse cx="200" cy="344" rx="55" ry="5" fill="white" opacity=".3"/>
+<ellipse cx="430" cy="341" rx="45" ry="4" fill="white" opacity=".28"/>
+<path d="M82,420 Q78,340 88,266" stroke="#6B3A18" stroke-width="12" fill="none" stroke-linecap="round"/>
+<path d="M88,266 C58,233 18,236 13,253 C36,253 60,266 88,276" fill="#3A8020"/>
+<path d="M88,266 C72,226 48,213 32,226 C54,236 74,254 88,280" fill="#308518"/>
+<path d="M88,266 C102,228 130,220 142,236 C120,242 100,258 88,278" fill="#3A8020"/>
+<path d="M88,266 C108,236 140,232 150,250 C128,248 107,262 88,276" fill="#2A7818"/>
+<path d="M556,420 Q558,340 548,268" stroke="#6B3A18" stroke-width="12" fill="none" stroke-linecap="round"/>
+<path d="M548,268 C520,235 480,238 476,255 C498,255 522,268 548,278" fill="#3A8020"/>
+<path d="M548,268 C532,228 508,215 492,228 C514,238 534,256 548,282" fill="#308518"/>
+<path d="M548,268 C562,230 590,222 602,238 C580,244 560,260 548,280" fill="#3A8020"/>
+${B(248,376)}${BR(370,376,{flip:true})}
+<ellipse cx="309" cy="363" rx="14" ry="5" fill="#C8A838" opacity=".45"/>
 <g class="sp" onclick="openMem()">
-<circle cx="320" cy="148" r="19" fill="#FFCCF0" opacity=".45"/>
-<path d="M320,159 C320,159 308,149 308,140 C308,133 314,130 320,136 C326,130 332,133 332,140 C332,149 320,159 320,159 Z" fill="#FF70B8"/>
-<circle cx="307" cy="130" r="2.5" fill="#FFCCE8"/><circle cx="333" cy="130" r="2.5" fill="#FFCCE8"/>
-<circle cx="302" cy="143" r="2" fill="#FFCCE8"/><circle cx="338" cy="143" r="2" fill="#FFCCE8"/></g>
+<circle cx="500" cy="128" r="19" fill="#FFE8A0" opacity=".55"/>
+<path d="M500,113 C500,113 488,103 488,94 C488,87 494,84 500,90 C506,84 512,87 512,94 C512,103 500,113 500,113 Z" fill="#FF8030"/>
+<circle cx="488" cy="82" r="2.5" fill="#FFCC70"/><circle cx="512" cy="82" r="2.5" fill="#FFCC70"/>
+<circle cx="481" cy="96" r="2" fill="#FFCC70"/><circle cx="519" cy="96" r="2" fill="#FFCC70"/>
+</g>
 </svg>
 <div class="stag">Memory 1 of 5</div>
-<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>That balcony above the whole city &mdash; just us, talking for hours, forgetting everything else existed. I never wanted to come back down.</p></div>
+<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Hawaii &mdash; our first trip that felt truly far from home. Standing at the edge of that ocean together, I remember thinking every adventure with you would always feel this good.</p></div>
 <div class="hint">tap the glowing heart</div>
-<div class="nav"><button class="btn btns" onclick="go(0)">&larr; Back</button><button class="btn btnp" onclick="go(2)">Next &rarr;</button></div>`;
-}
+<div class="nav"><button class="btn btns" onclick="go(0)">&larr; Back</button><button class="btn btnp" onclick="go(2)">Next &rarr;</button></div>`;}
 
+// ── Scene 2: Playing Blind ───────────────────────────────────────────────────
 function rS2(){return `
 <svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
 <defs><linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#AEE4FF"/><stop offset="100%" stop-color="#DDF5FF"/></linearGradient></defs>
@@ -217,141 +206,219 @@ function rS2(){return `
 <ellipse cx="320" cy="308" rx="345" ry="22" fill="#72BB42"/>
 <path d="M210,308 Q280,335 330,365 Q380,395 440,420 L390,420 Q335,392 295,362 Q255,332 195,308 Z" fill="#D4B070"/>
 <path d="M255,308 Q322,335 372,365 Q415,395 462,420 L438,420 Q395,392 352,362 Q312,332 250,308 Z" fill="#DCC282"/>
-<ellipse cx="300" cy="338" rx="30" ry="8" fill="#C8A850" opacity=".55"/><ellipse cx="338" cy="362" rx="26" ry="6" fill="#C8A850" opacity=".5"/>
+<ellipse cx="300" cy="338" rx="30" ry="8" fill="#C8A850" opacity=".55"/>
+<ellipse cx="338" cy="362" rx="26" ry="6" fill="#C8A850" opacity=".5"/>
+<circle cx="180" cy="316" r="5" fill="#FF88C8"/><circle cx="188" cy="313" r="3.5" fill="#FFAADD"/>
+<circle cx="460" cy="318" r="5" fill="#FFD880"/><circle cx="468" cy="314" r="3.5" fill="#FFE8A0"/>
+<circle cx="100" cy="325" r="4" fill="#FF9090"/><circle cx="545" cy="320" r="4" fill="#C8A0FF"/>
+<circle cx="580" cy="332" r="4" fill="#FF88C8"/><circle cx="60" cy="337" r="4" fill="#80E880"/>
 <rect x="58" y="245" width="16" height="65" fill="#6B3A1A"/><circle cx="66" cy="230" r="38" fill="#3C8020"/><circle cx="48" cy="245" r="28" fill="#358018"/><circle cx="84" cy="245" r="30" fill="#348520"/>
 <rect x="140" y="255" width="14" height="55" fill="#6B3A1A"/><circle cx="147" cy="240" r="34" fill="#3C8020"/><circle cx="130" cy="252" r="25" fill="#358018"/><circle cx="162" cy="253" r="26" fill="#308020"/>
 <rect x="488" y="250" width="16" height="60" fill="#6B3A1A"/><circle cx="496" cy="235" r="36" fill="#3C8020"/><circle cx="478" cy="248" r="27" fill="#358018"/><circle cx="514" cy="248" r="28" fill="#308020"/>
 <rect x="572" y="255" width="14" height="55" fill="#6B3A1A"/><circle cx="579" cy="241" r="32" fill="#3C8020"/><circle cx="562" cy="253" r="24" fill="#358018"/><circle cx="596" cy="252" r="25" fill="#308020"/>
-<circle cx="180" cy="316" r="4" fill="#FF88C8"/><circle cx="460" cy="318" r="4" fill="#FFD880"/><circle cx="100" cy="324" r="3.5" fill="#FF9090"/><circle cx="545" cy="320" r="3.5" fill="#C8A0FF"/>
 ${B(255,330)}${BR(355,330,{blind:true})}
 <ellipse cx="305" cy="296" rx="15" ry="8" fill="#D8AEC8" opacity=".6"/>
 <g class="sp" onclick="openMem()">
 <circle cx="490" cy="98" r="19" fill="#FFFCE0" opacity=".5"/>
 <polygon points="490,82 494,95 508,95 497,103 501,116 490,109 479,116 483,103 472,95 486,95" fill="#FFE040"/>
-<circle cx="490" cy="79" r="2.5" fill="#FFF0A0"/><circle cx="509" cy="86" r="2" fill="#FFF0A0"/><circle cx="471" cy="86" r="2" fill="#FFF0A0"/></g>
+<circle cx="490" cy="79" r="2.5" fill="#FFF0A0"/><circle cx="509" cy="86" r="2" fill="#FFF0A0"/><circle cx="471" cy="86" r="2" fill="#FFF0A0"/>
+</g>
 </svg>
 <div class="stag">Memory 2 of 5</div>
-<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Blindfolded, trusting you with every step. You'd lead me over every bump and edge &mdash; they always felt so much higher than they were. But somehow it was never scary. Just us, and the adventure.</p></div>
+<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Playing blind with you. Every bump, every edge felt so much bigger &mdash; but never scary, because you were there. It was always just us and the adventure, exactly as it should be.</p></div>
 <div class="hint">tap the glowing star</div>
 <div class="nav"><button class="btn btns" onclick="go(1)">&larr; Back</button><button class="btn btnp" onclick="go(3)">Next &rarr;</button></div>`;}
 
-function rS3(){
-  const sf=starField(75,10,10,630,235,777);
-  return `
+// ── Scene 3: Hiking ──────────────────────────────────────────────────────────
+function rS3(){return `
 <svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
-<rect width="640" height="420" fill="#0C1138"/><rect width="640" height="255" fill="#11173E"/>
-${sf}
-<circle cx="160" cy="55" r="6" fill="white" opacity=".14"/><circle cx="160" cy="55" r="3" fill="white" opacity=".9"/>
-<circle cx="480" cy="42" r="7" fill="#FFF8A0" opacity=".12"/><circle cx="480" cy="42" r="3.5" fill="#FFF8A0" opacity=".9"/>
-<circle cx="350" cy="38" r="2.5" fill="#A0D8FF" opacity=".85"/><circle cx="220" cy="128" r="2" fill="white" opacity=".8"/><circle cx="410" cy="108" r="2" fill="white" opacity=".75"/>
-<line x1="160" y1="55" x2="220" y2="128" stroke="white" stroke-width=".6" opacity=".28"/>
-<line x1="220" y1="128" x2="350" y2="38" stroke="white" stroke-width=".6" opacity=".28"/>
-<line x1="350" y1="38" x2="410" y2="108" stroke="white" stroke-width=".6" opacity=".28"/>
-<line x1="410" y1="108" x2="480" y2="42" stroke="white" stroke-width=".6" opacity=".28"/>
-<circle cx="555" cy="68" r="32" fill="#FFF8D8" opacity=".92"/><circle cx="544" cy="60" r="26" fill="#11173E"/>
-<rect x="0" y="255" width="640" height="45" fill="#0A0C22"/>
-<rect x="50" y="238" width="45" height="62" fill="#0A0C22"/><rect x="105" y="248" width="30" height="52" fill="#0A0C22"/>
-<rect x="148" y="242" width="38" height="58" fill="#0A0C22"/><rect x="200" y="235" width="55" height="65" fill="#0A0C22"/>
-<rect x="370" y="240" width="50" height="60" fill="#0A0C22"/><rect x="430" y="234" width="42" height="66" fill="#0A0C22"/>
-<rect x="483" y="244" width="32" height="56" fill="#0A0C22"/><rect x="526" y="238" width="48" height="62" fill="#0A0C22"/><rect x="585" y="247" width="55" height="53" fill="#0A0C22"/>
-<rect x="58" y="248" width="4" height="4" fill="#FFE898" opacity=".8"/><rect x="70" y="250" width="4" height="4" fill="#FFE898" opacity=".7"/>
-<rect x="210" y="243" width="4" height="4" fill="#FFE898" opacity=".8"/><rect x="222" y="247" width="4" height="4" fill="#FFE898" opacity=".7"/>
-<rect x="437" y="242" width="4" height="4" fill="#FFE898" opacity=".75"/><rect x="449" y="248" width="4" height="4" fill="#FFE898" opacity=".65"/>
-<rect x="0" y="298" width="640" height="122" fill="#2A2842"/><rect x="0" y="298" width="640" height="4" fill="#383658"/>
-<line x1="0" y1="320" x2="640" y2="320" stroke="#383658" stroke-width="1"/><line x1="0" y1="345" x2="640" y2="345" stroke="#383658" stroke-width=".8"/>
-${Array.from({length:9},(_,i)=>`<line x1="${i*80}" y1="298" x2="${i*80}" y2="320" stroke="#383658" stroke-width=".7"/>`).join('')}
-<rect x="50" y="280" width="40" height="22" rx="3" fill="#221F38"/><rect x="555" y="282" width="35" height="18" rx="2" fill="#221F38"/>
-${B(200,352,{top:true})}${BR(420,352,{top:true})}
+<defs>
+<linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stop-color="#7EC8F0"/>
+  <stop offset="100%" stop-color="#C8ECFF"/>
+</linearGradient>
+</defs>
+<rect width="640" height="420" fill="url(#sky3)"/>
+<polygon points="0,265 100,150 200,265" fill="#8098B8" opacity=".6"/>
+<polygon points="80,265 200,132 320,265" fill="#7088A8" opacity=".7"/>
+<polygon points="200,265 340,108 480,265" fill="#6080A0" opacity=".8"/>
+<polygon points="380,265 500,148 620,265" fill="#7090B0" opacity=".65"/>
+<polygon points="460,265 585,162 700,265" fill="#8098B8" opacity=".55"/>
+<polygon points="265,175 340,108 415,175 340,152" fill="white" opacity=".68"/>
+<ellipse cx="130" cy="72" rx="60" ry="26" fill="white" opacity=".7"/><ellipse cx="88" cy="78" rx="44" ry="22" fill="white" opacity=".65"/>
+<ellipse cx="520" cy="62" rx="58" ry="24" fill="white" opacity=".68"/>
+<rect x="0" y="258" width="640" height="162" fill="#4A8A28"/>
+<path d="M270,258 Q312,282 322,420 L358,420 Q348,282 390,258 Z" fill="#C8A060"/>
+<path d="M276,258 Q314,280 324,420 L336,420 Q346,280 384,258 Z" fill="#D4B070"/>
+<rect x="20" y="180" width="14" height="145" fill="#5A3015"/><polygon points="27,118 0,218 54,218" fill="#225010"/><polygon points="27,153 -2,226 56,226" fill="#2A5818"/>
+<rect x="68" y="192" width="13" height="133" fill="#5A3015"/><polygon points="74,132 48,216 100,216" fill="#225010"/><polygon points="74,163 46,222 102,222" fill="#2A5818"/>
+<rect x="115" y="178" width="15" height="147" fill="#5A3015"/><polygon points="122,115 92,220 152,220" fill="#1E4C10"/><polygon points="122,150 90,226 154,226" fill="#265418"/>
+<rect x="168" y="188" width="13" height="137" fill="#5A3015"/><polygon points="174,128 148,216 200,216" fill="#225010"/>
+<rect x="210" y="198" width="12" height="127" fill="#5A3015"/><polygon points="216,143 193,210 239,210" fill="#225010"/>
+<rect x="420" y="198" width="12" height="127" fill="#5A3015"/><polygon points="426,143 401,210 451,210" fill="#225010"/>
+<rect x="460" y="188" width="13" height="137" fill="#5A3015"/><polygon points="466,128 440,216 492,216" fill="#225010"/><polygon points="466,160 438,222 494,222" fill="#2A5818"/>
+<rect x="508" y="178" width="15" height="147" fill="#5A3015"/><polygon points="515,115 485,220 545,220" fill="#1E4C10"/><polygon points="515,150 483,226 547,226" fill="#265418"/>
+<rect x="558" y="192" width="13" height="133" fill="#5A3015"/><polygon points="564,132 538,216 590,216" fill="#225010"/><polygon points="564,163 536,222 592,222" fill="#2A5818"/>
+<rect x="604" y="180" width="14" height="145" fill="#5A3015"/><polygon points="611,118 584,218 638,218" fill="#225010"/>
+<ellipse cx="320" cy="312" rx="12" ry="5" fill="#B8A070" opacity=".55"/>
+<ellipse cx="320" cy="356" rx="10" ry="4" fill="#B8A070" opacity=".5"/>
+${B(278,382)}${BR(362,382,{flip:true})}
+<ellipse cx="320" cy="370" rx="13" ry="5" fill="#A89060" opacity=".45"/>
 <g class="sp" onclick="openMem()">
-<circle cx="320" cy="84" r="22" fill="white" opacity=".07"/>
-<polygon points="320,64 325,78 340,78 328,87 333,101 320,92 307,101 312,87 300,78 315,78" fill="#FFE880" opacity=".95"/>
-<circle cx="320" cy="61" r="3" fill="#FFFAC0"/><circle cx="342" cy="69" r="2.5" fill="#FFFAC0"/><circle cx="298" cy="69" r="2.5" fill="#FFFAC0"/></g>
+<circle cx="148" cy="100" r="19" fill="#D8FFCC" opacity=".55"/>
+<polygon points="148,84 152,97 166,97 155,105 159,118 148,110 137,118 141,105 130,97 144,97" fill="#60CC30"/>
+<circle cx="148" cy="81" r="3" fill="#A0FF70"/><circle cx="167" cy="88" r="2.5" fill="#A0FF70"/><circle cx="129" cy="88" r="2.5" fill="#A0FF70"/>
+</g>
 </svg>
 <div class="stag">Memory 3 of 5</div>
-<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Late nights on the rooftop, just staring up. The whole universe felt close enough to touch &mdash; the city humming below, the sky stretching forever above. Our own quiet little corner of it all.</p></div>
+<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Every trail we hike turns into our new favorite place we&rsquo;ve ever been. We find somewhere new and it always becomes ours. Every trip with you feels like the start of something.</p></div>
 <div class="hint">tap the glowing star</div>
-<div class="nav"><button class="btn btns" onclick="go(2)">&larr; Back</button><button class="btn btnp" onclick="go(4)">Next &rarr;</button></div>`;
-}
+<div class="nav"><button class="btn btns" onclick="go(2)">&larr; Back</button><button class="btn btnp" onclick="go(4)">Next &rarr;</button></div>`;}
 
+// ── Scene 4: Dancing ────────────────────────────────────────────────────────
 function rS4(){
-  const fl=Array.from({length:16},(_,i)=>{
-    const xs=[320,358,392,422,452,482,512,542,572,338,372,406,440,475,505,535];
-    const ys=[300,322,295,342,305,332,310,326,298,352,362,346,372,356,342,366];
-    const cs=['#FF88C8','#FFD060','#FF9090','#80E880','#A888FF','#FFB860'];
-    return `<circle cx="${xs[i]}" cy="${ys[i]}" r="5" fill="${cs[i%6]}" opacity=".9"/><circle cx="${xs[i]}" cy="${ys[i]}" r="2.5" fill="${cs[(i+2)%6]}" opacity=".7"/>`;
-  }).join('');
+  const lights=[30,90,150,210,268,328,388,448,508,568,618].map((x,i)=>
+    `<circle cx="${x}" cy="${62+(i%3-1)*3}" r="3.5" fill="#FFE060" opacity=".78"/>`
+  ).join('');
   return `
 <svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
-<defs><linearGradient id="sky4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C8F0FF"/><stop offset="100%" stop-color="#EAF9FF"/></linearGradient></defs>
-<rect width="640" height="420" fill="url(#sky4)"/>
-<rect x="240" y="0" width="400" height="420" fill="#A8E058"/>
-<rect x="285" y="0" width="355" height="285" fill="#C8EFFF"/>
-<ellipse cx="475" cy="385" rx="220" ry="65" fill="#88CC38"/>
-<rect x="0" y="0" width="262" height="420" fill="#173A0E"/>
-<ellipse cx="130" cy="385" rx="175" ry="52" fill="#274E16"/>
-<rect x="20" y="120" width="12" height="200" fill="#3A2010"/><polygon points="26,60 -5,190 57,190" fill="#1A4510"/><polygon points="26,100 -8,200 60,200" fill="#214C18"/>
-<rect x="70" y="140" width="14" height="180" fill="#3A2010"/><polygon points="77,80 45,200 109,200" fill="#1A4510"/><polygon points="77,120 44,210 110,210" fill="#214C18"/>
-<rect x="130" y="130" width="13" height="190" fill="#3A2010"/><polygon points="136,70 103,200 169,200" fill="#1A4510"/><polygon points="136,110 102,210 170,210" fill="#214C18"/>
-<rect x="185" y="145" width="12" height="175" fill="#3A2010"/><polygon points="191,85 160,200 222,200" fill="#1A4510"/><polygon points="191,125 158,208 224,208" fill="#214C18"/>
-<rect x="228" y="150" width="11" height="170" fill="#3A2010"/><polygon points="233,95 208,205 258,205" fill="#1A4510"/>
-<ellipse cx="60" cy="345" rx="25" ry="13" fill="#3A7020" opacity=".45"/><ellipse cx="165" cy="362" rx="30" ry="11" fill="#3A7020" opacity=".4"/>
-<path d="M238,0 Q262,105 256,210 Q250,312 238,420 L300,420 L300,0 Z" fill="#2A6018" opacity=".55"/>
-${fl}
-<line x1="310" y1="282" x2="308" y2="312" stroke="#70B830" stroke-width="3" stroke-linecap="round"/>
-<line x1="318" y1="278" x2="316" y2="310" stroke="#80C840" stroke-width="2.5" stroke-linecap="round"/>
-<line x1="326" y1="284" x2="324" y2="314" stroke="#70B830" stroke-width="2.5" stroke-linecap="round"/>
-<path d="M0,360 Q100,346 200,340 Q260,338 312,342 L320,420 L0,420 Z" fill="#C8A860" opacity=".75"/>
-<path d="M30,360 Q120,348 210,343 Q265,341 315,343" fill="none" stroke="#D4B870" stroke-width="3" opacity=".5"/>
-${B(303,340)}${BR(368,340)}
-<ellipse cx="336" cy="326" rx="11" ry="6" fill="#D4B8A0" opacity=".55"/>
+<defs>
+<linearGradient id="bg4" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stop-color="#2A1A0E"/>
+  <stop offset="100%" stop-color="#1A0C06"/>
+</linearGradient>
+<radialGradient id="lamp4" cx="70%" cy="15%" r="58%">
+  <stop offset="0%" stop-color="#FFE090" stop-opacity=".48"/>
+  <stop offset="100%" stop-color="#2A1A0E" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<rect width="640" height="420" fill="url(#bg4)"/>
+<rect width="640" height="420" fill="url(#lamp4)"/>
+<line x1="0" y1="100" x2="640" y2="100" stroke="#3A2510" stroke-width="2"/>
+<line x1="0" y1="65" x2="640" y2="65" stroke="#3A2510" stroke-width="1"/>
+<rect x="82" y="110" width="118" height="88" rx="5" fill="#3A2510" opacity=".5"/>
+<rect x="88" y="116" width="106" height="76" rx="3" fill="#2A1808" opacity=".6"/>
+<rect x="282" y="106" width="78" height="64" rx="4" fill="#3A2510" opacity=".42"/>
+<rect x="0" y="310" width="640" height="110" fill="#3A2408"/>
+<line x1="0" y1="340" x2="640" y2="340" stroke="#4A3018" stroke-width="1.5"/>
+<line x1="0" y1="368" x2="640" y2="368" stroke="#4A3018" stroke-width="1"/>
+<line x1="160" y1="310" x2="160" y2="420" stroke="#4A3018" stroke-width="1"/>
+<line x1="320" y1="310" x2="320" y2="420" stroke="#4A3018" stroke-width="1"/>
+<line x1="480" y1="310" x2="480" y2="420" stroke="#4A3018" stroke-width="1"/>
+<line x1="460" y1="0" x2="460" y2="80" stroke="#8A6040" stroke-width="3"/>
+<ellipse cx="460" cy="82" rx="22" ry="10" fill="#C89040"/>
+<polygon points="440,82 460,148 480,82" fill="#FFD860" opacity=".82"/>
+<circle cx="460" cy="82" r="5" fill="#FFFCD0"/>
+<path d="M0,62 Q80,72 160,62 Q240,52 320,62 Q400,72 480,62 Q560,52 640,62" fill="none" stroke="#8A6030" stroke-width="1.5"/>
+${lights}
+<text x="188" y="198" font-size="28" fill="#FFD060" opacity=".8" font-family="serif">&#9835;</text>
+<text x="312" y="162" font-size="22" fill="#FF90CC" opacity=".75" font-family="serif">&#9833;</text>
+<text x="158" y="152" font-size="18" fill="#FFD060" opacity=".62" font-family="serif">&#9835;</text>
+<text x="350" y="198" font-size="20" fill="#FFA0D0" opacity=".7" font-family="serif">&#9835;</text>
+<!-- dancing puppy — tilted, arms raised, happy squint eyes -->
+<g transform="translate(230,382) rotate(10,0,-50)">
+<ellipse cx="-10" cy="-5" rx="7" ry="10" fill="#FFF0DC"/>
+<ellipse cx="8" cy="-12" rx="7" ry="9" fill="#FFF0DC" transform="rotate(-20,8,-12)"/>
+<ellipse cx="0" cy="-28" rx="18" ry="20" fill="#FFF0DC"/>
+<ellipse cx="-26" cy="-52" rx="7" ry="10" fill="#FFF0DC" transform="rotate(-50,-26,-52)"/>
+<ellipse cx="26" cy="-54" rx="7" ry="10" fill="#FFF0DC" transform="rotate(45,26,-54)"/>
+<ellipse cx="-19" cy="-72" rx="9" ry="18" fill="#FFF0DC" transform="rotate(-14,-19,-72)"/>
+<ellipse cx="-19" cy="-72" rx="5.5" ry="12" fill="#FFD8A8" transform="rotate(-14,-19,-72)"/>
+<ellipse cx="19" cy="-72" rx="9" ry="18" fill="#FFF0DC" transform="rotate(14,19,-72)"/>
+<ellipse cx="19" cy="-72" rx="5.5" ry="12" fill="#FFD8A8" transform="rotate(14,19,-72)"/>
+<circle cx="0" cy="-62" r="24" fill="#FFF0DC"/>
+<ellipse cx="2" cy="-54" rx="13" ry="10" fill="#FFE8D0"/>
+<path d="M-12,-66 Q-8,-61 -4,-66" fill="none" stroke="#1A0F2E" stroke-width="3" stroke-linecap="round"/>
+<path d="M4,-66 Q8,-61 12,-66" fill="none" stroke="#1A0F2E" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="-14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".75"/>
+<ellipse cx="14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".75"/>
+<ellipse cx="2" cy="-57" rx="4" ry="3" fill="#FF8866"/>
+<path d="M-5,-50 Q2,-43 9,-50" fill="none" stroke="#FF8866" stroke-width="2.2" stroke-linecap="round"/>
+</g>
+<!-- bear watching, laughing -->
+<g transform="translate(402,382)">
+<ellipse cx="-8" cy="-8" rx="7" ry="10.5" fill="#C8855A"/><ellipse cx="8" cy="-8" rx="7" ry="10.5" fill="#C8855A"/>
+<ellipse cx="0" cy="-28" rx="19" ry="20" fill="#C8855A"/>
+<ellipse cx="-21" cy="-35" rx="5.5" ry="9.5" fill="#C8855A" transform="rotate(-22,-21,-35)"/>
+<ellipse cx="21" cy="-35" rx="5.5" ry="9.5" fill="#C8855A" transform="rotate(22,21,-35)"/>
+<circle cx="0" cy="-62" r="24" fill="#D08B60"/>
+<circle cx="-18" cy="-82" r="9.5" fill="#C8855A"/><circle cx="-18" cy="-82" r="5.5" fill="#A86040"/>
+<circle cx="18" cy="-82" r="9.5" fill="#C8855A"/><circle cx="18" cy="-82" r="5.5" fill="#A86040"/>
+<ellipse cx="0" cy="-54" rx="13" ry="10" fill="#DDA878"/>
+<path d="M-13,-67 Q-8.5,-61 -4,-67" fill="none" stroke="#1A0F2E" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M4,-67 Q8.5,-61 13,-67" fill="none" stroke="#1A0F2E" stroke-width="3.2" stroke-linecap="round"/>
+<ellipse cx="-14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".5"/>
+<ellipse cx="14" cy="-59" rx="5.5" ry="3.8" fill="#FFB0C8" opacity=".5"/>
+<ellipse cx="0" cy="-57" rx="3.5" ry="2.5" fill="#6B3020"/>
+<path d="M-7,-51 Q0,-43 7,-51" fill="#6B3020" stroke="#6B3020" stroke-width="1"/>
+<ellipse cx="0" cy="-49" rx="5" ry="3" fill="#FF8888" opacity=".65"/>
+</g>
+<ellipse cx="238" cy="358" rx="30" ry="7" fill="#FFD060" opacity=".16"/>
 <g class="sp" onclick="openMem()">
-<circle cx="500" cy="210" r="19" fill="#DFFFCC" opacity=".6"/>
-<path d="M500,194 L504,206 H517 L507,214 L511,227 L500,219 L489,227 L493,214 L483,206 H496 Z" fill="#6ECC30"/>
-<circle cx="500" cy="191" r="3" fill="#A0FF70"/><circle cx="518" cy="198" r="2.5" fill="#A0FF70"/><circle cx="482" cy="198" r="2.5" fill="#A0FF70"/></g>
+<circle cx="522" cy="218" r="19" fill="#FFE8A0" opacity=".5"/>
+<polygon points="522,202 526,215 540,215 529,223 533,236 522,228 511,236 515,223 504,215 518,215" fill="#FFA030"/>
+<circle cx="522" cy="199" r="2.5" fill="#FFD080"/><circle cx="541" cy="206" r="2" fill="#FFD080"/><circle cx="503" cy="206" r="2" fill="#FFD080"/>
+</g>
 </svg>
 <div class="stag">Memory 4 of 5</div>
-<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Trekking through the deep woods and then &mdash; suddenly &mdash; the trees opening into wide open fields. That feeling of stepping into something big and bright and brand new, always side by side.</p></div>
+<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>You dancing this past weekend &mdash; I laughed harder than I have in a long time. That sound, that version of you. I want to keep that moment forever.</p></div>
 <div class="hint">tap the glowing star</div>
 <div class="nav"><button class="btn btns" onclick="go(3)">&larr; Back</button><button class="btn btnp" onclick="go(5)">Next &rarr;</button></div>`;
 }
 
+// ── Scene 5: Spring Sunset ───────────────────────────────────────────────────
 function rS5(){
-  const sf=starField(45,10,10,630,190,202);
+  const rays=Array.from({length:12},(_,i)=>{
+    const a=(i*30)*Math.PI/180;
+    const x1=(320+56*Math.cos(a)).toFixed(1),y1=(268+56*Math.sin(a)).toFixed(1);
+    const x2=(320+82*Math.cos(a)).toFixed(1),y2=(268+82*Math.sin(a)).toFixed(1);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#FFE040" stroke-width="2" opacity=".32"/>`;
+  }).join('');
+  const flowers=[55,92,132,168,204,244,396,434,472,512,552,592].map((x,i)=>{
+    const cs=['#FF88C8','#FFD840','#FF9090','#80E880','#C0A0FF','#FF70A0'];
+    const y=290+(i%4)*7;
+    return `<circle cx="${x}" cy="${y}" r="4.5" fill="${cs[i%6]}" opacity=".9"/>`;
+  }).join('');
   return `
 <svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
-<rect width="640" height="420" fill="#1C2C58"/><rect width="640" height="200" fill="#263668"/>
-${sf}
-<circle cx="565" cy="62" r="26" fill="#FFF8D0" opacity=".9"/><circle cx="555" cy="55" r="20" fill="#1C2C58"/>
-<path d="M0,240 Q80,180 160,220 Q240,260 320,200 Q400,140 480,190 Q560,240 640,210 L640,295 L0,295 Z" fill="#182248"/>
-<rect x="0" y="290" width="640" height="130" fill="#E8EEF8"/><ellipse cx="320" cy="290" rx="345" ry="20" fill="#D8E4F4"/>
-<rect x="30" y="185" width="12" height="105" fill="#4A2810"/><polygon points="36,120 10,210 62,210" fill="#1A4020"/><polygon points="36,150 8,218 64,218" fill="#214818"/><polygon points="36,175 12,224 60,224" fill="#1E4216"/>
-<rect x="80" y="195" width="11" height="95" fill="#4A2810"/><polygon points="85,135 62,215 108,215" fill="#1A4020"/><polygon points="85,162 60,221 110,221" fill="#214818"/><polygon points="85,185 63,227 107,227" fill="#1E4216"/>
-<rect x="550" y="185" width="12" height="105" fill="#4A2810"/><polygon points="556,120 530,210 582,210" fill="#1A4020"/><polygon points="556,150 528,218 584,218" fill="#214818"/><polygon points="556,175 532,224 580,224" fill="#1E4216"/>
-<rect x="600" y="195" width="11" height="95" fill="#4A2810"/><polygon points="605,135 582,215 628,215" fill="#1A4020"/><polygon points="605,162 580,221 630,221" fill="#214818"/>
-<rect x="190" y="195" width="260" height="130" rx="4" fill="#7A4A25"/>
-${[215,232,249,266,283,300].map(yy=>`<line x1="190" y1="${yy}" x2="450" y2="${yy}" stroke="#6A3A18" stroke-width="3"/>`).join('')}
-<polygon points="170,200 320,130 470,200" fill="#5A3518"/><polygon points="168,202 320,128 472,202" fill="none" stroke="#4A2810" stroke-width="3"/>
-<rect x="360" y="115" width="22" height="50" rx="2" fill="#6A4028"/><rect x="357" y="110" width="28" height="10" rx="2" fill="#5A3020"/>
-<ellipse cx="371" cy="100" rx="6" ry="8" fill="#CCCCCC" opacity=".32"/><ellipse cx="374" cy="86" rx="5" ry="7" fill="#CCCCCC" opacity=".22"/><ellipse cx="370" cy="73" rx="5" ry="7" fill="#CCCCCC" opacity=".16"/>
-<ellipse cx="237" cy="237" rx="42" ry="32" fill="#FFD060" opacity=".22"/>
-<rect x="210" y="215" width="55" height="45" rx="4" fill="#FFD870" opacity=".9"/><rect x="215" y="220" width="22" height="35" rx="2" fill="#FFCC58"/><rect x="241" y="220" width="22" height="35" rx="2" fill="#FFCC58"/>
-<ellipse cx="402" cy="237" rx="42" ry="32" fill="#FFD060" opacity=".22"/>
-<rect x="375" y="215" width="55" height="45" rx="4" fill="#FFD870" opacity=".9"/><rect x="380" y="220" width="22" height="35" rx="2" fill="#FFCC58"/><rect x="406" y="220" width="22" height="35" rx="2" fill="#FFCC58"/>
-<rect x="293" y="260" width="54" height="65" rx="4" fill="#5A3018"/><rect x="296" y="263" width="23" height="58" rx="2" fill="#4A2810"/><rect x="322" y="263" width="23" height="58" rx="2" fill="#4A2810"/><circle cx="315" cy="295" r="3.5" fill="#C89040"/>
-<rect x="270" y="320" width="100" height="10" rx="2" fill="#9A6840"/><rect x="260" y="328" width="120" height="10" rx="2" fill="#8A5830"/><rect x="250" y="336" width="140" height="12" rx="2" fill="#7A4820"/>
-${B(278,360)}${BR(370,360,{flip:true,mug:true})}
-<rect x="293" y="318" width="12" height="10" rx="3" fill="#FFB8A0"/><path d="M305,322 Q310,322 310,327 Q310,332 305,332" fill="none" stroke="#FFB8A0" stroke-width="2"/>
+<defs>
+<linearGradient id="sky5" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stop-color="#FF5228"/>
+  <stop offset="35%" stop-color="#FF8840"/>
+  <stop offset="65%" stop-color="#FFBA65"/>
+  <stop offset="100%" stop-color="#FFD885"/>
+</linearGradient>
+</defs>
+<rect width="640" height="420" fill="url(#sky5)"/>
+${rays}
+<circle cx="320" cy="268" r="56" fill="#FFE040" opacity=".9"/>
+<circle cx="320" cy="268" r="42" fill="#FFCC18" opacity=".86"/>
+<ellipse cx="320" cy="268" rx="190" ry="28" fill="#FFDD50" opacity=".2"/>
+<rect x="0" y="272" width="640" height="148" fill="#6AB830"/>
+<ellipse cx="320" cy="272" rx="360" ry="22" fill="#58A828"/>
+<ellipse cx="120" cy="310" rx="162" ry="46" fill="#60B030" opacity=".68"/>
+<ellipse cx="522" cy="306" rx="157" ry="43" fill="#60B030" opacity=".62"/>
+${flowers}
+<rect x="30" y="192" width="12" height="98" fill="#2A5010"/><polygon points="36,132 14,208 58,208" fill="#1E4810"/><polygon points="36,163 12,216 60,216" fill="#245018"/>
+<rect x="76" y="202" width="11" height="88" fill="#2A5010"/><polygon points="81,147 59,208 103,208" fill="#1E4810"/>
+<rect x="586" y="197" width="12" height="93" fill="#2A5010"/><polygon points="592,137 570,210 614,210" fill="#1E4810"/><polygon points="592,167 568,218 616,218" fill="#245018"/>
+<rect x="626" y="207" width="11" height="83" fill="#2A5010"/><polygon points="631,152 609,212 653,212" fill="#1E4810"/>
+<ellipse cx="320" cy="280" rx="75" ry="9" fill="#FFDD50" opacity=".18"/>
+${B(262,377)}${BR(360,377,{flip:true})}
+<ellipse cx="311" cy="364" rx="15" ry="5" fill="#58A828" opacity=".45"/>
 <g class="sp" onclick="openMem()">
-<circle cx="150" cy="145" r="19" fill="#FFE8C0" opacity=".5"/>
-<polygon points="150,129 154,142 168,142 157,150 161,163 150,155 139,163 143,150 132,142 146,142" fill="#FFA030"/>
-<circle cx="150" cy="126" r="3" fill="#FFD080"/><circle cx="169" cy="133" r="2" fill="#FFD080"/><circle cx="131" cy="133" r="2" fill="#FFD080"/></g>
+<circle cx="150" cy="143" r="19" fill="#FFE8C0" opacity=".55"/>
+<polygon points="150,127 154,140 168,140 157,148 161,161 150,153 139,161 143,148 132,140 146,140" fill="#FF8820"/>
+<circle cx="150" cy="124" r="3" fill="#FFCC70"/><circle cx="169" cy="131" r="2" fill="#FFCC70"/><circle cx="131" cy="131" r="2" fill="#FFCC70"/>
+</g>
 </svg>
 <div class="stag">Memory 5 of 5</div>
-<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Cabin days. Warm light through the windows, nowhere to be, nothing to rush. Just us, the quiet, and the trees outside. Some of the best days of my life.</p></div>
+<div class="mc" id="mc"><button class="mcx" onclick="closeMem()">&times;</button><p>Spring sunsets with you &mdash; nowhere to be, nothing to rush. Everything gets softer and warmer and exactly right when you&rsquo;re there.</p></div>
 <div class="hint">tap the glowing star</div>
 <div class="nav"><button class="btn btns" onclick="go(4)">&larr; Back</button><button class="btn btnp" onclick="go(6)">To the surprise &rarr;</button></div>`;
 }
 
+// ── Ending ───────────────────────────────────────────────────────────────────
 function rEnd(){
   const cfx=[45,88,132,178,220,265,310,355,398,442,486,530,575,618,60,105,150,195,240,285,330,375,420,465,510,555,600,30,75,120,165,210,255,300,345,390,435,480,525,570];
   const cfy=[18,42,12,36,26,48,10,40,22,34,16,46,28,20,58,30,54,38,64,24,68,44,56,18,40,28,48,78,16,64,34,20,70,26,54,38,12,60,44,28];
@@ -373,17 +440,17 @@ ${confetti}
 ${flags}
 <text x="320" y="148" text-anchor="middle" font-family="Nunito,sans-serif" font-size="40" font-weight="800" fill="white">Happy Birthday</text>
 <text x="320" y="198" text-anchor="middle" font-family="Nunito,sans-serif" font-size="48" font-weight="800" fill="#FFE060">Mia!</text>
-<text x="320" y="232" text-anchor="middle" font-family="Nunito,sans-serif" font-size="13.5" font-weight="600" fill="rgba(255,255,255,.92)">You make every ordinary moment feel like an adventure.</text>
-<text x="320" y="252" text-anchor="middle" font-family="Nunito,sans-serif" font-size="13.5" font-weight="600" fill="rgba(255,255,255,.92)">I love every single one of them with you.</text>
+<text x="320" y="232" text-anchor="middle" font-family="Nunito,sans-serif" font-size="13.5" font-weight="600" fill="rgba(255,255,255,.92)">Every ordinary moment with you feels like an adventure.</text>
+<text x="320" y="252" text-anchor="middle" font-family="Nunito,sans-serif" font-size="13.5" font-weight="600" fill="rgba(255,255,255,.92)">I love every single one of them.</text>
 <ellipse cx="320" cy="356" rx="92" ry="10" fill="#E8C8D8" opacity=".7"/>
 <rect x="240" y="288" width="160" height="15" rx="3" fill="#FFD8E8" opacity=".6"/>
 <rect x="248" y="298" width="144" height="55" rx="6" fill="#FF7890"/>
 <rect x="248" y="265" width="144" height="38" rx="6" fill="#FF9BB8"/>
 <ellipse cx="280" cy="298" rx="8" ry="6" fill="#FFEECC"/><ellipse cx="310" cy="295" rx="9" ry="7" fill="#FFEECC"/><ellipse cx="340" cy="297" rx="8" ry="6" fill="#FFEECC"/><ellipse cx="368" cy="295" rx="7" ry="6" fill="#FFEECC"/>
 ${candles}
-${B(215,366)}${BR(425,366,{flip:true})}
+${B(215,368)}${BR(427,368,{flip:true})}
 <polygon points="215,266 198,305 232,305" fill="#FF5090"/><rect x="198" y="303" width="34" height="5" rx="2" fill="#CC3070"/><circle cx="215" cy="266" r="4" fill="#FFE040"/>
-<polygon points="425,266 408,305 442,305" fill="#60B8FF"/><rect x="408" y="303" width="34" height="5" rx="2" fill="#3888CC"/><circle cx="425" cy="266" r="4" fill="#FFE040"/>
+<polygon points="427,266 410,305 444,305" fill="#60B8FF"/><rect x="410" y="303" width="34" height="5" rx="2" fill="#3888CC"/><circle cx="427" cy="266" r="4" fill="#FFE040"/>
 <path d="M140,182 C140,182 133,176 133,170 C133,165 137,163 140,167 C143,163 147,165 147,170 C147,176 140,182 140,182 Z" fill="white" opacity=".7"/>
 <path d="M502,196 C502,196 496,191 496,186 C496,182 499,180 502,183 C505,180 508,182 508,186 C508,191 502,196 502,196 Z" fill="white" opacity=".7"/>
 <path d="M178,222 C178,222 173,217 173,213 C173,209 176,208 178,210 C180,208 183,209 183,213 C183,217 178,222 178,222 Z" fill="#FFE070" opacity=".65"/>
@@ -393,7 +460,6 @@ ${B(215,366)}${BR(425,366,{flip:true})}
 }
 
 function getSVG(n){return [rTitle,rS1,rS2,rS3,rS4,rS5,rEnd][n]();}
-
 function go(n){cur=n;render();if(n===6)setTimeout(confetti,60);}
 function render(){document.getElementById('gm').innerHTML=getSVG(cur);}
 function openMem(){const m=document.getElementById('mc');if(m)m.classList.add('on');const h=document.querySelector('.hint');if(h)h.style.display='none';}
