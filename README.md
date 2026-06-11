@@ -1,4 +1,4 @@
-# Tools Lab
+# MP's R&D Lab
 
 An R&D repo for micro-tools and games. Each project lives in its own directory and can be extracted into its own repo whenever it's ready.
 
