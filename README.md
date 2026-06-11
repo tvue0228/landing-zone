@@ -10,9 +10,9 @@ An R&D repo for micro-tools and games. Each project lives in its own directory a
 |------|------|-------------|
 | [A Little Adventure for Mia](games/mia-adventure/) | `games/mia-adventure/` | Personalized birthday gift — portrait mobile storybook with 5 illustrated memory scenes, swipe navigation, sparkle effects, and a birthday finale |
 | [Mastermind](games/mastermind/) | `games/mastermind/` | Code-breaking game — create a secret and share a link for others to crack |
-| [Mafia](tools/mafia/) | `tools/mafia/` | Pass-the-phone Mafia with secret roles, day voting, and night actions |
-| [Imposter](tools/imposter/) | `tools/imposter/` | Spyfall-style — everyone gets a word except the Imposter |
-| [Dino](tools/dino/) | `tools/dino/` | Chrome's offline dinosaur game rebuilt in canvas |
+| [Mafia](games/mafia/) | `games/mafia/` | Pass-the-phone Mafia with secret roles, day voting, and night actions |
+| [Imposter](games/imposter/) | `games/imposter/` | Spyfall-style — everyone gets a word except the Imposter |
+| [Dino](games/dino/) | `games/dino/` | Chrome's offline dinosaur game rebuilt in canvas |
 
 ## Tools
 
@@ -40,4 +40,4 @@ To trigger manually: **Actions → Daily Watchlist → Run workflow**
 ## Adding a project
 
 - **Tool:** create `tools/<name>/index.html`, add a card to the Live section in `index.html`
-- **Game:** create `tools/<name>/index.html` or `games/<name>/index.html`, add a card to the Games section in `index.html`
+- **Game:** create `games/<name>/index.html`, add a card to the Games section in `index.html`
