@@ -4,276 +4,238 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>MP's R&D Lab</title>
-</head>
-<body>
 <style>
-:root {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
-  --color-text-success: #15803d;
-  --color-text-warning: #92400e;
-  --color-text-info: #1d4ed8;
-  --color-background-primary: #ffffff;
-  --color-background-secondary: #f3f4f6;
-  --color-background-success: #dcfce7;
-  --color-background-warning: #fef3c7;
-  --color-background-concept: #f3f4f6;
-  --color-border-tertiary: #e5e7eb;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #fff;
+  color: #111827;
+  min-height: 100vh;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); background: var(--color-background-primary); color: var(--color-text-primary); min-height: 100vh; }
 a { color: inherit; text-decoration: none; }
 
-.wrap { padding: 3rem 1.5rem; max-width: 720px; margin: 0 auto; }
+/* Layout */
+.wrap {
+  padding: 1.75rem 1rem 3rem;
+  max-width: 640px;
+  margin: 0 auto;
+}
 
 /* Header */
-.header { margin-bottom: 3rem; }
-.header-eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 0.5rem; }
-.header-title { font-size: 28px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 0.5rem; }
-.header-sub { font-size: 15px; color: var(--color-text-secondary); line-height: 1.5; max-width: 460px; }
+.header { margin-bottom: 1.75rem; }
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 5px;
+}
+.subtitle {
+  font-size: 13.5px;
+  color: #6b7280;
+  line-height: 1.5;
+}
 
 /* Section */
-.section-label { font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-border-tertiary); }
+.section { margin-bottom: 1.5rem; }
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 6px;
+}
 
-/* Tool grid */
-.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 2.5rem; }
-
-.tool-card {
+/* Card list — single column mobile, 2-col at 520px+ */
+.card-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1.25rem;
-  border: 1px solid var(--color-border-tertiary);
-  border-radius: var(--border-radius-lg);
-  transition: border-color 0.15s, box-shadow 0.15s;
-  cursor: pointer;
-}
-.tool-card:hover {
-  border-color: #d1d5db;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-.tool-card.concept {
-  background: var(--color-background-secondary);
-  cursor: default;
+  gap: 3px;
 }
 
-.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-.card-icon { font-size: 20px; line-height: 1; }
-.card-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
-.card-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
-.card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem; }
-.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Card row */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  transition: background 0.1s, border-color 0.1s;
+  min-width: 0;
+}
+.card:hover {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+.card-icon { font-size: 17px; line-height: 1; flex-shrink: 0; width: 24px; text-align: center; }
+.card-body { flex: 1; min-width: 0; }
+.card-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1.3;
+}
+.card-desc {
+  font-size: 12px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.card-arrow {
+  font-size: 11px;
+  color: #d1d5db;
+  flex-shrink: 0;
+  transition: color 0.1s;
+}
+.card:hover .card-arrow { color: #9ca3af; }
 
-/* Status badges */
-.badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; }
-.badge-live { background: var(--color-background-success); color: var(--color-text-success); }
-.badge-wip { background: var(--color-background-warning); color: var(--color-text-warning); }
-.badge-concept { background: var(--color-background-concept); color: var(--color-text-tertiary); border: 1px solid var(--color-border-tertiary); }
-
-/* Arrow link hint */
-.card-arrow { font-size: 14px; color: var(--color-text-tertiary); }
-.tool-card:hover .card-arrow { color: var(--color-text-secondary); }
-
-@media (max-width: 480px) {
-  .wrap { padding: 2rem 1rem; }
-  .header-title { font-size: 22px; }
-  .tool-grid { grid-template-columns: 1fr; }
+@media (min-width: 520px) {
+  .wrap { padding: 2.5rem 1.5rem 3rem; }
+  .title { font-size: 26px; }
+  .card-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+  }
 }
 </style>
-
+</head>
+<body>
 <div class="wrap">
+
   <header class="header">
-    <div class="header-eyebrow">MP</div>
-    <h1 class="header-title">R&amp;D Lab</h1>
-    <p class="header-sub">A collection of micro-tools and games — each one lives here until it's ready to graduate into its own project.</p>
+    <div class="eyebrow">MP</div>
+    <h1 class="title">R&amp;D Lab</h1>
+    <p class="subtitle">Micro-tools and games — each one lives here until it's ready to graduate.</p>
   </header>
 
-  <div class="section-label">Live</div>
-  <div class="tool-grid" id="live-grid">
+  <div class="section">
+    <div class="section-label">Tools</div>
+    <div class="card-list">
 
-    <a href="tools/time-allocator/" class="tool-card">
-      <div class="card-top">
+      <a href="tools/time-allocator/" class="card">
         <span class="card-icon">⏱</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Time Allocator</div>
-      <div class="card-desc">Split the time remaining until a deadline into equal chunks. Useful for pacing meetings, study sessions, or work blocks.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
+        <div class="card-body">
+          <div class="card-name">Time Allocator</div>
+          <div class="card-desc">Split a deadline into equal time blocks</div>
         </div>
-      </div>
-    </a>
+        <span class="card-arrow">→</span>
+      </a>
 
-    <a href="tools/commander-tournament/" class="tool-card">
-      <div class="card-top">
+      <a href="tools/commander-tournament/" class="card">
         <span class="card-icon">⚔️</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Commander Circuit</div>
-      <div class="card-desc">Run a Commander (EDH) tournament with pod pairings, round-by-round scoring, standings, and strength-of-schedule tiebreakers.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
+        <div class="card-body">
+          <div class="card-name">Commander Circuit</div>
+          <div class="card-desc">EDH tournament bracket, standings, tiebreakers</div>
         </div>
-      </div>
-    </a>
+        <span class="card-arrow">→</span>
+      </a>
 
-    <a href="tools/etsy-research/" class="tool-card">
-      <div class="card-top">
+      <a href="tools/etsy-research/" class="card">
         <span class="card-icon">🛍️</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Etsy Research Hub</div>
-      <div class="card-desc">Browse curated best-seller ideas across 6 niches (POD, laser engraving, digital assets, etc.) and search live Etsy listings via API.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
+        <div class="card-body">
+          <div class="card-name">Etsy Research Hub</div>
+          <div class="card-desc">Best-seller ideas and live Etsy listing search</div>
         </div>
-      </div>
-    </a>
+        <span class="card-arrow">→</span>
+      </a>
 
-    <a href="tools/weight-loss/" class="tool-card">
-      <div class="card-top">
+      <a href="tools/weight-loss/" class="card">
         <span class="card-icon">⚖️</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Weight Loss Competition</div>
-      <div class="card-desc">Track competitors, log weigh-ins, and rank by percentage of weight lost. Includes a progress chart and full weigh-in history.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
+        <div class="card-body">
+          <div class="card-name">Weight Loss Competition</div>
+          <div class="card-desc">Track weigh-ins and rank by % lost</div>
         </div>
-      </div>
-    </a>
+        <span class="card-arrow">→</span>
+      </a>
 
-    <a href="tools/pc-parts/" class="tool-card">
-      <div class="card-top">
+      <a href="tools/pc-parts/" class="card">
         <span class="card-icon">🖥️</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">PC Parts Builder</div>
-      <div class="card-desc">Build a parts list, add prices, and get instant links to compare deals on PCPartPicker, Amazon, and Newegg. Paste an existing list to import it instantly.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
+        <div class="card-body">
+          <div class="card-name">PC Parts Builder</div>
+          <div class="card-desc">Parts list with PCPartPicker / Amazon / Newegg links</div>
         </div>
-      </div>
-    </a>
+        <span class="card-arrow">→</span>
+      </a>
 
-    <a href="tools/book-creator/" class="tool-card">
-      <div class="card-top">
+      <a href="tools/book-creator/" class="card">
         <span class="card-icon">📖</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">AI Book Creator</div>
-      <div class="card-desc">Give a prompt, generate a complete book — chapters, illustrations, and a print-ready PDF formatted for Amazon KDP publishing.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
+        <div class="card-body">
+          <div class="card-name">AI Book Creator</div>
+          <div class="card-desc">Generate a full KDP-ready book with Gemini</div>
         </div>
-      </div>
-    </a>
+        <span class="card-arrow">→</span>
+      </a>
 
-    <a href="tools/watchlist/" class="tool-card">
-      <div class="card-top">
+      <a href="tools/watchlist/" class="card">
         <span class="card-icon">📈</span>
+        <div class="card-body">
+          <div class="card-name">Daily Watchlist</div>
+          <div class="card-desc">Morning stock &amp; options screener via GitHub Actions</div>
+        </div>
         <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Daily Watchlist</div>
-      <div class="card-desc">Morning stock &amp; options watchlist generated by a GitHub Actions screener. Surfaces Gap &amp; Go, Breakout, Momentum, and Fade setups with suggested options strategies.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
-        </div>
-      </div>
-    </a>
+      </a>
 
-  </div>
-
-  <div class="section-label" style="margin-top: 1rem;">Games</div>
-  <div class="tool-grid" id="games-grid">
-
-    <a href="games/mastermind/" class="tool-card">
-      <div class="card-top">
-        <span class="card-icon">🎯</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Mastermind</div>
-      <div class="card-desc">Classic code-breaking game. Create a secret color code and share a link — challengers get limited guesses to crack it. Share results Wordle-style.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
-        </div>
-      </div>
-    </a>
-
-    <a href="games/mafia/" class="tool-card">
-      <div class="card-top">
-        <span class="card-icon">🔪</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Mafia</div>
-      <div class="card-desc">Pass-the-phone Mafia game. Add players, deal secret roles (Mafia, Sheriff, Doctor, Civilian), then play through day voting and night actions.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
-        </div>
-      </div>
-    </a>
-
-    <a href="games/imposter/" class="tool-card">
-      <div class="card-top">
-        <span class="card-icon">🕵️</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Imposter</div>
-      <div class="card-desc">Everyone gets a secret word from a category — except the Imposter. Ask questions, give clues, and vote out the fake before they guess the word.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
-        </div>
-      </div>
-    </a>
-
-    <a href="games/dino/" class="tool-card">
-      <div class="card-top">
-        <span class="card-icon">🦕</span>
-        <span class="card-arrow">→</span>
-      </div>
-      <div class="card-title">Dino</div>
-      <div class="card-desc">Chrome's offline dinosaur game rebuilt with canvas. Jump over cacti, duck under pterodactyls — day/night cycle, hi-score tracking, speed ramp.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-live">live</span>
-        </div>
-      </div>
-    </a>
-
-  </div>
-
-  <div class="section-label" style="margin-top: 1rem;">Concepts</div>
-  <div class="tool-grid" id="concept-grid">
-
-    <div class="tool-card concept">
-      <div class="card-top">
-        <span class="card-icon">💡</span>
-      </div>
-      <div class="card-title">Add a tool</div>
-      <div class="card-desc">Drop a new folder under <code style="font-size:12px; background: var(--color-border-tertiary); padding: 1px 5px; border-radius: 4px;">tools/</code> and add a card here to track it.</div>
-      <div class="card-footer">
-        <div class="card-tags">
-          <span class="badge badge-concept">concept</span>
-        </div>
-      </div>
     </div>
-
   </div>
-</div>
 
+  <div class="section">
+    <div class="section-label">Games</div>
+    <div class="card-list">
+
+      <a href="games/mastermind/" class="card">
+        <span class="card-icon">🎯</span>
+        <div class="card-body">
+          <div class="card-name">Mastermind</div>
+          <div class="card-desc">Share a secret code link — crack it in limited guesses</div>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+
+      <a href="games/mafia/" class="card">
+        <span class="card-icon">🔪</span>
+        <div class="card-body">
+          <div class="card-name">Mafia</div>
+          <div class="card-desc">Pass-the-phone with secret roles, voting, night actions</div>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+
+      <a href="games/imposter/" class="card">
+        <span class="card-icon">🕵️</span>
+        <div class="card-body">
+          <div class="card-name">Imposter</div>
+          <div class="card-desc">Everyone gets a word — except the Imposter</div>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+
+      <a href="games/dino/" class="card">
+        <span class="card-icon">🦕</span>
+        <div class="card-body">
+          <div class="card-name">Dino</div>
+          <div class="card-desc">Chrome's offline dinosaur game rebuilt in canvas</div>
+        </div>
+        <span class="card-arrow">→</span>
+      </a>
+
+    </div>
+  </div>
+
+</div>
 </body>
 </html>
