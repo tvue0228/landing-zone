@@ -2,14 +2,15 @@
 """
 Daily Watchlist Generator
 Runs via GitHub Actions every weekday morning before market open.
-Screens ~60 liquid stocks for day trading setups and suggests options strategies.
+Downloads 6 months of daily bars for indicators + 2 days of 5-min
+pre/post-market bars for today's actual gap.
 Output: data/daily-watchlist.json
 """
 
 import json
 import logging
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -37,7 +38,7 @@ UNIVERSE = [
     "LLY", "JNJ", "PFE", "MRNA", "ABBV", "GILD",
     # Consumer
     "WMT", "COST", "HD", "NKE", "SBUX",
-    # Sector ETFs (tradeable setups)
+    # Sector ETFs
     "XLF", "XLE", "XLK", "XLV",
     # Macro / Vol
     "TLT", "GLD", "USO", "HYG",
@@ -73,59 +74,73 @@ def hist_vol(close: pd.Series, period: int = 20) -> float:
 # ── Setup classifier ───────────────────────────────────────────────────────────
 
 def classify_setup(d: dict) -> dict:
-    gap       = d["gap_pct"]
-    vol_r     = d["vol_ratio"]
-    rsi_val   = d["rsi"]
-    prev_chg  = d["prev_change_pct"]
-    near_hi   = d["near_52w_high"]
-    near_lo   = d["near_52w_low"]
-    above_20  = d["above_20ma"]
-    hv        = d["hv20"]
+    gap      = d["gap_pct"]          # today's pre-market gap vs yesterday's close
+    vol_r    = d["vol_ratio"]        # yesterday's vol vs 20-day avg
+    rsi_val  = d["rsi"]
+    prev_chg = d["prev_change_pct"]  # yesterday's close vs prior close
+    near_hi  = d["near_52w_high"]
+    near_lo  = d["near_52w_low"]
+    above_20 = d["above_20ma"]
+    hv       = d["hv20"]
 
     setup      = "Watch"
     direction  = "neutral"
     confidence = "low"
     notes      = []
 
-    if gap >= 2.5 and vol_r >= 1.4:
-        setup, direction, confidence = "Gap & Go", "bullish", "high" if vol_r > 2 else "medium"
-        notes.append(f"Gapping up {gap:.1f}% on {vol_r:.1f}x avg volume — momentum open expected")
+    # ── Pre-market gap plays ───────────────────────────────────────────────────
+    if gap >= 1.5 and vol_r >= 1.2:
+        confidence = "high" if gap >= 3.5 and vol_r >= 2.0 else "medium"
+        setup, direction = "Gap & Go", "bullish"
+        notes.append(f"Gapping up {gap:.1f}% pre-market on {vol_r:.1f}x avg volume")
 
-    elif gap <= -2.5 and vol_r >= 1.4:
-        setup, direction, confidence = "Gap & Go", "bearish", "high" if vol_r > 2 else "medium"
-        notes.append(f"Gapping down {abs(gap):.1f}% on {vol_r:.1f}x volume — continuation or snap-back watch")
+    elif gap <= -1.5 and vol_r >= 1.2:
+        confidence = "high" if gap <= -3.5 and vol_r >= 2.0 else "medium"
+        setup, direction = "Gap & Go", "bearish"
+        notes.append(f"Gapping down {abs(gap):.1f}% pre-market on {vol_r:.1f}x volume")
 
-    elif gap >= 4.0:
+    elif gap >= 4.5:
         setup, direction, confidence = "Gap Fade", "bearish", "medium"
         notes.append(f"Overextended gap up {gap:.1f}% — fade if opening drive stalls under VWAP")
 
-    elif gap <= -4.0:
+    elif gap <= -4.5:
         setup, direction, confidence = "Gap Fade", "bullish", "medium"
         notes.append(f"Overextended gap down {abs(gap):.1f}% — bounce candidate if buyers step in at open")
 
-    elif near_hi and vol_r >= 1.3 and rsi_val < 75:
+    # ── Price-structure plays (based on yesterday's close + technicals) ────────
+    elif near_hi and vol_r >= 1.2 and rsi_val < 78:
         setup, direction, confidence = "Breakout", "bullish", "medium"
-        notes.append(f"Near 52-week high with {vol_r:.1f}x volume — watch for new high breakout with follow-through")
+        notes.append(f"Near 52-week high with {vol_r:.1f}x volume — watch for continuation breakout")
 
-    elif rsi_val <= 28 and near_lo:
-        setup, direction, confidence = "Oversold Bounce", "bullish", "medium"
-        notes.append(f"RSI {rsi_val:.0f} at extreme oversold near 52-week low — mean reversion candidate")
+    elif rsi_val <= 32:
+        setup, direction = "Oversold Bounce", "bullish"
+        confidence = "medium" if near_lo else "low"
+        notes.append(f"RSI {rsi_val:.0f} — oversold, mean reversion watch")
 
-    elif rsi_val >= 74 and near_hi and gap < 1:
+    elif rsi_val >= 72 and near_hi and abs(gap) < 1.0:
         setup, direction, confidence = "Overbought Fade", "bearish", "low"
-        notes.append(f"RSI {rsi_val:.0f} overextended at highs — fade on weakness below VWAP")
+        notes.append(f"RSI {rsi_val:.0f} extended at 52-week highs — fade on weakness below VWAP")
 
-    elif prev_chg >= 3.5 and above_20 and vol_r >= 1.2:
+    # ── Momentum (yesterday's big move) ───────────────────────────────────────
+    elif prev_chg >= 2.0 and above_20 and vol_r >= 1.2:
         setup, direction, confidence = "Momentum", "bullish", "medium"
-        notes.append(f"Up {prev_chg:.1f}% yesterday above 20-day MA — continuation setup, buy dips to VWAP")
+        notes.append(f"Up {prev_chg:.1f}% yesterday above 20-day MA on {vol_r:.1f}x volume — continuation watch")
 
-    elif prev_chg <= -3.5 and not above_20 and vol_r >= 1.2:
+    elif prev_chg <= -2.0 and not above_20 and vol_r >= 1.2:
         setup, direction, confidence = "Momentum", "bearish", "medium"
         notes.append(f"Down {abs(prev_chg):.1f}% yesterday below 20-day MA — short bounce-fails near VWAP")
 
-    elif hv >= 55:
+    # ── Small pre-market gap + relative volume ─────────────────────────────────
+    elif abs(gap) >= 0.7 and vol_r >= 1.8:
+        setup    = "Gap & Go"
+        direction = "bullish" if gap > 0 else "bearish"
+        confidence = "low"
+        notes.append(f"{'Up' if gap > 0 else 'Down'} {abs(gap):.1f}% pre-market on elevated {vol_r:.1f}x volume")
+
+    # ── High-vol structural watches ────────────────────────────────────────────
+    elif hv >= 45:
         setup, direction, confidence = "High Vol Watch", "neutral", "low"
-        notes.append(f"Historical vol {hv:.0f}% — elevated range, watch for breakout of opening range")
+        notes.append(f"Historical vol {hv:.0f}% — wide intraday range likely, watch opening range breakout")
 
     return {
         "setup":      setup,
@@ -138,137 +153,142 @@ def classify_setup(d: dict) -> dict:
 # ── Options strategy selector ──────────────────────────────────────────────────
 
 def options_strategy(setup: str, direction: str, hv20: float, hv60: float) -> dict:
-    """
-    Select an options strategy based on the trading setup and IV environment.
-    We use HV20 vs HV60 as a proxy for whether implied vol is elevated.
-    If HV20 > HV60: vol is expanding (high IV env — sell premium).
-    If HV20 < HV60: vol is contracting (low IV env — buy premium).
-    """
-    high_iv_env = hv20 > hv60 * 1.05  # current vol above recent avg = elevated
+    high_iv_env = hv20 > hv60 * 1.05
 
     strats = {
         ("Gap & Go", "bullish", False): {
-            "name":      "Long Call",
+            "name": "Long Call", "type": "debit",
             "structure": "Buy ATM call, 1–2 weeks expiry",
-            "rationale": "Clean directional bet on gap continuation. Low IV env keeps premium cheap.",
-            "risk":      "Max loss = premium paid. Exit if price fills the gap.",
+            "rationale": "Clean directional bet on gap continuation. Low IV keeps premium cheap.",
+            "risk": "Max loss = premium paid. Exit if price fills the gap.",
         },
         ("Gap & Go", "bullish", True): {
-            "name":      "Bull Call Spread",
+            "name": "Bull Call Spread", "type": "debit",
             "structure": "Buy ATM call / Sell OTM call, same expiry",
             "rationale": "Cap cost with a spread in elevated IV. Defines risk and reduces theta decay.",
-            "risk":      "Max loss = net debit. Max gain capped at short strike.",
+            "risk": "Max loss = net debit. Max gain capped at short strike.",
         },
         ("Gap & Go", "bearish", False): {
-            "name":      "Long Put",
+            "name": "Long Put", "type": "debit",
             "structure": "Buy ATM put, 1–2 weeks expiry",
-            "rationale": "Directional downside play on gap continuation. Low IV makes outright puts attractive.",
-            "risk":      "Max loss = premium paid. Cut if price reclaims gap.",
+            "rationale": "Directional downside play. Low IV makes outright puts attractive.",
+            "risk": "Max loss = premium paid. Cut if price reclaims gap.",
         },
         ("Gap & Go", "bearish", True): {
-            "name":      "Bear Put Spread",
+            "name": "Bear Put Spread", "type": "debit",
             "structure": "Buy ATM put / Sell OTM put, same expiry",
             "rationale": "Spread reduces cost when IV is elevated. Still captures directional move.",
-            "risk":      "Max loss = net debit. Gain capped at short strike.",
+            "risk": "Max loss = net debit. Gain capped at short strike.",
         },
         ("Gap Fade", "bearish", False): {
-            "name":      "Long Put",
+            "name": "Long Put", "type": "debit",
             "structure": "Buy ATM–slightly OTM put, weekly expiry",
             "rationale": "Short-dated put captures the fade if opening momentum stalls under VWAP.",
-            "risk":      "Premium at risk if gap continues higher.",
+            "risk": "Premium at risk if gap continues higher.",
         },
         ("Gap Fade", "bearish", True): {
-            "name":      "Bear Put Spread",
+            "name": "Bear Put Spread", "type": "debit",
             "structure": "Buy ATM put / Sell 2–3 strikes OTM put, weekly",
-            "rationale": "Spread reduces cost on an overextended gap. High IV makes spreads more efficient.",
-            "risk":      "Max loss = debit. Gap can always continue — use tight stop.",
+            "rationale": "Spread reduces cost on an overextended gap.",
+            "risk": "Max loss = debit. Gap can always continue — use tight stop.",
         },
         ("Gap Fade", "bullish", False): {
-            "name":      "Long Call",
+            "name": "Long Call", "type": "debit",
             "structure": "Buy ATM call, weekly expiry",
             "rationale": "Bounce play on a deep gap-down. Low IV makes calls cheap.",
-            "risk":      "Gap can continue fading — size small.",
+            "risk": "Gap can continue fading — size small.",
+        },
+        ("Gap Fade", "bullish", True): {
+            "name": "Bull Call Spread", "type": "debit",
+            "structure": "Buy ATM call / Sell OTM call, weekly",
+            "rationale": "Spread in elevated IV for a gap-down bounce.",
+            "risk": "Max loss = debit.",
         },
         ("Breakout", "bullish", False): {
-            "name":      "Long Call",
+            "name": "Long Call", "type": "debit",
             "structure": "Buy ATM or 1-strike OTM call, 2 weeks out",
             "rationale": "Low IV favors outright calls on a clean breakout setup.",
-            "risk":      "False breakout risk — needs volume confirmation.",
+            "risk": "False breakout risk — needs volume confirmation.",
         },
         ("Breakout", "bullish", True): {
-            "name":      "Bull Call Spread",
+            "name": "Bull Call Spread", "type": "debit",
             "structure": "Buy ATM call / Sell 3–5% OTM call, 2 weeks out",
-            "rationale": "Spread reduces cost at elevated IV. Captures the breakout move with defined risk.",
-            "risk":      "Gain capped — if breakout accelerates beyond short strike, consider rolling.",
+            "rationale": "Spread reduces cost at elevated IV. Captures breakout with defined risk.",
+            "risk": "Gain capped — consider rolling if breakout accelerates.",
         },
         ("Momentum", "bullish", False): {
-            "name":      "Long Call",
+            "name": "Long Call", "type": "debit",
             "structure": "Buy ATM call, 1 week expiry",
             "rationale": "Momentum continuation. Low IV = cheap short-term calls.",
-            "risk":      "Buy dips to VWAP — don't chase extended price.",
+            "risk": "Buy dips to VWAP — don't chase extended price.",
         },
         ("Momentum", "bullish", True): {
-            "name":      "Bull Call Spread",
+            "name": "Bull Call Spread", "type": "debit",
             "structure": "Buy ATM call / Sell 1-strike OTM call, 1 week",
-            "rationale": "Defined risk debit spread in higher IV. Still leveraged to the move.",
-            "risk":      "Capped gain — adjust if momentum accelerates.",
+            "rationale": "Defined risk debit spread in higher IV.",
+            "risk": "Capped gain — adjust if momentum accelerates.",
         },
         ("Momentum", "bearish", False): {
-            "name":      "Long Put",
+            "name": "Long Put", "type": "debit",
             "structure": "Buy ATM put, 1 week expiry",
             "rationale": "Bearish momentum continuation with cheap puts.",
-            "risk":      "Short bounce-fails only — avoid holding through sharp reversals.",
+            "risk": "Short bounce-fails only — avoid holding through sharp reversals.",
         },
         ("Momentum", "bearish", True): {
-            "name":      "Bear Put Spread",
+            "name": "Bear Put Spread", "type": "debit",
             "structure": "Buy ATM put / Sell OTM put, 1 week",
-            "rationale": "Spread limits cost at elevated IV. Captures downside momentum.",
-            "risk":      "Max loss = debit paid.",
+            "rationale": "Spread limits cost at elevated IV.",
+            "risk": "Max loss = debit paid.",
         },
         ("Oversold Bounce", "bullish", False): {
-            "name":      "Cash-Secured Put",
+            "name": "Cash-Secured Put", "type": "credit",
             "structure": "Sell OTM put 1–2 strikes below current price, 1–2 weeks",
-            "rationale": "Collect premium at a support level. Get long at a discount if assigned.",
-            "risk":      "Obligated to buy shares at strike. Stock can keep falling.",
+            "rationale": "Collect premium at support. Get long at a discount if assigned.",
+            "risk": "Obligated to buy shares at strike. Stock can keep falling.",
         },
         ("Oversold Bounce", "bullish", True): {
-            "name":      "Bull Put Spread",
+            "name": "Bull Put Spread", "type": "credit",
             "structure": "Sell OTM put / Buy lower-strike put, same expiry",
-            "rationale": "High IV = rich premium. Defined risk credit spread at support level.",
-            "risk":      "Max loss = spread width minus credit received.",
+            "rationale": "High IV = rich premium. Defined risk credit spread at support.",
+            "risk": "Max loss = spread width minus credit received.",
         },
         ("Overbought Fade", "bearish", True): {
-            "name":      "Bear Call Spread",
+            "name": "Bear Call Spread", "type": "credit",
             "structure": "Sell ATM call / Buy OTM call above resistance, 1 week",
-            "rationale": "High IV at overbought levels — sell premium near resistance. Defined risk.",
-            "risk":      "Max loss = spread width minus credit. Stock can keep grinding up.",
+            "rationale": "Sell premium near resistance in high IV. Defined risk.",
+            "risk": "Max loss = spread width minus credit. Stock can keep grinding up.",
+        },
+        ("Overbought Fade", "bearish", False): {
+            "name": "Long Put", "type": "debit",
+            "structure": "Buy ATM put, 1–2 weeks expiry",
+            "rationale": "Fade extended move. Low IV makes outright puts viable.",
+            "risk": "Premium at risk if stock continues higher.",
         },
     }
 
     key = (setup, direction, high_iv_env)
     if key in strats:
-        return {**strats[key], "iv_context": "elevated — sell premium" if high_iv_env else "low — buy premium"}
+        s = strats[key]
+        return {**s, "iv_context": "elevated — sell premium" if high_iv_env else "low — buy premium"}
 
-    # Fallback
     if high_iv_env:
         return {
-            "name":      "Credit Spread",
+            "name": "Credit Spread", "type": "credit",
             "structure": "Sell OTM vertical spread in direction of bias, 1–2 weeks",
-            "rationale": "Elevated IV makes selling premium the edge. Define risk with the opposing leg.",
-            "risk":      "Max loss = spread width minus credit.",
+            "rationale": "Elevated IV makes selling premium the edge.",
+            "risk": "Max loss = spread width minus credit.",
             "iv_context": "elevated — sell premium",
         }
-
     return {
-        "name":      "Defined-Risk Debit Spread",
+        "name": "Debit Spread", "type": "debit",
         "structure": "Buy ATM option / Sell OTM option in direction of bias",
-        "rationale": "No dominant setup — use a spread to reduce cost and risk.",
-        "risk":      "Max loss = debit paid.",
+        "rationale": "Use a spread to reduce cost and define risk.",
+        "risk": "Max loss = debit paid.",
         "iv_context": "low — buy premium",
     }
 
 
-# ── Fetch + process ────────────────────────────────────────────────────────────
+# ── Data helpers ───────────────────────────────────────────────────────────────
 
 def get_series(raw: pd.DataFrame, ticker: str, col: str) -> pd.Series:
     try:
@@ -279,55 +299,87 @@ def get_series(raw: pd.DataFrame, ticker: str, col: str) -> pd.Series:
         return pd.Series(dtype=float)
 
 
-def run():
-    now_utc = datetime.utcnow()
-    today_str = now_utc.strftime("%Y-%m-%d")
-    generated_at = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+def latest_premarket_price(raw_pm: pd.DataFrame | None, ticker: str) -> float | None:
+    """Return the most recent pre/post-market price from the intraday download."""
+    if raw_pm is None:
+        return None
+    try:
+        s = get_series(raw_pm, ticker, "Close")
+        if s.empty:
+            return None
+        return float(s.iloc[-1])
+    except Exception:
+        return None
 
+
+# ── Main ───────────────────────────────────────────────────────────────────────
+
+def run():
+    now_utc = datetime.now(timezone.utc)
+    today_str    = now_utc.strftime("%Y-%m-%d")
+    generated_at = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
     log.info(f"Generating watchlist for {today_str}")
 
-    # ── Download all data at once ──────────────────────────────────────────────
     all_tickers = list(set(UNIVERSE + MARKET_CONTEXT))
-    log.info(f"Downloading {len(all_tickers)} tickers…")
 
+    # ── 1. Daily data (6 months) for RSI, MA, HV, 52-week levels ──────────────
+    log.info(f"Downloading 6-month daily data for {len(all_tickers)} tickers…")
     raw = yf.download(
-        all_tickers, period="65d", interval="1d",
+        all_tickers, period="6mo", interval="1d",
         auto_adjust=True, progress=False, group_by="ticker",
     )
 
+    # ── 2. Pre-market intraday (2 days, 5-min bars, pre+post-market) ──────────
+    log.info("Fetching pre-market 5-min data for gap calculation…")
+    raw_pm = None
+    try:
+        raw_pm = yf.download(
+            UNIVERSE, period="2d", interval="5m", prepost=True,
+            auto_adjust=True, progress=False, group_by="ticker",
+        )
+        log.info("Pre-market data fetched OK")
+    except Exception as e:
+        log.warning(f"Pre-market fetch failed ({e}) — gap_pct will fall back to 0")
+
     # ── Market overview ────────────────────────────────────────────────────────
-    def last_two(ticker):
+    def last_close(ticker):
         s = get_series(raw, ticker, "Close")
-        if len(s) < 2:
-            return None, None
-        return float(s.iloc[-1]), float(s.iloc[-2])
+        return float(s.iloc[-1]) if len(s) >= 2 else None, \
+               float(s.iloc[-2]) if len(s) >= 2 else None
 
-    spy_now, spy_prev = last_two("SPY")
-    qqq_now, qqq_prev = last_two("QQQ")
-    vix_now, _        = last_two("^VIX")
+    spy_now, spy_prev = last_close("SPY")
+    qqq_now, qqq_prev = last_close("QQQ")
+    vix_now, _        = last_close("^VIX")
 
-    spy_chg = round((spy_now - spy_prev) / spy_prev * 100, 2) if spy_now and spy_prev else 0
-    qqq_chg = round((qqq_now - qqq_prev) / qqq_prev * 100, 2) if qqq_now and qqq_prev else 0
+    # Use pre-market SPY for current change
+    spy_pm = latest_premarket_price(raw_pm, "SPY")
+    qqq_pm = latest_premarket_price(raw_pm, "QQQ")
 
-    spy_close = get_series(raw, "SPY", "Close")
-    spy_ma20  = float(spy_close.rolling(20).mean().iloc[-1]) if len(spy_close) >= 20 else None
-    market_trend = "bullish" if spy_now and spy_ma20 and spy_now > spy_ma20 else "bearish"
+    spy_price = round(spy_pm or spy_now, 2) if (spy_pm or spy_now) else None
+    qqq_price = round(qqq_pm or qqq_now, 2) if (qqq_pm or qqq_now) else None
 
-    vix_regime = "low (<20)" if vix_now and vix_now < 20 else \
-                 "elevated (20–30)" if vix_now and vix_now < 30 else "high (>30)"
-    market_bias = (
-        "risk-on"  if market_trend == "bullish" and vix_now and vix_now < 20 else
-        "risk-off" if market_trend == "bearish" and vix_now and vix_now > 25 else
-        "mixed"
-    )
+    spy_chg = round((spy_price - spy_now) / spy_now * 100, 2) \
+              if spy_pm and spy_now else \
+              round((spy_now - spy_prev) / spy_prev * 100, 2) if spy_now and spy_prev else 0
+    qqq_chg = round((qqq_price - qqq_now) / qqq_now * 100, 2) \
+              if qqq_pm and qqq_now else \
+              round((qqq_now - qqq_prev) / qqq_prev * 100, 2) if qqq_now and qqq_prev else 0
+
+    spy_close_series = get_series(raw, "SPY", "Close")
+    spy_ma20 = float(spy_close_series.rolling(20).mean().iloc[-1]) if len(spy_close_series) >= 20 else None
+    market_trend = "bullish" if spy_price and spy_ma20 and spy_price > spy_ma20 else "bearish"
+    vix_regime   = "low (<20)"      if vix_now and vix_now < 20 else \
+                   "elevated (20–30)" if vix_now and vix_now < 30 else "high (>30)"
+    market_bias  = "risk-on"  if market_trend == "bullish" and vix_now and vix_now < 20 else \
+                   "risk-off" if market_trend == "bearish" and vix_now and vix_now > 25 else "mixed"
 
     market_overview = {
-        "spy":   {"price": round(spy_now, 2) if spy_now else None, "change_pct": spy_chg},
-        "qqq":   {"price": round(qqq_now, 2) if qqq_now else None, "change_pct": qqq_chg},
-        "vix":   round(vix_now, 2) if vix_now else None,
-        "trend": market_trend,
+        "spy":        {"price": spy_price, "change_pct": spy_chg},
+        "qqq":        {"price": qqq_price, "change_pct": qqq_chg},
+        "vix":        round(vix_now, 2) if vix_now else None,
+        "trend":      market_trend,
         "vix_regime": vix_regime,
-        "bias":  market_bias,
+        "bias":       market_bias,
     }
 
     # ── Screen each ticker ─────────────────────────────────────────────────────
@@ -340,50 +392,52 @@ def run():
             vol   = get_series(raw, ticker, "Volume")
             high  = get_series(raw, ticker, "High")
             low   = get_series(raw, ticker, "Low")
-            open_ = get_series(raw, ticker, "Open")
 
             if len(close) < 22:
                 continue
 
-            price      = float(close.iloc[-1])
-            prev_close = float(close.iloc[-2])
-            today_open = float(open_.iloc[-1]) if len(open_) else price
-            prev2      = float(close.iloc[-3]) if len(close) >= 3 else prev_close
+            prev_close = float(close.iloc[-1])   # yesterday's closing price
+            prev2      = float(close.iloc[-2])   # two days ago
+            prev_change = round((prev_close - prev2) / prev2 * 100, 2)
 
-            gap_pct        = round((today_open - prev_close) / prev_close * 100, 2)
-            prev_change    = round((prev_close - prev2) / prev2 * 100, 2)
-            today_vol      = float(vol.iloc[-1]) if len(vol) else 0
-            avg_vol_20d    = float(vol.iloc[-21:-1].mean()) if len(vol) >= 21 else float(vol.mean())
-            vol_ratio      = round(today_vol / avg_vol_20d, 2) if avg_vol_20d else 1.0
+            # Today's price: latest pre-market bar, else yesterday's close
+            pm_price    = latest_premarket_price(raw_pm, ticker)
+            today_price = pm_price if pm_price else prev_close
+            gap_pct     = round((today_price - prev_close) / prev_close * 100, 2) \
+                          if pm_price else 0.0
+
+            today_vol    = float(vol.iloc[-1])
+            avg_vol_20d  = float(vol.iloc[-21:-1].mean()) if len(vol) >= 21 else float(vol.mean())
+            vol_ratio    = round(today_vol / avg_vol_20d, 2) if avg_vol_20d else 1.0
 
             ma20 = float(close.rolling(20).mean().iloc[-1])
             ma50 = float(close.rolling(50).mean().iloc[-1]) if len(close) >= 50 else ma20
 
-            rsi_val = float(rsi(close).iloc[-1]) if not pd.isna(rsi(close).iloc[-1]) else 50.0
+            rsi_val = rsi(close)
+            rsi_val = float(rsi_val.iloc[-1]) if not pd.isna(rsi_val.iloc[-1]) else 50.0
 
-            hi52 = float(high.tail(252).max()) if len(high) >= 50 else float(high.max())
-            lo52 = float(low.tail(252).min())  if len(low) >= 50  else float(low.min())
+            hi52 = float(high.max())
+            lo52 = float(low.min())
 
-            atr_val = float(atr(high, low, close).iloc[-1])
+            atr_val  = float(atr(high, low, close).iloc[-1])
             hv20_val = hist_vol(close, 20)
             hv60_val = hist_vol(close, 60) if len(close) >= 60 else hv20_val
 
             row = {
                 "ticker":          ticker,
-                "price":           round(price, 2),
+                "price":           round(today_price, 2),
                 "prev_close":      round(prev_close, 2),
-                "open":            round(today_open, 2),
                 "gap_pct":         gap_pct,
                 "prev_change_pct": prev_change,
                 "vol_ratio":       vol_ratio,
                 "avg_volume_m":    round(avg_vol_20d / 1e6, 1),
                 "rsi":             round(rsi_val, 1),
-                "above_20ma":      price > ma20,
-                "above_50ma":      price > ma50,
+                "above_20ma":      today_price > ma20,
+                "above_50ma":      today_price > ma50,
                 "ma20":            round(ma20, 2),
                 "ma50":            round(ma50, 2),
-                "near_52w_high":   price >= hi52 * 0.97,
-                "near_52w_low":    price <= lo52 * 1.03,
+                "near_52w_high":   today_price >= hi52 * 0.97,
+                "near_52w_low":    today_price <= lo52 * 1.03,
                 "hi52":            round(hi52, 2),
                 "lo52":            round(lo52, 2),
                 "atr":             round(atr_val, 2),
@@ -392,24 +446,15 @@ def run():
             }
 
             setup_info = classify_setup(row)
-
-            # Skip low-signal tickers
             if setup_info["setup"] == "Watch":
                 continue
 
-            # Key levels
             direction = setup_info["direction"]
-            stop = round(
-                price - atr_val * 1.5 if direction == "bullish" else price + atr_val * 1.5, 2
-            )
-            target = round(
-                price + atr_val * 2.5 if direction == "bullish" else price - atr_val * 2.5, 2
-            )
-            rr = round(abs(target - price) / abs(price - stop), 1) if abs(price - stop) else 0
+            stop   = round(today_price - atr_val * 1.5 if direction == "bullish" else today_price + atr_val * 1.5, 2)
+            target = round(today_price + atr_val * 2.5 if direction == "bullish" else today_price - atr_val * 2.5, 2)
+            rr     = round(abs(target - today_price) / abs(today_price - stop), 1) if abs(today_price - stop) else 0
 
-            opt_strat = options_strategy(
-                setup_info["setup"], direction, hv20_val, hv60_val
-            )
+            opt_strat = options_strategy(setup_info["setup"], direction, hv20_val, hv60_val)
 
             candidates.append({
                 **row,
@@ -423,12 +468,11 @@ def run():
         except Exception as e:
             log.warning(f"  {ticker}: {e}")
 
-    # ── Sort ───────────────────────────────────────────────────────────────────
-    conf_rank = {"high": 0, "medium": 1, "low": 2}
+    # ── Sort: confidence → setup priority → gap magnitude ─────────────────────
+    conf_rank  = {"high": 0, "medium": 1, "low": 2}
     setup_rank = {
         "Gap & Go": 0, "Breakout": 1, "Momentum": 2,
-        "Oversold Bounce": 3, "Gap Fade": 4, "Overbought Fade": 5,
-        "High Vol Watch": 6,
+        "Oversold Bounce": 3, "Gap Fade": 4, "Overbought Fade": 5, "High Vol Watch": 6,
     }
     candidates.sort(key=lambda x: (
         conf_rank.get(x["confidence"], 3),
@@ -441,12 +485,12 @@ def run():
 
     # ── Write output ───────────────────────────────────────────────────────────
     output = {
-        "generated_at":      generated_at,
-        "market_date":       today_str,
-        "market_overview":   market_overview,
-        "picks":             top,
-        "total_screened":    len(UNIVERSE),
-        "total_candidates":  len(candidates),
+        "generated_at":     generated_at,
+        "market_date":      today_str,
+        "market_overview":  market_overview,
+        "picks":            top,
+        "total_screened":   len(UNIVERSE),
+        "total_candidates": len(candidates),
     }
 
     out_path = Path(__file__).parent.parent / "data" / "daily-watchlist.json"
