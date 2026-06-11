@@ -1,8 +1,21 @@
 {
-  "generated_at": null,
-  "market_date": null,
-  "market_overview": null,
+  "generated_at": "2026-06-11T14:45:40Z",
+  "market_date": "2026-06-11",
+  "market_overview": {
+    "spy": {
+      "price": null,
+      "change_pct": 0
+    },
+    "qqq": {
+      "price": null,
+      "change_pct": 0
+    },
+    "vix": null,
+    "trend": "bearish",
+    "vix_regime": "high (>30)",
+    "bias": "mixed"
+  },
   "picks": [],
-  "total_screened": 0,
+  "total_screened": 55,
   "total_candidates": 0
 }
