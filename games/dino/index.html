@@ -170,6 +170,17 @@ let dino, obstacles, clouds, groundOff, spawnIn;
 
 hiScore = parseFloat(localStorage.getItem('dino_hi') || '0');
 
+// ---------- Controls UI ----------
+const elStart   = document.getElementById('btn-start');
+const elRow     = document.getElementById('btn-row');
+const elRestart = document.getElementById('btn-restart');
+
+function updateControls() {
+  elStart.classList.toggle  ('hidden', state !== 'idle');
+  elRow.classList.toggle    ('hidden', state !== 'running');
+  elRestart.classList.toggle('hidden', state !== 'gameover');
+}
+
 // ---------- Init ----------
 function init() {
   speed     = SPEED_INIT;
@@ -199,17 +210,6 @@ function init() {
 }
 
 init();
-
-// ---------- Controls UI ----------
-const elStart   = document.getElementById('btn-start');
-const elRow     = document.getElementById('btn-row');
-const elRestart = document.getElementById('btn-restart');
-
-function updateControls() {
-  elStart.classList.toggle  ('hidden', state !== 'idle');
-  elRow.classList.toggle    ('hidden', state !== 'running');
-  elRestart.classList.toggle('hidden', state !== 'gameover');
-}
 
 // ---------- Obstacle factory ----------
 const OBSTACLE_TYPES = [
