@@ -6,50 +6,141 @@
 <title>Dino</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { height: 100%; }
+
 body {
-  background: #f7f7f7;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
+  background: #f7f7f7;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
   transition: background 0.8s;
-  touch-action: none;
-  cursor: pointer;
 }
 body.night { background: #1a1a2e; }
-#wrap {
+
+/* ── Canvas area ── */
+#canvas-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px 8px;
   position: relative;
-  width: 100%;
-  max-width: 800px;
-  padding: 0 16px;
+  min-height: 0;
 }
+
 canvas {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
-  cursor: pointer;
 }
+
 #back {
   position: absolute;
-  top: -36px;
+  top: 12px;
   left: 16px;
   font-size: 13px;
   color: #9ca3af;
   text-decoration: none;
   letter-spacing: 0.02em;
+  z-index: 10;
 }
 #back:hover { color: #6b7280; }
 body.night #back { color: #555; }
-body.night #back:hover { color: #888; }
+
+/* ── Controls (touch devices only) ── */
+#controls {
+  display: none;
+  flex-direction: column;
+  padding: 10px 14px max(20px, env(safe-area-inset-bottom));
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (pointer: coarse) {
+  #controls { display: flex; height: 46vh; }
+}
+
+/* Button base */
+.btn {
+  flex: 1;
+  border: none;
+  border-radius: 18px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: opacity 0.08s, transform 0.08s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn:active { opacity: 0.75; transform: scale(0.97); }
+
+/* Full-width single button (start / restart) */
+.btn-full { width: 100%; }
+
+#btn-start, #btn-restart {
+  background: #535353;
+  color: #f7f7f7;
+}
+body.night #btn-start,
+body.night #btn-restart {
+  background: #f0f0f0;
+  color: #1a1a2e;
+}
+
+/* Game row: jump + duck */
+#btn-row {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+#btn-jump {
+  flex: 3;
+  background: #535353;
+  color: #f7f7f7;
+  font-size: 22px;
+}
+#btn-duck {
+  flex: 2;
+  background: #e5e7eb;
+  color: #535353;
+  font-size: 18px;
+}
+body.night #btn-jump { background: #f0f0f0; color: #1a1a2e; }
+body.night #btn-duck { background: #2a2a4e; color: #f0f0f0; }
+
+.hidden { display: none !important; }
+
+/* Desktop: whole page is clickable */
+@media (pointer: fine) {
+  body { cursor: pointer; touch-action: none; }
+}
 </style>
 </head>
 <body>
-<div id="wrap">
+
+<div id="canvas-area">
   <a href="../../" id="back">← R&amp;D Lab</a>
   <canvas id="c" width="800" height="300"></canvas>
+</div>
+
+<div id="controls">
+  <button id="btn-start"   class="btn btn-full">▶ &nbsp;START</button>
+  <div    id="btn-row"     class="hidden">
+    <button id="btn-jump"  class="btn">▲ &nbsp;JUMP</button>
+    <button id="btn-duck"  class="btn">▼ &nbsp;DUCK</button>
+  </div>
+  <button id="btn-restart" class="btn btn-full hidden">↺ &nbsp;RESTART</button>
 </div>
 
 <script>
@@ -58,7 +149,7 @@ const ctx = canvas.getContext('2d');
 const W = 800, H = 300;
 
 // ---------- Colors ----------
-const DAY  = { bg: '#f7f7f7', fg: '#535353', dim: '#ccc' };
+const DAY   = { bg: '#f7f7f7', fg: '#535353', dim: '#ccc' };
 const NIGHT = { bg: '#1a1a2e', fg: '#f0f0f0', dim: '#3a3a5c' };
 let pal = DAY;
 
@@ -70,10 +161,10 @@ const SPEED_INIT = 5.5;
 const SPEED_MAX  = 16;
 const GAP_MIN    = 550;
 const GAP_MAX    = 1100;
-const NIGHT_INTERVAL = 700;   // score points per cycle
+const NIGHT_INTERVAL = 700;
 
 // ---------- State ----------
-let state = 'idle'; // idle | running | dead | gameover
+let state = 'idle';
 let speed, score, hiScore, tick, nightPhase;
 let dino, obstacles, clouds, groundOff, spawnIn;
 
@@ -81,12 +172,12 @@ hiScore = parseFloat(localStorage.getItem('dino_hi') || '0');
 
 // ---------- Init ----------
 function init() {
-  speed      = SPEED_INIT;
-  score      = 0;
-  tick       = 0;
+  speed     = SPEED_INIT;
+  score     = 0;
+  tick      = 0;
   nightPhase = false;
-  groundOff  = 0;
-  spawnIn    = GAP_MIN / SPEED_INIT;
+  groundOff = 0;
+  spawnIn   = GAP_MIN / SPEED_INIT;
 
   dino = {
     x: 76, y: GROUND_Y,
@@ -96,7 +187,7 @@ function init() {
   };
 
   obstacles = [];
-  clouds    = [
+  clouds = [
     { x: 120, y: 38, w: 90 },
     { x: 400, y: 55, w: 70 },
     { x: 660, y: 30, w: 100 },
@@ -104,9 +195,21 @@ function init() {
 
   pal = DAY;
   document.body.classList.remove('night');
+  updateControls();
 }
 
 init();
+
+// ---------- Controls UI ----------
+const elStart   = document.getElementById('btn-start');
+const elRow     = document.getElementById('btn-row');
+const elRestart = document.getElementById('btn-restart');
+
+function updateControls() {
+  elStart.classList.toggle  ('hidden', state !== 'idle');
+  elRow.classList.toggle    ('hidden', state !== 'running');
+  elRestart.classList.toggle('hidden', state !== 'gameover');
+}
 
 // ---------- Obstacle factory ----------
 const OBSTACLE_TYPES = [
@@ -115,74 +218,75 @@ const OBSTACLE_TYPES = [
   { k: 'cactus', cols: 3, big: false },
   { k: 'cactus', cols: 1, big: true  },
   { k: 'cactus', cols: 2, big: true  },
-  { k: 'ptero',  alt: 0 },   // low — duck or jump over
-  { k: 'ptero',  alt: 1 },   // mid — must jump
+  { k: 'ptero',  alt: 0 },
+  { k: 'ptero',  alt: 1 },
 ];
 
 function spawnObstacle() {
-  // No pterodactyls early on
   const pool = score < 200
     ? OBSTACLE_TYPES.filter(t => t.k === 'cactus')
     : OBSTACLE_TYPES;
-
   const t = pool[Math.floor(Math.random() * pool.length)];
-
   if (t.k === 'cactus') {
     const unit = t.big ? 25 : 17;
     const h    = t.big ? 52 : 36;
-    const gap  = t.big ? 3  : 2;
+    const gap  = t.big ?  3 :  2;
     return { k: 'cactus', x: W + 60, y: GROUND_Y,
              w: unit * t.cols + gap * (t.cols - 1), h, cols: t.cols, big: t.big };
-  } else {
-    // alt 0 = low (duck-able), alt 1 = mid (need to jump)
-    const py = t.alt === 0 ? GROUND_Y - 18 : GROUND_Y - 54;
-    return { k: 'ptero', x: W + 60, y: py, w: 46, h: 34, frame: 0, ft: 0 };
   }
+  const py = t.alt === 0 ? GROUND_Y - 18 : GROUND_Y - 54;
+  return { k: 'ptero', x: W + 60, y: py, w: 46, h: 34, frame: 0, ft: 0 };
 }
 
 // ---------- Hitboxes ----------
 function dinoBox() {
-  if (dino.ducking) return { x: dino.x + 4,  y: dino.y - 28, w: 54, h: 28 };
-  return              { x: dino.x + 8,  y: dino.y - 50, w: 32, h: 50 };
+  if (dino.ducking) return { x: dino.x + 4, y: dino.y - 28, w: 54, h: 28 };
+  return                   { x: dino.x + 8, y: dino.y - 50, w: 32, h: 50 };
 }
-
 function obstBox(o) {
   if (o.k === 'cactus') return { x: o.x + 3, y: o.y - o.h, w: o.w - 6, h: o.h };
   return                       { x: o.x + 8, y: o.y - 28,  w: 30,      h: 22  };
 }
-
 function overlaps(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x &&
          a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 // ---------- Input ----------
-let keys = {};
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
-  keys[e.code] = true;
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); onJump(); }
   if (e.code === 'ArrowDown') { e.preventDefault(); onDuck(true); }
 });
 document.addEventListener('keyup', e => {
-  keys[e.code] = false;
   if (e.code === 'ArrowDown') onDuck(false);
 });
 
-let touchY = null;
-window.addEventListener('pointerdown', e => {
-  if (e.target.closest('a')) return; // don't intercept the back link
-  e.preventDefault();
-  const relY = e.clientY / window.innerHeight;
-  touchY = relY;
-  if (relY > 0.65) { onDuck(true); }
-  else { onJump(); }
+// Desktop: tap anywhere to jump (only when no touch buttons visible)
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
+if (!isTouch) {
+  window.addEventListener('pointerdown', e => {
+    if (e.target.closest('a')) return;
+    e.preventDefault();
+    onJump();
+  }, { passive: false });
+}
+
+// Mobile buttons
+elStart.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); onJump(); }, { passive: false });
+elRestart.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); onJump(); }, { passive: false });
+
+document.getElementById('btn-jump').addEventListener('pointerdown', e => {
+  e.stopPropagation(); e.preventDefault(); onJump();
 }, { passive: false });
-window.addEventListener('pointerup',     () => { touchY = null; onDuck(false); });
-window.addEventListener('pointercancel', () => { touchY = null; onDuck(false); });
+
+const duckBtn = document.getElementById('btn-duck');
+duckBtn.addEventListener('pointerdown',  e => { e.stopPropagation(); e.preventDefault(); onDuck(true);  }, { passive: false });
+duckBtn.addEventListener('pointerup',    () => onDuck(false));
+duckBtn.addEventListener('pointercancel',() => onDuck(false));
 
 function onJump() {
-  if (state === 'idle') { state = 'running'; return; }
+  if (state === 'idle') { state = 'running'; updateControls(); return; }
   if (state === 'gameover') { state = 'running'; init(); return; }
   if (state === 'running' && !dino.jumping && !dino.dead) {
     dino.jumping = true;
@@ -192,7 +296,7 @@ function onJump() {
 function onDuck(on) {
   if (state !== 'running' || dino.dead) return;
   dino.ducking = on;
-  if (on && dino.jumping && dino.vy < -2) dino.vy = 1; // cut jump
+  if (on && dino.jumping && dino.vy < -2) dino.vy = 1;
 }
 
 // ---------- Update ----------
@@ -200,14 +304,10 @@ function update() {
   if (state !== 'running') return;
   tick++;
 
-  // Speed ramp
   speed = Math.min(SPEED_MAX, SPEED_INIT + tick * 0.002);
-
-  // Score
   score += speed * 0.025;
   if (score > hiScore) { hiScore = score; localStorage.setItem('dino_hi', hiScore); }
 
-  // Night cycle
   const wasNight = nightPhase;
   nightPhase = Math.floor(score / NIGHT_INTERVAL) % 2 === 1;
   if (nightPhase !== wasNight) {
@@ -215,14 +315,12 @@ function update() {
     document.body.classList.toggle('night', nightPhase);
   }
 
-  // Dino physics
   if (!dino.dead) {
     if (dino.jumping || dino.y < GROUND_Y) {
       dino.vy += GRAVITY;
       dino.y  += dino.vy;
       if (dino.y >= GROUND_Y) { dino.y = GROUND_Y; dino.jumping = false; dino.vy = 0; }
     }
-    // Run animation
     if (!dino.jumping) {
       dino.frameTick++;
       const rate = Math.max(3, 8 - Math.floor(speed * 0.4));
@@ -230,20 +328,16 @@ function update() {
     }
   } else {
     dino.deadTick++;
-    if (dino.deadTick > 50) state = 'gameover';
+    if (dino.deadTick > 50) { state = 'gameover'; updateControls(); }
   }
 
-  // Ground scroll
   groundOff = (groundOff + speed) % 600;
 
-  // Clouds
   clouds.forEach(c => c.x -= speed * 0.25);
   clouds = clouds.filter(c => c.x > -180);
-  if (clouds.length < 3) {
+  if (clouds.length < 3)
     clouds.push({ x: W + 60, y: 20 + Math.random() * 55, w: 60 + Math.random() * 80 });
-  }
 
-  // Obstacles
   spawnIn -= speed;
   if (spawnIn <= 0) {
     obstacles.push(spawnObstacle());
@@ -251,42 +345,33 @@ function update() {
   }
   obstacles.forEach(o => {
     o.x -= speed;
-    if (o.k === 'ptero') {
-      o.ft++;
-      if (o.ft >= 8) { o.ft = 0; o.frame ^= 1; }
-    }
+    if (o.k === 'ptero') { o.ft++; if (o.ft >= 8) { o.ft = 0; o.frame ^= 1; } }
   });
   obstacles = obstacles.filter(o => o.x > -200);
 
-  // Collision
   if (!dino.dead) {
     const db = dinoBox();
     for (const o of obstacles) {
-      if (overlaps(db, obstBox(o))) {
-        dino.dead = true;
-        dino.deadTick = 0;
-        break;
-      }
+      if (overlaps(db, obstBox(o))) { dino.dead = true; dino.deadTick = 0; break; }
     }
   }
 }
 
-// ---------- Draw helpers ----------
+// ---------- Draw ----------
 function fillRect(x, y, w, h) { ctx.fillRect(Math.round(x), Math.round(y), w, h); }
 
 function drawCloud(c) {
   ctx.fillStyle = pal.dim;
   const { x, y, w } = c;
-  fillRect(x,           y,      w,           10);
-  fillRect(x + w*0.08,  y - 7,  w * 0.36, 7);
-  fillRect(x + w*0.36,  y - 14, w * 0.30, 14);
-  fillRect(x + w*0.60,  y - 8,  w * 0.32, 8);
+  fillRect(x,          y,      w,        10);
+  fillRect(x + w*0.08, y - 7,  w * 0.36, 7);
+  fillRect(x + w*0.36, y - 14, w * 0.30, 14);
+  fillRect(x + w*0.60, y - 8,  w * 0.32, 8);
 }
 
 function drawGround() {
   ctx.fillStyle = pal.fg;
   fillRect(0, GROUND_Y + 2, W, 3);
-  // Pebbles / texture
   const seeds = [0, 45, 93, 148, 200, 260, 310, 370, 430, 490, 540];
   for (let i = 0; i < 22; i++) {
     const bx = ((seeds[i % seeds.length] + i * 57 - groundOff + 600) % 600);
@@ -298,145 +383,97 @@ function drawGround() {
 
 function drawMoon() {
   if (!nightPhase) return;
-  // Moon phases cycle
   const phase = Math.floor(score / NIGHT_INTERVAL / 2) % 5;
   const mx = 680, my = 38, r = 14;
   ctx.fillStyle = pal.fg;
   ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.fill();
-  // Bite out for crescent
   const bites = [0, 4, 7, 10, 14];
-  const bite = bites[phase];
-  if (bite > 0) {
+  if (bites[phase] > 0) {
     ctx.fillStyle = pal.bg;
-    ctx.beginPath(); ctx.arc(mx + bite, my - 3, r * 0.85, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx + bites[phase], my - 3, r * 0.85, 0, Math.PI * 2); ctx.fill();
   }
-  // Stars
   ctx.fillStyle = pal.fg;
-  const stars = [[608,24],[640,58],[700,18],[740,42],[560,36],[580,60]];
-  stars.forEach(([sx, sy]) => fillRect(sx, sy, 3, 3));
+  [[608,24],[640,58],[700,18],[740,42],[560,36],[580,60]].forEach(([sx, sy]) => fillRect(sx, sy, 3, 3));
 }
 
 function drawDino(d) {
-  const x = Math.round(d.x);
-  const y = Math.round(d.y);
-  const c = pal.fg;
+  const x = Math.round(d.x), y = Math.round(d.y), c = pal.fg;
   ctx.fillStyle = c;
 
   if (d.ducking) {
-    // === DUCKING ===
-    // Body
     fillRect(x,      y - 26, 56, 26);
-    // Head pushed forward
     fillRect(x + 32, y - 40, 26, 16);
-    // Snout
-    fillRect(x + 54, y - 38, 5, 4);
-    // Tail
-    fillRect(x - 2,  y - 20, 10, 6);
-    // Eye
+    fillRect(x + 54, y - 38,  5,  4);
+    fillRect(x - 2,  y - 20, 10,  6);
     ctx.fillStyle = nightPhase ? '#1a1a2e' : '#fff';
     fillRect(x + 50, y - 37, 6, 6);
     ctx.fillStyle = c;
-    fillRect(x + 52, y - 35, 3, 3); // pupil
-    // Legs (duck — both mid)
+    fillRect(x + 52, y - 35, 3, 3);
     fillRect(x + 12, y - 12, 9, 12);
     fillRect(x + 24, y - 12, 9, 12);
     return;
   }
 
-  // === STANDING / RUNNING ===
-  // Tail
-  fillRect(x - 2,  y - 24, 10, 7);
-  fillRect(x + 2,  y - 30, 6,  8);
-  // Body
+  fillRect(x - 2,  y - 24, 10,  7);
+  fillRect(x + 2,  y - 30,  6,  8);
   fillRect(x + 4,  y - 36, 28, 36);
-  // Arm stump
-  fillRect(x + 26, y - 36, 9, 8);
-  // Head
+  fillRect(x + 26, y - 36,  9,  8);
   fillRect(x + 16, y - 52, 30, 22);
-  // Snout top
-  fillRect(x + 42, y - 52, 6,  6);
-  // Lower jaw
-  fillRect(x + 40, y - 34, 8,  5);
+  fillRect(x + 42, y - 52,  6,  6);
+  fillRect(x + 40, y - 34,  8,  5);
 
-  // Eye
   ctx.fillStyle = nightPhase ? '#1a1a2e' : '#fff';
   fillRect(x + 37, y - 50, 7, 7);
   ctx.fillStyle = c;
-  fillRect(x + 39, y - 48, 4, 4); // pupil
+  fillRect(x + 39, y - 48, 4, 4);
 
   if (d.dead) {
-    // X eye
     ctx.fillStyle = nightPhase ? '#1a1a2e' : '#fff';
     fillRect(x + 37, y - 50, 7, 7);
     ctx.fillStyle = c;
-    fillRect(x + 37, y - 50, 3, 3);
-    fillRect(x + 41, y - 50, 3, 3);
+    fillRect(x + 37, y - 50, 3, 3); fillRect(x + 41, y - 50, 3, 3);
     fillRect(x + 39, y - 48, 3, 3);
-    fillRect(x + 37, y - 46, 3, 3);
-    fillRect(x + 41, y - 46, 3, 3);
+    fillRect(x + 37, y - 46, 3, 3); fillRect(x + 41, y - 46, 3, 3);
   }
 
-  // Legs
   if (d.dead) {
-    fillRect(x + 8,  y - 14, 10, 14);
-    fillRect(x + 22, y - 10, 10, 10);
+    fillRect(x + 8, y - 14, 10, 14); fillRect(x + 22, y - 10, 10, 10);
   } else if (d.jumping) {
-    fillRect(x + 8,  y - 16, 10, 12);
-    fillRect(x + 22, y - 10, 10, 10);
+    fillRect(x + 8, y - 16, 10, 12); fillRect(x + 22, y - 10, 10, 10);
   } else if (d.frame === 0) {
-    fillRect(x + 8,  y - 16, 10, 16); // left down
-    fillRect(x + 22, y - 6,  10, 6);  // right up
+    fillRect(x + 8,  y - 16, 10, 16); fillRect(x + 22, y - 6,  10, 6);
   } else {
-    fillRect(x + 8,  y - 6,  10, 6);  // left up
-    fillRect(x + 22, y - 16, 10, 16); // right down
+    fillRect(x + 8,  y - 6,  10, 6);  fillRect(x + 22, y - 16, 10, 16);
   }
 }
 
 function drawCactus(o) {
   ctx.fillStyle = pal.fg;
-  const unit = o.big ? 25 : 17;
-  const h    = o.big ? 52 : 36;
-  const armH = o.big ? 18 : 12;
-  const armW = o.big ?  7 :  5;
-  const armY = o.big ? 18 : 12; // offset from top for arm base
-  const gap  = o.big ?  3 :  2;
-
+  const unit = o.big ? 25 : 17, h = o.big ? 52 : 36;
+  const armH = o.big ? 18 : 12, armW = o.big ? 7 : 5;
+  const armY = o.big ? 18 : 12, gap  = o.big ?  3 : 2;
   for (let i = 0; i < o.cols; i++) {
     const cx = o.x + i * (unit + gap);
-    const stem = Math.floor(unit * 0.35);
-    const sw   = Math.ceil(unit * 0.30);
-    // Main stem
-    fillRect(cx + stem, o.y - h, sw, h);
-    // Left arm
-    fillRect(cx,            o.y - h + armY, stem, armW);
-    fillRect(cx,            o.y - h + armY - armH, armW, armH);
-    // Right arm
-    const ra = cx + stem + sw;
-    fillRect(ra,            o.y - h + armY, unit - stem - sw, armW);
-    fillRect(cx + unit - armW, o.y - h + armY - armH, armW, armH);
+    const stem = Math.floor(unit * 0.35), sw = Math.ceil(unit * 0.30);
+    fillRect(cx + stem,        o.y - h,           sw,                h);
+    fillRect(cx,               o.y - h + armY,    stem,              armW);
+    fillRect(cx,               o.y - h + armY - armH, armW,          armH);
+    fillRect(cx + stem + sw,   o.y - h + armY,    unit - stem - sw,  armW);
+    fillRect(cx + unit - armW, o.y - h + armY - armH, armW,          armH);
   }
 }
 
 function drawPtero(o) {
   ctx.fillStyle = pal.fg;
-  const x = o.x, y = o.y;
-  // Body
+  const { x, y } = o;
   fillRect(x + 10, y - 22, 26, 14);
-  // Head
   fillRect(x + 32, y - 26, 16, 12);
-  // Beak
-  fillRect(x + 44, y - 24, 8,  5);
-  // Crest
-  fillRect(x + 28, y - 34, 8,  12);
-  // Wings
+  fillRect(x + 44, y - 24,  8,  5);
+  fillRect(x + 28, y - 34,  8, 12);
   if (o.frame === 0) {
-    // Up
-    fillRect(x - 4,  y - 34, 18, 12);
-    fillRect(x + 36, y - 10, 12, 8);
+    fillRect(x - 4,  y - 34, 18, 12); fillRect(x + 36, y - 10, 12, 8);
   } else {
-    // Down
-    fillRect(x - 4,  y - 12, 18, 12);
-    fillRect(x + 36, y - 34, 12, 8);
+    fillRect(x - 4,  y - 12, 18, 12); fillRect(x + 36, y - 34, 12, 8);
   }
 }
 
@@ -445,39 +482,14 @@ function drawHiScore() {
   ctx.textAlign = 'right';
   const sc = String(Math.floor(score)).padStart(5, '0');
   if (hiScore > 0) {
-    const hi = String(Math.floor(hiScore)).padStart(5, '0');
     ctx.fillStyle = pal.dim;
-    ctx.fillText('HI ' + hi, W - 20 - 70, 30);
+    ctx.fillText('HI ' + String(Math.floor(hiScore)).padStart(5, '0'), W - 20 - 70, 30);
   }
   ctx.fillStyle = pal.fg;
   ctx.fillText(sc, W - 20, 30);
   ctx.textAlign = 'left';
 }
 
-function drawOverlay(lines, sub) {
-  ctx.fillStyle = pal.fg;
-  ctx.font = '700 20px "Courier New", monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(lines, W / 2, H / 2 - 16);
-  if (sub) {
-    ctx.font = '13px "Courier New", monospace';
-    ctx.fillStyle = pal.dim;
-    ctx.fillText(sub, W / 2, H / 2 + 12);
-  }
-  ctx.textAlign = 'left';
-}
-
-// Restart icon (two arrows)
-function drawRestart(x, y) {
-  ctx.fillStyle = pal.fg;
-  // Simple: draw ↺ text
-  ctx.font = '700 22px "Courier New", monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('↺', x, y);
-  ctx.textAlign = 'left';
-}
-
-// ---------- Render ----------
 function draw() {
   ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, W, H);
@@ -489,22 +501,26 @@ function draw() {
   drawDino(dino);
   drawHiScore();
 
-  if (state === 'idle') {
-    drawOverlay('', 'Press SPACE or tap to start   ↑ = jump   ↓ = duck');
+  if (state === 'idle' && !isTouch) {
+    ctx.fillStyle = pal.dim;
+    ctx.font = '13px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SPACE / ↑ = jump    ↓ = duck', W / 2, H / 2 + 10);
+    ctx.textAlign = 'left';
   }
-  if (state === 'gameover') {
-    drawOverlay('G A M E  O V E R', 'Press SPACE or tap to restart');
-    drawRestart(W / 2, H / 2 + 48);
+  if (state === 'gameover' && !isTouch) {
+    ctx.fillStyle = pal.fg;
+    ctx.font = '700 20px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('G A M E  O V E R', W / 2, H / 2 - 10);
+    ctx.font = '13px "Courier New", monospace';
+    ctx.fillStyle = pal.dim;
+    ctx.fillText('Press SPACE to restart', W / 2, H / 2 + 16);
+    ctx.textAlign = 'left';
   }
 }
 
-// ---------- Game loop ----------
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-
+function loop() { update(); draw(); requestAnimationFrame(loop); }
 loop();
 </script>
 </body>
