@@ -17,6 +17,7 @@ body {
   overflow: hidden;
   transition: background 0.8s;
   touch-action: none;
+  cursor: pointer;
 }
 body.night { background: #1a1a2e; }
 #wrap {
@@ -169,16 +170,16 @@ document.addEventListener('keyup', e => {
 });
 
 let touchY = null;
-document.addEventListener('pointerdown', e => {
+window.addEventListener('pointerdown', e => {
   if (e.target.closest('a')) return; // don't intercept the back link
   e.preventDefault();
   const relY = e.clientY / window.innerHeight;
   touchY = relY;
   if (relY > 0.65) { onDuck(true); }
   else { onJump(); }
-});
-document.addEventListener('pointerup',   () => { touchY = null; onDuck(false); });
-document.addEventListener('pointercancel', () => { touchY = null; onDuck(false); });
+}, { passive: false });
+window.addEventListener('pointerup',     () => { touchY = null; onDuck(false); });
+window.addEventListener('pointercancel', () => { touchY = null; onDuck(false); });
 
 function onJump() {
   if (state === 'idle') { state = 'running'; return; }
