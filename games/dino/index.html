@@ -51,6 +51,24 @@ canvas {
 #back:hover { color: #6b7280; }
 body.night #back { color: #555; }
 
+/* ── Mobile score bar ── */
+#score-bar {
+  display: none;
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  line-height: 1.2;
+  pointer-events: none;
+}
+#score-cur { font-size: 30px; color: #535353; }
+#score-hi  { font-size: 13px; color: #aaa; margin-top: 2px; }
+body.night #score-cur { color: #f0f0f0; }
+body.night #score-hi  { color: #3a3a5c; }
+@media (pointer: coarse) { #score-bar { display: block; } }
+
 /* ── Controls (touch devices only) ── */
 #controls {
   display: none;
@@ -122,6 +140,40 @@ body.night #btn-duck { background: #2a2a4e; color: #f0f0f0; }
 
 .hidden { display: none !important; }
 
+/* Gameover panel */
+#gameover-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+#scores-panel {
+  flex: 1;
+  background: rgba(83,83,83,0.07);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+body.night #scores-panel { background: rgba(240,240,240,0.06); }
+#scores-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 2px;
+}
+.score-row {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: #535353;
+}
+body.night .score-row { color: #f0f0f0; }
+
 /* Desktop: whole page is clickable */
 @media (pointer: fine) {
   body { cursor: pointer; }
@@ -133,6 +185,10 @@ body.night #btn-duck { background: #2a2a4e; color: #f0f0f0; }
 <div id="canvas-area">
   <a href="../../" id="back">← R&amp;D Lab</a>
   <canvas id="c" width="800" height="300"></canvas>
+  <div id="score-bar">
+    <div id="score-cur">00000</div>
+    <div id="score-hi"></div>
+  </div>
 </div>
 
 <div id="controls">
@@ -141,7 +197,13 @@ body.night #btn-duck { background: #2a2a4e; color: #f0f0f0; }
     <button id="btn-jump"  class="btn">▲ &nbsp;JUMP</button>
     <button id="btn-duck"  class="btn">▼ &nbsp;DUCK</button>
   </div>
-  <button id="btn-restart" class="btn btn-full hidden">↺ &nbsp;RESTART</button>
+  <div id="gameover-panel" class="hidden">
+    <button id="btn-restart" class="btn btn-full">↺ &nbsp;RESTART</button>
+    <div id="scores-panel">
+      <div id="scores-label">TOP SCORES</div>
+      <div id="scores-list"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -170,16 +232,56 @@ let speed, score, hiScore, tick, nightPhase;
 let dino, obstacles, clouds, groundOff, spawnIn;
 
 hiScore = parseFloat(localStorage.getItem('dino_hi') || '0');
+let scores = JSON.parse(localStorage.getItem('dino_scores') || '[]');
 
 // ---------- Controls UI ----------
-const elStart   = document.getElementById('btn-start');
-const elRow     = document.getElementById('btn-row');
-const elRestart = document.getElementById('btn-restart');
+const elStart      = document.getElementById('btn-start');
+const elRow        = document.getElementById('btn-row');
+const elRestart    = document.getElementById('btn-restart');
+const elGameover   = document.getElementById('gameover-panel');
+const elScoreCur   = document.getElementById('score-cur');
+const elScoreHi    = document.getElementById('score-hi');
+const elScoresList = document.getElementById('scores-list');
+
+function saveScore(s) {
+  const n = Math.floor(s);
+  if (n <= 0) return;
+  scores.push(n);
+  scores.sort((a, b) => b - a);
+  scores = scores.slice(0, 5);
+  localStorage.setItem('dino_scores', JSON.stringify(scores));
+}
+
+function renderScoresList() {
+  elScoresList.innerHTML = '';
+  if (scores.length === 0) {
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.style.color = '#9ca3af';
+    row.textContent = 'No scores yet';
+    elScoresList.appendChild(row);
+    return;
+  }
+  scores.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.textContent = `#${i + 1}  ${String(s).padStart(5, '0')}`;
+    elScoresList.appendChild(row);
+  });
+}
+
+function updateScoreBar() {
+  elScoreCur.textContent = String(Math.floor(score)).padStart(5, '0');
+  elScoreHi.textContent = hiScore > 0
+    ? 'HI ' + String(Math.floor(hiScore)).padStart(5, '0')
+    : '';
+}
 
 function updateControls() {
   elStart.classList.toggle  ('hidden', state !== 'idle');
   elRow.classList.toggle    ('hidden', state !== 'running');
-  elRestart.classList.toggle('hidden', state !== 'gameover');
+  elGameover.classList.toggle('hidden', state !== 'gameover');
+  if (state === 'gameover') renderScoresList();
 }
 
 // ---------- Init ----------
@@ -329,7 +431,7 @@ function update() {
     }
   } else {
     dino.deadTick++;
-    if (dino.deadTick > 50) { state = 'gameover'; updateControls(); }
+    if (dino.deadTick > 50) { saveScore(score); state = 'gameover'; updateControls(); }
   }
 
   groundOff = (groundOff + speed) % 600;
@@ -479,6 +581,7 @@ function drawPtero(o) {
 }
 
 function drawHiScore() {
+  if (isTouch) return;
   ctx.font = '700 16px "Courier New", monospace';
   ctx.textAlign = 'right';
   const sc = String(Math.floor(score)).padStart(5, '0');
@@ -500,6 +603,7 @@ function draw() {
   drawGround();
   obstacles.forEach(o => o.k === 'cactus' ? drawCactus(o) : drawPtero(o));
   drawDino(dino);
+  if (isTouch) updateScoreBar();
   drawHiScore();
 
   if (state === 'idle' && !isTouch) {
