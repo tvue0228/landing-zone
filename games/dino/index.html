@@ -16,6 +16,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
   transition: background 0.8s;
+  touch-action: none;
 }
 body.night { background: #1a1a2e; }
 #wrap {
@@ -29,7 +30,6 @@ canvas {
   width: 100%;
   height: auto;
   cursor: pointer;
-  touch-action: none;
 }
 #back {
   position: absolute;
@@ -169,16 +169,16 @@ document.addEventListener('keyup', e => {
 });
 
 let touchY = null;
-canvas.addEventListener('pointerdown', e => {
+document.addEventListener('pointerdown', e => {
+  if (e.target.closest('a')) return; // don't intercept the back link
   e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const relY = (e.clientY - rect.top) / rect.height;
+  const relY = e.clientY / window.innerHeight;
   touchY = relY;
-  if (relY > 0.6) { onDuck(true); }
+  if (relY > 0.65) { onDuck(true); }
   else { onJump(); }
 });
-canvas.addEventListener('pointerup',   () => { touchY = null; onDuck(false); });
-canvas.addEventListener('pointercancel', () => { touchY = null; onDuck(false); });
+document.addEventListener('pointerup',   () => { touchY = null; onDuck(false); });
+document.addEventListener('pointercancel', () => { touchY = null; onDuck(false); });
 
 function onJump() {
   if (state === 'idle') { state = 'running'; return; }
