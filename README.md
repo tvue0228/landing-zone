@@ -9,6 +9,7 @@ An R&D repo for micro-tools and games. Each project lives in its own directory a
 | Game | Path | Description |
 |------|------|-------------|
 | [A Little Adventure for Mia](games/mia-adventure/) | `games/mia-adventure/` | Personalized birthday gift — portrait mobile storybook with 5 illustrated memory scenes, swipe navigation, sparkle effects, and a birthday finale |
+| [Cookie Lab](games/clicker/) | `games/clicker/` | Cookie-clicker style idle game — click to bake, buy upgrades and buildings, level up to Cookie God |
 | [Mastermind](games/mastermind/) | `games/mastermind/` | Code-breaking game — create a secret and share a link for others to crack |
 | [Mafia](games/mafia/) | `games/mafia/` | Pass-the-phone Mafia with secret roles, day voting, and night actions |
 | [Imposter](games/imposter/) | `games/imposter/` | Spyfall-style — everyone gets a word except the Imposter |

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Cookie Lab</title>
+<style>
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  display: flex;
+  flex-direction: column;
+  background: #fdf8f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Canvas area (top) ── */
+#canvas-area {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Particle canvas sits behind everything */
+canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Back link */
+#back {
+  position: absolute;
+  top: 12px; left: 16px;
+  font-size: 13px;
+  color: #9ca3af;
+  text-decoration: none;
+  z-index: 10;
+}
+#back:hover { color: #6b7280; }
+
+/* ── HUD ── */
+#hud {
+  width: 100%;
+  padding: 12px 16px 0;
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+  flex-shrink: 0;
+}
+#score-display {
+  font-size: clamp(30px, 7.5vw, 48px);
+  font-weight: 700;
+  color: #7c3aed;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+#score-sub {
+  font-size: clamp(11px, 2.5vw, 13px);
+  color: #9ca3af;
+  margin-top: 3px;
+}
+#level-bar-wrap {
+  width: min(260px, 68%);
+  margin: 8px auto 0;
+  height: 5px;
+  background: #e9d5ff;
+  border-radius: 99px;
+  overflow: hidden;
+}
+#level-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+#level-label {
+  font-size: clamp(9px, 1.8vw, 11px);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-top: 5px;
+}
+
+/* ── Cookie button ── */
+#btn-cookie {
+  flex: 1;
+  position: relative;
+  z-index: 6;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  width: 100%;
+  font-size: clamp(88px, 21vw, 160px);
+  line-height: 1;
+  padding: 4px;
+  filter: drop-shadow(0 4px 18px rgba(124,58,237,0.18));
+  transition: transform 0.1s, filter 0.1s;
+}
+
+/* ── Shop ── */
+#shop {
+  flex-shrink: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 8px 12px max(12px, env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1.5px solid #f3e8ff;
+}
+@media (pointer: coarse) { #shop { height: 46vh; } }
+@media (pointer: fine)   { #shop { max-height: 44vh; min-height: 200px; } }
+
+#shop-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  padding: 0 2px 6px;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.shop-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid #e9d5ff;
+  background: #faf5ff;
+  cursor: pointer;
+  text-align: left;
+  touch-action: none;
+  transition: background 0.1s, border-color 0.1s, transform 0.1s;
+}
+.shop-btn:active:not(:disabled) {
+  background: #f3e8ff;
+  border-color: #c4b5fd;
+  transform: scale(0.96);
+}
+.shop-btn:disabled { opacity: 0.38; cursor: default; pointer-events: none; }
+
+.shop-icon { font-size: 20px; flex-shrink: 0; }
+.shop-info { flex: 1; min-width: 0; }
+.shop-name {
+  font-size: 12px; font-weight: 600; color: #374151;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.shop-cost {
+  font-size: 11px; font-weight: 700; color: #7c3aed; margin-top: 1px;
+}
+.shop-desc {
+  font-size: 10px; color: #9ca3af; margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.shop-badge {
+  font-size: 13px; font-weight: 700; color: #7c3aed;
+  flex-shrink: 0; min-width: 18px; text-align: right;
+}
+
+/* Level-up flash overlay */
+#levelup-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  font-size: clamp(18px, 5vw, 26px);
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(250,245,255,0.92);
+  border: 2px solid #c4b5fd;
+  border-radius: 14px;
+  padding: 10px 22px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+#levelup-banner.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="canvas-area">
+  <a href="../../" id="back">← R&amp;D Lab</a>
+  <canvas id="c"></canvas>
+
+  <div id="hud">
+    <div id="score-display">0</div>
+    <div id="score-sub">cookies</div>
+    <div id="level-bar-wrap"><div id="level-bar"></div></div>
+    <div id="level-label">LV 1 · Apprentice Baker · 1/click</div>
+  </div>
+
+  <button id="btn-cookie">🍪</button>
+  <div id="levelup-banner">⬆ LEVEL UP!</div>
+</div>
+
+<div id="shop">
+  <div id="shop-header">Upgrades &amp; Buildings</div>
+  <div class="shop-grid" id="shop-grid"></div>
+</div>
+
+<script>
+// ─── Canvas setup ───────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W = 0, H = 0, dpr = 1;
+
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  dpr = window.devicePixelRatio || 1;
+  W = area.clientWidth;
+  H = area.clientHeight;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ─── State ──────────────────────────────────────────────────────
+let cookies     = 0;
+let totalEarned = 0;
+let clickValue  = 1;
+let cps         = 0;
+let lastTime    = performance.now();
+let prevLevel   = 0;
+
+// ─── Levels ─────────────────────────────────────────────────────
+const LEVELS = [
+  { min: 0,        name: 'Apprentice Baker', bonus: 0  },
+  { min: 100,      name: 'Cookie Rookie',    bonus: 1  },
+  { min: 500,      name: 'Sugar Rush',       bonus: 1  },
+  { min: 2500,     name: 'Dough Expert',     bonus: 2  },
+  { min: 10000,    name: 'Cookie Master',    bonus: 3  },
+  { min: 50000,    name: 'Grand Baker',      bonus: 5  },
+  { min: 250000,   name: 'Legendary Chef',   bonus: 10 },
+  { min: 1000000,  name: 'Cookie God',       bonus: 20 },
+];
+
+function getLevel() {
+  let lv = 0;
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (totalEarned >= LEVELS[i].min) lv = i; else break;
+  }
+  return lv;
+}
+function levelProgress() {
+  const lv = getLevel();
+  if (lv >= LEVELS.length - 1) return 1;
+  return (totalEarned - LEVELS[lv].min) / (LEVELS[lv + 1].min - LEVELS[lv].min);
+}
+
+// ─── Shop data ──────────────────────────────────────────────────
+const BUILDINGS = [
+  { icon: '🖱️', name: 'Auto-Cursor',  baseCost: 15,      cps: 0.1,  owned: 0 },
+  { icon: '👵', name: 'Grandma',      baseCost: 100,     cps: 0.5,  owned: 0 },
+  { icon: '🌾', name: 'Cookie Farm',  baseCost: 800,     cps: 4,    owned: 0 },
+  { icon: '⛏️', name: 'Dough Mine',   baseCost: 6000,    cps: 10,   owned: 0 },
+  { icon: '🏭', name: 'Factory',      baseCost: 50000,   cps: 40,   owned: 0 },
+  { icon: '🧪', name: 'Cookie Lab',   baseCost: 400000,  cps: 200,  owned: 0 },
+];
+const UPGRADES = [
+  { icon: '🧤', name: 'Better Grip',  cost: 50,     bonus: 1,   bought: false },
+  { icon: '⚡', name: 'Power Click',  cost: 500,    bonus: 5,   bought: false },
+  { icon: '💥', name: 'Hyper Click',  cost: 5000,   bonus: 20,  bought: false },
+  { icon: '🌀', name: 'Turbo Click',  cost: 50000,  bonus: 100, bought: false },
+];
+
+function buildingCost(b) {
+  return Math.floor(b.baseCost * Math.pow(1.15, b.owned));
+}
+function recomputeCps() {
+  cps = BUILDINGS.reduce((s, b) => s + b.cps * b.owned, 0);
+}
+
+// ─── Format numbers ─────────────────────────────────────────────
+function fmt(n) {
+  n = Math.floor(n);
+  if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+  if (n >= 1e9)  return (n / 1e9 ).toFixed(1) + 'B';
+  if (n >= 1e6)  return (n / 1e6 ).toFixed(1) + 'M';
+  if (n >= 1e3)  return (n / 1e3 ).toFixed(1) + 'K';
+  return n.toString();
+}
+
+// ─── Save / load ────────────────────────────────────────────────
+function saveGame() {
+  localStorage.setItem('cookie_lab', JSON.stringify({
+    cookies, totalEarned, clickValue, prevLevel,
+    buildings: BUILDINGS.map(b => b.owned),
+    upgrades:  UPGRADES.map(u => u.bought),
+  }));
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem('cookie_lab');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    cookies     = s.cookies     || 0;
+    totalEarned = s.totalEarned || 0;
+    clickValue  = s.clickValue  || 1;
+    prevLevel   = s.prevLevel   || 0;
+    if (s.buildings) s.buildings.forEach((n, i) => { if (BUILDINGS[i]) BUILDINGS[i].owned = n; });
+    if (s.upgrades)  s.upgrades.forEach ((b, i) => { if (UPGRADES[i])  UPGRADES[i].bought = b; });
+    recomputeCps();
+  } catch (_) {}
+}
+
+loadGame();
+
+// ─── Particles & floats ─────────────────────────────────────────
+const particles = [];
+const floats    = [];
+
+function spawnParticles(x, y, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = 1.5 + Math.random() * 3.5;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2.5,
+      r: 2.5 + Math.random() * 3.5,
+      life: 1,
+      hue: 256 + Math.random() * 50,
+    });
+  }
+}
+
+function spawnFloat(x, y, text, big) {
+  floats.push({ x, y, vy: big ? -1.6 : -1.2, text, life: 1, big: !!big });
+}
+
+// ─── HUD refs ───────────────────────────────────────────────────
+const elScore    = document.getElementById('score-display');
+const elSub      = document.getElementById('score-sub');
+const elBar      = document.getElementById('level-bar');
+const elLvLabel  = document.getElementById('level-label');
+const elBanner   = document.getElementById('levelup-banner');
+
+let bannerTimer = 0;
+
+function updateHud() {
+  elScore.textContent = fmt(cookies);
+  const cpsStr = cps >= 0.1 ? ` · ${fmt(cps)}/s` : '';
+  elSub.textContent = `cookies${cpsStr}`;
+  elBar.style.width = (levelProgress() * 100).toFixed(1) + '%';
+  const lv = getLevel();
+  elLvLabel.textContent =
+    `LV ${lv + 1}  ·  ${LEVELS[lv].name}  ·  ${clickValue}/click`;
+}
+
+// ─── Level up ───────────────────────────────────────────────────
+function checkLevelUp() {
+  const lv = getLevel();
+  if (lv > prevLevel) {
+    for (let i = prevLevel + 1; i <= lv; i++) clickValue += LEVELS[i].bonus;
+    prevLevel = lv;
+
+    spawnParticles(W / 2, H * 0.55, 35);
+    spawnFloat(W / 2, H * 0.36, `LEVEL ${lv + 1} — ${LEVELS[lv].name}`, true);
+    elBanner.textContent = `⬆ Level ${lv + 1} — ${LEVELS[lv].name}`;
+    elBanner.classList.add('show');
+    bannerTimer = 2.2;
+  }
+}
+
+// ─── Canvas draw ────────────────────────────────────────────────
+function drawCanvas() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.13;
+    p.life -= 0.033;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = p.life * 0.85;
+    ctx.fillStyle = `hsl(${p.hue},80%,65%)`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * (0.3 + p.life * 0.7), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const f = floats[i];
+    f.y += f.vy;
+    f.life -= f.big ? 0.015 : 0.022;
+    if (f.life <= 0) { floats.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, f.life * 1.5);
+    ctx.fillStyle = f.big ? '#5b21b6' : '#7c3aed';
+    ctx.font = `700 ${f.big ? 17 : 15}px -apple-system,BlinkMacSystemFont,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.restore();
+  }
+}
+
+// ─── Cookie click ───────────────────────────────────────────────
+const btnCookie = document.getElementById('btn-cookie');
+const canvasArea = document.getElementById('canvas-area');
+
+btnCookie.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  cookies     += clickValue;
+  totalEarned += clickValue;
+  checkLevelUp();
+
+  btnCookie.style.transform = 'scale(0.82)';
+  setTimeout(() => { btnCookie.style.transform = ''; }, 110);
+
+  const rect = canvasArea.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  spawnParticles(px, py, 9);
+  spawnFloat(px, py - 24, `+${fmt(clickValue)}`, false);
+}, { passive: false });
+
+// ─── Shop ───────────────────────────────────────────────────────
+const shopGrid = document.getElementById('shop-grid');
+
+function buildShop() {
+  shopGrid.innerHTML = '';
+
+  for (const u of UPGRADES) {
+    if (u.bought) continue;
+    const btn = document.createElement('button');
+    btn.className = 'shop-btn';
+    btn.disabled  = cookies < u.cost;
+    btn.innerHTML =
+      `<span class="shop-icon">${u.icon}</span>
+       <div class="shop-info">
+         <div class="shop-name">${u.name}</div>
+         <div class="shop-cost">🍪 ${fmt(u.cost)}</div>
+         <div class="shop-desc">+${u.bonus}/click</div>
+       </div>`;
+    btn.addEventListener('pointerdown', e => {
+      e.stopPropagation(); e.preventDefault();
+      if (cookies < u.cost) return;
+      cookies -= u.cost;
+      u.bought = true;
+      clickValue += u.bonus;
+      saveGame(); buildShop();
+    }, { passive: false });
+    shopGrid.appendChild(btn);
+  }
+
+  for (const b of BUILDINGS) {
+    const cost = buildingCost(b);
+    const btn  = document.createElement('button');
+    btn.className = 'shop-btn';
+    btn.disabled  = cookies < cost;
+    btn.innerHTML =
+      `<span class="shop-icon">${b.icon}</span>
+       <div class="shop-info">
+         <div class="shop-name">${b.name}</div>
+         <div class="shop-cost">🍪 ${fmt(cost)}</div>
+         <div class="shop-desc">${b.cps}/s each</div>
+       </div>
+       ${b.owned > 0 ? `<span class="shop-badge">${b.owned}</span>` : ''}`;
+    btn.addEventListener('pointerdown', e => {
+      e.stopPropagation(); e.preventDefault();
+      if (cookies < cost) return;
+      cookies -= cost;
+      b.owned++;
+      recomputeCps();
+      saveGame(); buildShop();
+    }, { passive: false });
+    shopGrid.appendChild(btn);
+  }
+}
+
+buildShop();
+
+// ─── Game loop ───────────────────────────────────────────────────
+let shopTimer = 0;
+let saveTimer = 10;
+
+function loop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+
+  if (cps > 0) {
+    const gain = cps * dt;
+    cookies     += gain;
+    totalEarned += gain;
+    checkLevelUp();
+  }
+
+  if (bannerTimer > 0) {
+    bannerTimer -= dt;
+    if (bannerTimer <= 0) elBanner.classList.remove('show');
+  }
+
+  updateHud();
+  drawCanvas();
+
+  shopTimer -= dt;
+  if (shopTimer <= 0) { buildShop(); shopTimer = 0.5; }
+
+  saveTimer -= dt;
+  if (saveTimer <= 0) { saveGame(); saveTimer = 10; }
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
