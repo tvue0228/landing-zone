@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Dino</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: none; }
 
 html, body { height: 100%; }
 
@@ -124,7 +124,7 @@ body.night #btn-duck { background: #2a2a4e; color: #f0f0f0; }
 
 /* Desktop: whole page is clickable */
 @media (pointer: fine) {
-  body { cursor: pointer; touch-action: none; }
+  body { cursor: pointer; }
 }
 </style>
 </head>
