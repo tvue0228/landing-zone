@@ -183,6 +183,12 @@ canvas {
   font-size: 13px; font-weight: 700; color: #7c3aed;
   flex-shrink: 0; min-width: 18px; text-align: right;
 }
+/* Synergy upgrade highlight */
+.shop-btn.synergy {
+  border-color: #c4b5fd;
+  background: linear-gradient(135deg, #faf5ff 60%, #f3e8ff);
+}
+.shop-btn.synergy .shop-badge { color: #f59e0b; }
 
 /* Level-up flash overlay */
 #levelup-banner {
@@ -255,14 +261,21 @@ let prevLevel   = 0;
 
 // ─── Levels ─────────────────────────────────────────────────────
 const LEVELS = [
-  { min: 0,        name: 'Apprentice Baker', bonus: 0  },
-  { min: 100,      name: 'Cookie Rookie',    bonus: 1  },
-  { min: 500,      name: 'Sugar Rush',       bonus: 1  },
-  { min: 2500,     name: 'Dough Expert',     bonus: 2  },
-  { min: 10000,    name: 'Cookie Master',    bonus: 3  },
-  { min: 50000,    name: 'Grand Baker',      bonus: 5  },
-  { min: 250000,   name: 'Legendary Chef',   bonus: 10 },
-  { min: 1000000,  name: 'Cookie God',       bonus: 20 },
+  { min: 0,             name: 'Apprentice Baker',  bonus: 0     },
+  { min: 100,           name: 'Cookie Rookie',     bonus: 1     },
+  { min: 500,           name: 'Sugar Rush',        bonus: 1     },
+  { min: 2500,          name: 'Dough Expert',      bonus: 2     },
+  { min: 10000,         name: 'Cookie Master',     bonus: 3     },
+  { min: 50000,         name: 'Grand Baker',       bonus: 5     },
+  { min: 250000,        name: 'Legendary Chef',    bonus: 10    },
+  { min: 1000000,       name: 'Cookie God',        bonus: 20    },
+  { min: 5000000,       name: 'Cookie Titan',      bonus: 40    },
+  { min: 25000000,      name: 'Cookie Overlord',   bonus: 80    },
+  { min: 100000000,     name: 'Transcendent',      bonus: 150   },
+  { min: 500000000,     name: 'Cookie Eternal',    bonus: 300   },
+  { min: 2000000000,    name: 'Omnipotent',        bonus: 600   },
+  { min: 10000000000,   name: 'Cookie Infinite',   bonus: 1200  },
+  { min: 50000000000,   name: 'Cookie Universe',   bonus: 2500  },
 ];
 
 function getLevel() {
@@ -280,30 +293,62 @@ function levelProgress() {
 
 // ─── Shop data ──────────────────────────────────────────────────
 const BUILDINGS = [
-  { icon: '🖱️', name: 'Auto-Cursor',  baseCost: 15,      cps: 0.1,  owned: 0 },
-  { icon: '👵', name: 'Grandma',      baseCost: 100,     cps: 0.5,  owned: 0 },
-  { icon: '🌾', name: 'Cookie Farm',  baseCost: 800,     cps: 4,    owned: 0 },
-  { icon: '⛏️', name: 'Dough Mine',   baseCost: 6000,    cps: 10,   owned: 0 },
-  { icon: '🏭', name: 'Factory',      baseCost: 50000,   cps: 40,   owned: 0 },
-  { icon: '🧪', name: 'Cookie Lab',   baseCost: 400000,  cps: 200,  owned: 0 },
+  { icon: '🖱️', name: 'Auto-Cursor',  baseCost: 15,           cps: 0.1,       owned: 0, mult: 1 },
+  { icon: '👵', name: 'Grandma',      baseCost: 100,          cps: 0.5,       owned: 0, mult: 1 },
+  { icon: '🌾', name: 'Cookie Farm',  baseCost: 800,          cps: 4,         owned: 0, mult: 1 },
+  { icon: '⛏️', name: 'Dough Mine',   baseCost: 6000,         cps: 10,        owned: 0, mult: 1 },
+  { icon: '🏭', name: 'Factory',      baseCost: 50000,        cps: 40,        owned: 0, mult: 1 },
+  { icon: '🧪', name: 'Cookie Lab',   baseCost: 400000,       cps: 200,       owned: 0, mult: 1 },
+  { icon: '🌀', name: 'Portal',       baseCost: 10000000,     cps: 1000,      owned: 0, mult: 1 },
+  { icon: '⏱️', name: 'Time Machine', baseCost: 250000000,    cps: 6500,      owned: 0, mult: 1 },
+  { icon: '⚛️', name: 'Antimatter',   baseCost: 8000000000,   cps: 50000,     owned: 0, mult: 1 },
+  { icon: '🔆', name: 'Prism',        baseCost: 200000000000, cps: 400000,    owned: 0, mult: 1 },
 ];
+
+// One-time click power upgrades
 const UPGRADES = [
-  { icon: '🧤', name: 'Better Grip',  cost: 50,     bonus: 1,   bought: false },
-  { icon: '⚡', name: 'Power Click',  cost: 500,    bonus: 5,   bought: false },
-  { icon: '💥', name: 'Hyper Click',  cost: 5000,   bonus: 20,  bought: false },
-  { icon: '🌀', name: 'Turbo Click',  cost: 50000,  bonus: 100, bought: false },
+  { icon: '🧤', name: 'Better Grip',   cost: 50,           bonus: 1,      bought: false },
+  { icon: '⚡', name: 'Power Click',   cost: 500,          bonus: 5,      bought: false },
+  { icon: '💥', name: 'Hyper Click',   cost: 5000,         bonus: 20,     bought: false },
+  { icon: '🌀', name: 'Turbo Click',   cost: 50000,        bonus: 100,    bought: false },
+  { icon: '🚀', name: 'Mega Click',    cost: 500000,       bonus: 500,    bought: false },
+  { icon: '🌟', name: 'Ultra Click',   cost: 5000000,      bonus: 2000,   bought: false },
+  { icon: '✨', name: 'Godly Click',   cost: 50000000,     bonus: 10000,  bought: false },
+  { icon: '🌌', name: 'Cosmic Click',  cost: 500000000,    bonus: 50000,  bought: false },
+];
+
+// Building synergy upgrades (appear when you own enough of a building)
+const BUPGRADES = [
+  { icon: '🖱️', name: 'Cursor Swarm',     cost: 2000,          desc: 'Cursors ×2',       idx: 0, need: 10, mult: 2, bought: false },
+  { icon: '📋', name: "Grandma's Recipe",  cost: 10000,         desc: 'Grandmas ×2',      idx: 1, need: 10, mult: 2, bought: false },
+  { icon: '🌿', name: 'Irrigation',        cost: 100000,        desc: 'Farms ×2',         idx: 2, need: 10, mult: 2, bought: false },
+  { icon: '💎', name: 'Diamond Drill',     cost: 1000000,       desc: 'Mines ×2',         idx: 3, need: 10, mult: 2, bought: false },
+  { icon: '🤖', name: 'Production AI',     cost: 10000000,      desc: 'Factories ×2',     idx: 4, need: 10, mult: 2, bought: false },
+  { icon: '🔬', name: 'Dark Matter',       cost: 100000000,     desc: 'Labs ×2',          idx: 5, need: 10, mult: 2, bought: false },
+  { icon: '🌀', name: 'Void Anchor',       cost: 2000000000,    desc: 'Portals ×2',       idx: 6, need: 10, mult: 2, bought: false },
+  { icon: '⏰', name: 'Temporal Flux',     cost: 50000000000,   desc: 'Time Mach. ×2',    idx: 7, need: 10, mult: 2, bought: false },
+  { icon: '☢️', name: 'Cosmic Rays',       cost: 2000000000000, desc: 'Antimatter ×2',    idx: 8, need: 10, mult: 2, bought: false },
+  { icon: '🌈', name: 'Rainbow Spectrum',  cost: 50000000000000,desc: 'Prisms ×2',        idx: 9, need: 10, mult: 2, bought: false },
+  // Tier 2 (25 owned)
+  { icon: '💫', name: 'Grandma Army',      cost: 500000,        desc: 'Grandmas ×3',      idx: 1, need: 25, mult: 3, bought: false },
+  { icon: '🚜', name: 'Mega Farm',         cost: 5000000,       desc: 'Farms ×3',         idx: 2, need: 25, mult: 3, bought: false },
+  { icon: '🏔️', name: 'Mountain Mine',    cost: 50000000,      desc: 'Mines ×3',         idx: 3, need: 25, mult: 3, bought: false },
+  { icon: '🏗️', name: 'Mega Factory',     cost: 500000000,     desc: 'Factories ×3',     idx: 4, need: 25, mult: 3, bought: false },
+  { icon: '🧬', name: 'Quantum Theory',    cost: 5000000000,    desc: 'Labs ×3',          idx: 5, need: 25, mult: 3, bought: false },
 ];
 
 function buildingCost(b) {
   return Math.floor(b.baseCost * Math.pow(1.15, b.owned));
 }
 function recomputeCps() {
-  cps = BUILDINGS.reduce((s, b) => s + b.cps * b.owned, 0);
+  cps = BUILDINGS.reduce((s, b) => s + b.cps * b.owned * b.mult, 0);
 }
 
 // ─── Format numbers ─────────────────────────────────────────────
 function fmt(n) {
   n = Math.floor(n);
+  if (n >= 1e18) return (n / 1e18).toFixed(1) + 'Qi';
+  if (n >= 1e15) return (n / 1e15).toFixed(1) + 'Qa';
   if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
   if (n >= 1e9)  return (n / 1e9 ).toFixed(1) + 'B';
   if (n >= 1e6)  return (n / 1e6 ).toFixed(1) + 'M';
@@ -315,8 +360,9 @@ function fmt(n) {
 function saveGame() {
   localStorage.setItem('cookie_lab', JSON.stringify({
     cookies, totalEarned, clickValue, prevLevel,
-    buildings: BUILDINGS.map(b => b.owned),
-    upgrades:  UPGRADES.map(u => u.bought),
+    buildings:  BUILDINGS.map(b => b.owned),
+    upgrades:   UPGRADES.map(u => u.bought),
+    bupgrades:  BUPGRADES.map(u => u.bought),
   }));
 }
 
@@ -331,6 +377,12 @@ function loadGame() {
     prevLevel   = s.prevLevel   || 0;
     if (s.buildings) s.buildings.forEach((n, i) => { if (BUILDINGS[i]) BUILDINGS[i].owned = n; });
     if (s.upgrades)  s.upgrades.forEach ((b, i) => { if (UPGRADES[i])  UPGRADES[i].bought = b; });
+    if (s.bupgrades) s.bupgrades.forEach((b, i) => {
+      if (b && BUPGRADES[i]) {
+        BUPGRADES[i].bought = true;
+        BUILDINGS[BUPGRADES[i].idx].mult *= BUPGRADES[i].mult;
+      }
+    });
     recomputeCps();
   } catch (_) {}
 }
@@ -451,54 +503,64 @@ btnCookie.addEventListener('pointerdown', e => {
 // ─── Shop ───────────────────────────────────────────────────────
 const shopGrid = document.getElementById('shop-grid');
 
+function makeBtn(icon, name, costNum, desc, badge, onBuy) {
+  const btn = document.createElement('button');
+  btn.className = 'shop-btn' + (badge === '★' ? ' synergy' : '');
+  btn.disabled  = cookies < costNum;
+  btn.innerHTML =
+    `<span class="shop-icon">${icon}</span>
+     <div class="shop-info">
+       <div class="shop-name">${name}</div>
+       <div class="shop-cost">🍪 ${fmt(costNum)}</div>
+       <div class="shop-desc">${desc}</div>
+     </div>
+     ${badge ? `<span class="shop-badge">${badge}</span>` : ''}`;
+  btn.addEventListener('pointerdown', e => {
+    e.stopPropagation(); e.preventDefault();
+    if (cookies < costNum) return;
+    onBuy();
+  }, { passive: false });
+  return btn;
+}
+
 function buildShop() {
   shopGrid.innerHTML = '';
 
+  // Building synergy upgrades — only show when unlock threshold met
+  for (const u of BUPGRADES) {
+    if (u.bought) continue;
+    if (BUILDINGS[u.idx].owned < u.need) continue;
+    shopGrid.appendChild(makeBtn(u.icon, u.name, u.cost, u.desc, '★', () => {
+      cookies -= u.cost;
+      u.bought = true;
+      BUILDINGS[u.idx].mult *= u.mult;
+      recomputeCps();
+      saveGame(); buildShop();
+    }));
+  }
+
+  // Click power upgrades
   for (const u of UPGRADES) {
     if (u.bought) continue;
-    const btn = document.createElement('button');
-    btn.className = 'shop-btn';
-    btn.disabled  = cookies < u.cost;
-    btn.innerHTML =
-      `<span class="shop-icon">${u.icon}</span>
-       <div class="shop-info">
-         <div class="shop-name">${u.name}</div>
-         <div class="shop-cost">🍪 ${fmt(u.cost)}</div>
-         <div class="shop-desc">+${u.bonus}/click</div>
-       </div>`;
-    btn.addEventListener('pointerdown', e => {
-      e.stopPropagation(); e.preventDefault();
-      if (cookies < u.cost) return;
+    shopGrid.appendChild(makeBtn(u.icon, u.name, u.cost, `+${fmt(u.bonus)}/click`, null, () => {
       cookies -= u.cost;
       u.bought = true;
       clickValue += u.bonus;
       saveGame(); buildShop();
-    }, { passive: false });
-    shopGrid.appendChild(btn);
+    }));
   }
 
+  // Buildings (repeatable)
   for (const b of BUILDINGS) {
     const cost = buildingCost(b);
-    const btn  = document.createElement('button');
-    btn.className = 'shop-btn';
-    btn.disabled  = cookies < cost;
-    btn.innerHTML =
-      `<span class="shop-icon">${b.icon}</span>
-       <div class="shop-info">
-         <div class="shop-name">${b.name}</div>
-         <div class="shop-cost">🍪 ${fmt(cost)}</div>
-         <div class="shop-desc">${b.cps}/s each</div>
-       </div>
-       ${b.owned > 0 ? `<span class="shop-badge">${b.owned}</span>` : ''}`;
-    btn.addEventListener('pointerdown', e => {
-      e.stopPropagation(); e.preventDefault();
-      if (cookies < cost) return;
-      cookies -= cost;
-      b.owned++;
-      recomputeCps();
-      saveGame(); buildShop();
-    }, { passive: false });
-    shopGrid.appendChild(btn);
+    const cpsEach = (b.cps * b.mult).toFixed(b.cps * b.mult < 1 ? 2 : 1);
+    shopGrid.appendChild(makeBtn(b.icon, b.name, cost, `${cpsEach}/s each`,
+      b.owned > 0 ? b.owned : null, () => {
+        cookies -= cost;
+        b.owned++;
+        recomputeCps();
+        saveGame(); buildShop();
+      }));
   }
 }
 
