@@ -190,26 +190,47 @@ canvas {
 }
 .shop-btn.synergy .shop-badge { color: #f59e0b; }
 
-/* Level-up flash overlay */
-#levelup-banner {
+/* Shared overlay banner */
+.banner {
   position: absolute;
-  top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   z-index: 20;
-  font-size: clamp(18px, 5vw, 26px);
   font-weight: 700;
-  color: #7c3aed;
-  background: rgba(250,245,255,0.92);
+  background: rgba(250,245,255,0.94);
   border: 2px solid #c4b5fd;
   border-radius: 14px;
-  padding: 10px 22px;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.25s;
   white-space: nowrap;
+  text-align: center;
 }
-#levelup-banner.show { opacity: 1; }
+.banner.show { opacity: 1; }
+
+#levelup-banner {
+  top: 50%;
+  translate: -50% -50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(18px, 5vw, 26px);
+  color: #7c3aed;
+  padding: 10px 22px;
+}
+
+/* Offline earnings toast (slides in from top) */
+#offline-toast {
+  top: 12px;
+  font-size: clamp(12px, 3vw, 15px);
+  color: #059669;
+  border-color: #a7f3d0;
+  background: rgba(236,253,245,0.96);
+  padding: 8px 18px;
+  line-height: 1.4;
+  max-width: 90%;
+  white-space: normal;
+  text-align: center;
+}
 </style>
 </head>
 <body>
@@ -226,7 +247,8 @@ canvas {
   </div>
 
   <button id="btn-cookie">🍪</button>
-  <div id="levelup-banner">⬆ LEVEL UP!</div>
+  <div id="levelup-banner" class="banner">⬆ LEVEL UP!</div>
+  <div id="offline-toast"  class="banner"></div>
 </div>
 
 <div id="shop">
@@ -357,8 +379,11 @@ function fmt(n) {
 }
 
 // ─── Save / load ────────────────────────────────────────────────
+let offlineBonusPending = 0; // set by loadGame, shown after first loop tick
+
 function saveGame() {
   localStorage.setItem('cookie_lab', JSON.stringify({
+    savedAt:    Date.now(),
     cookies, totalEarned, clickValue, prevLevel,
     buildings:  BUILDINGS.map(b => b.owned),
     upgrades:   UPGRADES.map(u => u.bought),
@@ -384,10 +409,35 @@ function loadGame() {
       }
     });
     recomputeCps();
+
+    // ── Offline earnings ──────────────────────────────────────────
+    if (s.savedAt && cps > 0) {
+      const elapsed = Math.min((Date.now() - s.savedAt) / 1000, 8 * 3600); // cap 8 h
+      if (elapsed >= 5) {
+        const bonus = cps * elapsed;
+        cookies        += bonus;
+        totalEarned    += bonus;
+        offlineBonusPending = bonus;
+        checkLevelUp();
+      }
+    }
   } catch (_) {}
 }
 
 loadGame();
+
+// Show offline bonus after state is fully ready
+if (offlineBonusPending > 0) {
+  elOffline.textContent = `Welcome back! 🍪 +${fmt(offlineBonusPending)} cookies baked while you were away.`;
+  elOffline.classList.add('show');
+  offlineTimer = 5;
+}
+
+// Save on page hide/close
+window.addEventListener('beforeunload', saveGame);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveGame();
+});
 
 // ─── Particles & floats ─────────────────────────────────────────
 const particles = [];
@@ -417,8 +467,10 @@ const elSub      = document.getElementById('score-sub');
 const elBar      = document.getElementById('level-bar');
 const elLvLabel  = document.getElementById('level-label');
 const elBanner   = document.getElementById('levelup-banner');
+const elOffline  = document.getElementById('offline-toast');
 
-let bannerTimer = 0;
+let bannerTimer  = 0;
+let offlineTimer = 0;
 
 function updateHud() {
   elScore.textContent = fmt(cookies);
@@ -568,7 +620,7 @@ buildShop();
 
 // ─── Game loop ───────────────────────────────────────────────────
 let shopTimer = 0;
-let saveTimer = 10;
+let saveTimer = 5;
 
 function loop(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
@@ -585,6 +637,10 @@ function loop(now) {
     bannerTimer -= dt;
     if (bannerTimer <= 0) elBanner.classList.remove('show');
   }
+  if (offlineTimer > 0) {
+    offlineTimer -= dt;
+    if (offlineTimer <= 0) elOffline.classList.remove('show');
+  }
 
   updateHud();
   drawCanvas();
@@ -593,7 +649,7 @@ function loop(now) {
   if (shopTimer <= 0) { buildShop(); shopTimer = 0.5; }
 
   saveTimer -= dt;
-  if (saveTimer <= 0) { saveGame(); saveTimer = 10; }
+  if (saveTimer <= 0) { saveGame(); saveTimer = 5; }
 
   requestAnimationFrame(loop);
 }
