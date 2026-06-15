@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Strawberry Café</title>
+<style>
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; touch-action: none;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  display: flex;
+  flex-direction: column;
+  background: #fff0f3;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Canvas area ── */
+#canvas-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 12px 8px;
+  position: relative;
+  min-height: 0;
+}
+canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(236,72,153,0.12);
+}
+#back {
+  position: absolute;
+  top: 12px; left: 16px;
+  font-size: 13px; color: #f9a8d4;
+  text-decoration: none; z-index: 10;
+}
+#back:hover { color: #ec4899; }
+
+/* ── Controls (touch only) ── */
+#controls {
+  display: none;
+  flex-direction: column;
+  padding: 10px 14px max(20px, env(safe-area-inset-bottom));
+  gap: 10px;
+  flex-shrink: 0;
+}
+@media (pointer: coarse) { #controls { display: flex; height: 46vh; } }
+
+.btn {
+  flex: 1; border: none; border-radius: 18px;
+  font-size: 22px; font-weight: 700; letter-spacing: 0.03em;
+  cursor: pointer; touch-action: none;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  color: #fff; transition: transform 0.08s, opacity 0.08s;
+}
+.btn:active { opacity: 0.82; transform: scale(0.97); }
+#btn-start, #btn-restart { background: #ec4899; }
+#btn-dip {
+  background: #be185d; font-size: 26px;
+  box-shadow: 0 4px 0 #9d174d;
+}
+#btn-dip.held {
+  transform: translateY(3px) scale(0.97);
+  box-shadow: 0 1px 0 #9d174d;
+}
+.hidden { display: none !important; }
+@media (pointer: fine) { body { cursor: pointer; } }
+</style>
+</head>
+<body>
+
+<div id="canvas-area">
+  <a href="../../" id="back">← R&amp;D Lab</a>
+  <canvas id="c" width="400" height="560"></canvas>
+</div>
+
+<div id="controls">
+  <button id="btn-start">🍓 &nbsp;START</button>
+  <button id="btn-dip"     class="btn hidden">🍫 &nbsp;HOLD TO DIP</button>
+  <button id="btn-restart" class="btn hidden">↺ &nbsp;PLAY AGAIN</button>
+</div>
+
+<script>
+// ── Canvas ────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const W = 400, H = 560;
+
+// ── Palette ───────────────────────────────────────────────────────
+const C = {
+  bg:      '#fff0f3', wall: '#fce7f3', floor: '#fbcfe8', tile: '#f9a8d4',
+  pot:     '#1c0a00', potB: '#2d1000', liquid: '#5c2d00', liqHi: '#8b4513',
+  choc:    '#3d1a00', chocDrip: '#2d1200',
+  skewer:  '#92400e', skewerHi: '#b45309',
+  pink:    '#ec4899', dpink: '#be185d', ddpink: '#831843',
+  sub:     '#fda4af', timerBg: '#fecdd3', timerFg: '#e11d48',
+  green:   '#16a34a', red: '#dc2626',
+};
+
+// ── Grade zones (dip progress 0..1) ──────────────────────────────
+const GRADES = [
+  { max: 0.20, key: 'low',     label: 'TOO LITTLE', pts: 8,  stars: 1, color: '#64748b' },
+  { max: 0.40, key: 'good',    label: 'GOOD',       pts: 30, stars: 2, color: '#2563eb' },
+  { max: 0.60, key: 'perfect', label: 'PERFECT!',   pts: 60, stars: 3, color: '#16a34a' },
+  { max: 0.78, key: 'high',    label: 'TOO MUCH',   pts: 15, stars: 1, color: '#f59e0b' },
+  { max: 1.00, key: 'burnt',   label: 'BURNT! 🔥',  pts: 0,  stars: 0, color: '#dc2626' },
+];
+function gradeOf(p) { return GRADES.find(g => p <= g.max) || GRADES.at(-1); }
+
+// ── State ─────────────────────────────────────────────────────────
+let state       = 'idle';   // idle | ready | dipping | result | gameover
+let score       = 0;
+let combo       = 0;
+let timeLeft    = 60;
+let dipProg     = 0;        // 0..1
+let result      = null;
+let resultTimer = 0;
+let servedCount = 0;
+let bestScore   = +localStorage.getItem('sc_best') || 0;
+let particles   = [];
+let bubbles     = [];
+let steamTick   = 0;
+
+for (let i = 0; i < 9; i++) resetBubble({ x:0, y:0, r:0, vy:0, life:0 }, true);
+function resetBubble(b, init) {
+  b.x    = 152 + Math.random() * 96;
+  b.y    = init ? 290 + Math.random() * 70 : 355;
+  b.r    = 2.5 + Math.random() * 4.5;
+  b.vy   = 18 + Math.random() * 22;
+  b.life = 0.6 + Math.random() * 0.4;
+  return b;
+}
+// Actually, let's pre-fill bubbles array properly
+bubbles = [];
+for (let i = 0; i < 9; i++) {
+  bubbles.push(resetBubble({ x:0, y:0, r:0, vy:0, life:0 }, true));
+}
+
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+// ── Difficulty ────────────────────────────────────────────────────
+function dipSpeed() {
+  if (timeLeft > 45) return 0.27;
+  if (timeLeft > 30) return 0.37;
+  if (timeLeft > 15) return 0.52;
+  return 0.70;
+}
+
+// ── Controls UI ───────────────────────────────────────────────────
+const elStart   = document.getElementById('btn-start');
+const elDip     = document.getElementById('btn-dip');
+const elRestart = document.getElementById('btn-restart');
+
+function showControls() {
+  const playing = state !== 'idle' && state !== 'gameover';
+  elStart.classList.toggle  ('hidden', state !== 'idle');
+  elDip.classList.toggle    ('hidden', !playing);
+  elRestart.classList.toggle('hidden', state !== 'gameover');
+  elDip.disabled = (state === 'result');
+}
+
+// ── Input ─────────────────────────────────────────────────────────
+function onPress() {
+  if (state === 'idle')     { state = 'ready'; score = 0; combo = 0; timeLeft = 60; servedCount = 0; dipProg = 0; showControls(); }
+  else if (state === 'ready')   { state = 'dipping'; }
+  else if (state === 'gameover') { state = 'idle'; showControls(); }
+}
+function onRelease() {
+  if (state !== 'dipping') return;
+  result      = gradeOf(dipProg);
+  const mult  = combo > 1 ? combo : 1;
+  score      += result.pts * mult;
+  if (result.key === 'perfect' || result.key === 'good') combo++;
+  else combo = 0;
+  servedCount++;
+  if (result.key === 'perfect') burst(W / 2, strawY());
+  state       = 'result';
+  resultTimer = 1.1;
+  showControls();
+}
+
+// Mobile
+elStart.addEventListener  ('pointerdown', e => { e.stopPropagation(); e.preventDefault(); onPress(); },   { passive: false });
+elRestart.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); onPress(); },   { passive: false });
+
+elDip.addEventListener('pointerdown', e => {
+  e.stopPropagation(); e.preventDefault();
+  elDip.setPointerCapture(e.pointerId);
+  elDip.classList.add('held');
+  onPress();
+}, { passive: false });
+elDip.addEventListener('pointerup',    () => { elDip.classList.remove('held'); onRelease(); });
+elDip.addEventListener('pointercancel',() => { elDip.classList.remove('held'); onRelease(); });
+
+// Desktop
+if (!isTouch) {
+  window.addEventListener('pointerdown', e => {
+    if (e.target.closest('a')) return;
+    e.preventDefault(); onPress();
+  }, { passive: false });
+  window.addEventListener('pointerup', () => onRelease());
+}
+
+// ── Particle burst ────────────────────────────────────────────────
+function burst(x, y) {
+  const cols = ['#ec4899','#fbbf24','#f9a8d4','#e11d48','#fb7185'];
+  for (let i = 0; i < 22; i++) {
+    const a = Math.random() * Math.PI * 2, s = 2.5 + Math.random() * 5;
+    particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s - 3.5,
+      r: 3.5 + Math.random()*5, life: 1, color: cols[i % cols.length] });
+  }
+}
+
+// ── Strawberry Y position ─────────────────────────────────────────
+const STRAW_REST = 162;  // y center when above pot
+const STRAW_DIP  = 320;  // y center when fully submerged
+const POT_TOP    = 268;  // y of liquid surface
+
+function strawY() {
+  if (state === 'dipping' || state === 'result') {
+    return STRAW_REST + (STRAW_DIP - STRAW_REST) * dipProg;
+  }
+  return STRAW_REST;
+}
+
+// ── Drawing ───────────────────────────────────────────────────────
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+  ctx.fill();
+}
+
+function drawBg() {
+  // Wall
+  ctx.fillStyle = C.wall;
+  ctx.fillRect(0, 0, W, H * 0.64);
+  // Floor
+  ctx.fillStyle = C.floor;
+  ctx.fillRect(0, H * 0.64, W, H * 0.36);
+  // Checkerboard tiles
+  const ts = 42;
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 11; c++) {
+    if ((r + c) % 2 === 0) {
+      ctx.fillStyle = C.tile;
+      ctx.fillRect(c * ts - ts * 0.5, H * 0.64 + r * ts, ts, ts);
+    }
+  }
+  // Counter shelf
+  ctx.fillStyle = '#fda4af';
+  ctx.fillRect(0, H * 0.60, W, 5);
+  ctx.fillStyle = '#fecdd3';
+  ctx.fillRect(0, H * 0.602, W, 22);
+
+  // Cafe sign (top center)
+  ctx.fillStyle = C.dpink;
+  ctx.font = '700 13px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🍓 STRAWBERRY CAFÉ 🍓', W / 2, 22);
+
+  // Decorative hearts on wall
+  ctx.fillStyle = '#fecdd3';
+  ctx.font = '16px serif';
+  ctx.fillText('♥', 28, 130);
+  ctx.fillText('♥', W - 38, 110);
+  ctx.fillText('♥', 42, 200);
+  ctx.fillText('♥', W - 30, 195);
+}
+
+function drawPot() {
+  const cx = W / 2, pt = 272, rX = 88, rY = 22, ph = 108;
+
+  // Handles
+  ctx.strokeStyle = C.pot; ctx.lineWidth = 11; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(cx - rX - 6, pt + 32, 17, Math.PI * 0.55, Math.PI * 1.45); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx + rX + 6, pt + 32, 17, Math.PI * 1.55, Math.PI * 0.45); ctx.stroke();
+
+  // Pot body
+  ctx.fillStyle = C.potB;
+  ctx.beginPath();
+  ctx.moveTo(cx - rX, pt);
+  ctx.lineTo(cx - rX * 0.84, pt + ph);
+  ctx.lineTo(cx + rX * 0.84, pt + ph);
+  ctx.lineTo(cx + rX, pt);
+  ctx.closePath();
+  ctx.fill();
+
+  // Liquid fill (clipped to pot interior)
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx - rX + 4, pt + 4);
+  ctx.lineTo(cx - rX * 0.84 + 4, pt + ph - 4);
+  ctx.lineTo(cx + rX * 0.84 - 4, pt + ph - 4);
+  ctx.lineTo(cx + rX - 4, pt + 4);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = C.liquid;
+  ctx.fillRect(cx - rX, pt, rX * 2, ph);
+  // Liquid highlight
+  ctx.fillStyle = C.liqHi;
+  ctx.beginPath();
+  ctx.ellipse(cx, pt + 18, rX * 0.78, rY * 0.85, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Bubbles
+  ctx.fillStyle = 'rgba(160, 82, 20, 0.55)';
+  for (const b of bubbles) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r * Math.min(b.life, 0.8), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Pot rim
+  ctx.fillStyle = C.pot;
+  ctx.beginPath();
+  ctx.ellipse(cx, pt, rX, rY, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Rim sheen
+  ctx.fillStyle = '#3a1500';
+  ctx.beginPath();
+  ctx.ellipse(cx - 8, pt - 5, rX * 0.62, rY * 0.45, -0.05, Math.PI, 0);
+  ctx.fill();
+
+  // Steam wisps
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.strokeStyle = '#a0522d';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const sx = cx - 28 + i * 28;
+    ctx.beginPath();
+    ctx.moveTo(sx, pt - 10);
+    for (let y = pt - 10; y > pt - 52; y -= 4) {
+      ctx.lineTo(sx + Math.sin((y + steamTick * 60 + i * 25) * 0.14) * 9, y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawSkewer(sy) {
+  const sx = W / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.07)';
+  ctx.fillRect(sx + 1, 30, 5, sy - 30);
+  ctx.fillStyle = C.skewer;
+  ctx.fillRect(sx - 2, 26, 5, sy - 26);
+  ctx.fillStyle = C.skewerHi;
+  ctx.fillRect(sx, 26, 2, sy - 26);
+  ctx.fillStyle = C.skewer;
+  ctx.beginPath();
+  ctx.arc(sx + 0.5, 30, 7, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawStrawberry(cx, cy, coat) {
+  const sz = 38;
+
+  // Leaves
+  ctx.fillStyle = '#15803d';
+  ctx.beginPath(); ctx.ellipse(cx - sz*0.22, cy - sz*0.55, sz*0.22, sz*0.11, -0.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + sz*0.22, cy - sz*0.55, sz*0.22, sz*0.11, 0.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.62, sz*0.13, sz*0.2, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#166534';
+  ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.48, sz*0.24, sz*0.1, 0, 0, Math.PI*2); ctx.fill();
+
+  // Body (red)
+  ctx.fillStyle = C.red;
+  ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.05, sz*0.44, sz*0.52, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx - sz*0.22, cy + sz*0.38);
+  ctx.lineTo(cx, cy + sz*0.72);
+  ctx.lineTo(cx + sz*0.22, cy + sz*0.38);
+  ctx.closePath(); ctx.fill();
+
+  // Seeds
+  ctx.fillStyle = '#fde047';
+  const seeds = [[-0.18,-0.22],[0.14,-0.30],[0.24,0.00],[-0.24,0.06],[0.06,0.28],[-0.1,0.44],[0.19,0.40]];
+  for (const [sx, sy] of seeds) {
+    ctx.beginPath();
+    ctx.ellipse(cx + sx*sz, cy + sy*sz, sz*0.057, sz*0.04, 0.3, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // Shine
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.beginPath(); ctx.ellipse(cx - sz*0.12, cy - sz*0.18, sz*0.14, sz*0.21, -0.3, 0, Math.PI*2); ctx.fill();
+
+  // Chocolate coating (rises from bottom as coat 0→1)
+  if (coat > 0.02) {
+    const clipTop = (cy + sz * 0.76) - coat * sz * 1.4;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cx - sz, clipTop, sz * 2, sz * 2.5);
+    ctx.clip();
+    ctx.fillStyle = C.choc;
+    ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.05, sz*0.46, sz*0.54, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - sz*0.24, cy + sz*0.36);
+    ctx.lineTo(cx, cy + sz*0.74);
+    ctx.lineTo(cx + sz*0.24, cy + sz*0.36);
+    ctx.closePath(); ctx.fill();
+    // Drips
+    if (coat > 0.12) {
+      ctx.fillStyle = C.chocDrip;
+      ctx.beginPath(); ctx.ellipse(cx - sz*0.18, clipTop + 5, sz*0.065, sz*0.11, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + sz*0.22, clipTop + 8, sz*0.055, sz*0.09, 0, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawMeter() {
+  const mx = 346, my = 82, mw = 22, mh = 210;
+  // Background + rounded clip
+  ctx.save();
+  ctx.fillStyle = '#fecdd3';
+  rr(mx, my, mw, mh, 8);
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(mx, my, mw, mh, 8); else ctx.rect(mx, my, mw, mh);
+  ctx.clip();
+  // Zone fills
+  const zones = [
+    [0,    0.20, '#94a3b8'],
+    [0.20, 0.40, '#86efac'],
+    [0.40, 0.60, '#22c55e'],
+    [0.60, 0.78, '#fb923c'],
+    [0.78, 1.00, '#ef4444'],
+  ];
+  for (const [f, t, col] of zones) {
+    ctx.fillStyle = col;
+    ctx.fillRect(mx, my + f * mh, mw, (t - f) * mh + 1);
+  }
+  // Perfect star label
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('★', mx + mw / 2, my + 0.50 * mh);
+  ctx.restore();
+
+  // Marker
+  if (state === 'dipping' || state === 'result') {
+    const my2 = my + dipProg * mh;
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = C.ddpink;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(mx + mw / 2, my2, 10, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+  }
+  // Label
+  ctx.fillStyle = C.sub;
+  ctx.font = '700 8px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('DIP', mx + mw / 2, my - 10);
+}
+
+function drawHud() {
+  // Score (left)
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = C.ddpink;
+  ctx.font = '700 28px -apple-system, sans-serif';
+  ctx.fillText(score, 18, 62);
+  ctx.fillStyle = C.sub;
+  ctx.font = '600 10px -apple-system, sans-serif';
+  ctx.fillText('SCORE', 18, 80);
+
+  // Combo (center)
+  if (combo > 1) {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = C.pink;
+    const fs = Math.min(18, 10 + combo * 1.5);
+    ctx.font = `700 ${fs}px -apple-system, sans-serif`;
+    ctx.fillText(`×${combo} COMBO!`, W / 2 - 10, 68);
+  }
+
+  // Timer (right)
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = timeLeft < 15 ? '#e11d48' : C.ddpink;
+  ctx.font = '700 28px -apple-system, sans-serif';
+  ctx.fillText(Math.ceil(timeLeft), W - 50, 62);
+  ctx.fillStyle = C.sub;
+  ctx.font = '600 10px -apple-system, sans-serif';
+  ctx.fillText('TIME', W - 50, 80);
+
+  // Timer bar
+  ctx.fillStyle = C.timerBg;
+  rr(18, 86, W - 36, 5, 3);
+  ctx.fillStyle = timeLeft < 15 ? '#e11d48' : C.timerFg;
+  rr(18, 86, (W - 36) * Math.max(0, timeLeft / 60), 5, 3);
+}
+
+function drawResultOverlay() {
+  if (!result || state !== 'result') return;
+  const alpha = Math.min(1, resultTimer / 0.35);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `700 ${result.key === 'perfect' ? 36 : 28}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = result.color;
+  ctx.fillText(result.label, W / 2, 208);
+
+  const mult = combo > 1 ? combo : 1;
+  if (result.pts > 0) {
+    ctx.font = '600 17px -apple-system, sans-serif';
+    ctx.fillStyle = C.ddpink;
+    ctx.fillText(`+${result.pts * mult}${mult > 1 ? ` (×${mult})` : ''}`, W / 2, 238);
+  }
+  ctx.font = '20px serif';
+  ctx.fillText('⭐'.repeat(result.stars) + (result.stars === 0 ? '💔' : ''), W / 2, 262);
+  ctx.restore();
+}
+
+function drawIdleScreen() {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = C.ddpink;
+  ctx.font = '700 30px -apple-system, sans-serif';
+  ctx.fillText('Strawberry Café', W / 2, 128);
+  ctx.font = '28px serif';
+  ctx.fillText('🍓🍫', W / 2, 170);
+  ctx.fillStyle = C.dpink;
+  ctx.font = '500 14px -apple-system, sans-serif';
+  if (isTouch) {
+    ctx.fillText('Hold HOLD TO DIP, release at the right', W / 2, 208);
+    ctx.fillText('moment for a perfect chocolate coat!', W / 2, 228);
+  } else {
+    ctx.fillText('Hold mouse button to dip, release to coat.', W / 2, 208);
+    ctx.fillText('Aim for the ★ zone on the right!', W / 2, 228);
+  }
+  if (bestScore > 0) {
+    ctx.fillStyle = C.sub;
+    ctx.font = '600 12px -apple-system, sans-serif';
+    ctx.fillText(`Best: ${bestScore} pts`, W / 2, 256);
+  }
+}
+
+function drawGameover() {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = C.ddpink;
+  ctx.font = '700 28px -apple-system, sans-serif';
+  ctx.fillText("Time's Up! 🍓", W / 2, 140);
+  ctx.font = '600 20px -apple-system, sans-serif';
+  ctx.fillText(`${score} pts`, W / 2, 178);
+  ctx.fillStyle = C.sub;
+  ctx.font = '500 13px -apple-system, sans-serif';
+  ctx.fillText(`${servedCount} strawberries served`, W / 2, 202);
+  if (score > bestScore) {
+    bestScore = score;
+    localStorage.setItem('sc_best', bestScore);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '700 15px -apple-system, sans-serif';
+    ctx.fillText('🏆 New Best!', W / 2, 228);
+  } else if (bestScore > 0) {
+    ctx.fillText(`Best: ${bestScore} pts`, W / 2, 228);
+  }
+  if (!isTouch) {
+    ctx.fillStyle = C.dpink;
+    ctx.font = '600 15px -apple-system, sans-serif';
+    ctx.fillText('Click to play again', W / 2, 256);
+  }
+}
+
+// ── Update ────────────────────────────────────────────────────────
+let lastTime = performance.now();
+
+function update(dt) {
+  steamTick += dt;
+
+  // Bubbles
+  for (const b of bubbles) {
+    b.y  -= b.vy * dt;
+    b.life -= dt * 0.55;
+    if (b.y < POT_TOP + 10 || b.life <= 0) resetBubble(b, false);
+  }
+
+  // Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.14;
+    p.life -= 0.032;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  if (state === 'idle' || state === 'gameover') return;
+
+  timeLeft -= dt;
+  if (timeLeft <= 0) {
+    timeLeft = 0;
+    if (score > bestScore) { bestScore = score; localStorage.setItem('sc_best', bestScore); }
+    state = 'gameover'; dipProg = 0; showControls(); return;
+  }
+
+  if (state === 'dipping') {
+    dipProg = Math.min(1, dipProg + dt * dipSpeed());
+    if (dipProg >= 1) onRelease(); // auto-burnt
+  }
+
+  if (state === 'result') {
+    resultTimer -= dt;
+    if (resultTimer <= 0) { dipProg = 0; result = null; state = 'ready'; showControls(); }
+  }
+}
+
+// ── Draw frame ────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawBg();
+
+  if (state === 'idle') {
+    drawPot();
+    drawIdleScreen();
+    return;
+  }
+  if (state === 'gameover') {
+    drawPot();
+    drawGameover();
+    return;
+  }
+
+  drawHud();
+
+  const sy   = strawY();
+  const coat = (state === 'dipping' || state === 'result') ? dipProg : 0;
+
+  drawSkewer(sy - 38 * 0.55);
+  drawPot();
+
+  // Draw strawberry (clipped above liquid when submerged)
+  if (sy < POT_TOP - 20) {
+    drawStrawberry(W / 2, sy, coat);
+  } else {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, POT_TOP + 6); ctx.clip();
+    drawStrawberry(W / 2, sy, coat);
+    ctx.restore();
+  }
+
+  drawMeter();
+  drawResultOverlay();
+
+  // Particles
+  ctx.save();
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * Math.max(0.2, p.life), 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+
+  // Desktop hint
+  if (state === 'ready' && !isTouch) {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = C.pink;
+    ctx.font = '600 14px -apple-system, sans-serif';
+    ctx.fillText('Hold mouse button to dip!', W / 2, 478);
+  }
+}
+
+// ── Loop ──────────────────────────────────────────────────────────
+function loop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+showControls();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
