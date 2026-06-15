@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Dressed to Impress</title>
+<style>
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; touch-action: none;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  display: flex;
+  flex-direction: column;
+  background: #fdf4ff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#canvas-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 12px 8px;
+  position: relative;
+  min-height: 0;
+}
+canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(168,85,247,0.15);
+}
+#back {
+  position: absolute;
+  top: 12px; left: 16px;
+  font-size: 13px; color: #c084fc;
+  text-decoration: none; z-index: 10;
+}
+#back:hover { color: #a855f7; }
+
+#controls {
+  display: none;
+  flex-direction: column;
+  padding: 10px 14px max(20px, env(safe-area-inset-bottom));
+  gap: 8px;
+  flex-shrink: 0;
+}
+@media (pointer: coarse) { #controls { display: flex; height: 46vh; } }
+
+.btn {
+  flex: 1; border: none; border-radius: 18px;
+  font-size: 20px; font-weight: 700; letter-spacing: 0.02em;
+  cursor: pointer; touch-action: none;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: #fff; transition: transform 0.08s, opacity 0.08s;
+}
+.btn:active { opacity: 0.82; transform: scale(0.97); }
+
+#btn-start, #btn-restart {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  font-size: 22px;
+  box-shadow: 0 4px 0 #7c3aed;
+}
+#btn-start:active, #btn-restart:active {
+  transform: translateY(3px) scale(0.97);
+  box-shadow: 0 1px 0 #7c3aed;
+}
+
+#choice-area {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.choice-btn {
+  flex: 1; border: 3px solid transparent; border-radius: 16px;
+  background: #fff;
+  font-size: 18px; font-weight: 600;
+  cursor: pointer; touch-action: none;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  color: #3b0764; transition: transform 0.06s, border-color 0.1s, background 0.1s;
+  padding: 0 14px;
+  box-shadow: 0 2px 8px rgba(168,85,247,0.1);
+}
+.choice-btn:active { transform: scale(0.97); }
+.choice-btn.correct  { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+.choice-btn.partial  { background: #fef9c3; border-color: #ca8a04; color: #713f12; }
+.choice-btn.wrong    { background: #fee2e2; border-color: #dc2626; color: #7f1d1d; }
+
+.hidden { display: none !important; }
+@media (pointer: fine) { body { cursor: pointer; } }
+</style>
+</head>
+<body>
+
+<div id="canvas-area">
+  <a href="../../" id="back">← Back</a>
+  <canvas id="c" width="400" height="460"></canvas>
+</div>
+
+<div id="controls">
+  <button class="btn" id="btn-start">👗 &nbsp;START</button>
+  <button class="btn hidden" id="btn-restart">↺ &nbsp;PLAY AGAIN</button>
+
+  <div id="choice-area">
+    <button class="choice-btn" data-i="0"></button>
+    <button class="choice-btn" data-i="1"></button>
+    <button class="choice-btn" data-i="2"></button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 400, H = 460;
+
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+// ── Question pool: 12 themes × 3 questions each ──
+const POOL = [
+  // Beach Day
+  { t:'🏖️ Beach Day', bg:'#0284c7', fg:'#e0f2fe',
+    q:'Perfect beach outfit?',
+    c:[{e:'🩱',n:'Swimsuit',p:60},{e:'👗',n:'Sundress',p:35},{e:'🧥',n:'Wool Coat',p:5}] },
+  { t:'🏖️ Beach Day', bg:'#0284c7', fg:'#e0f2fe',
+    q:'Best footwear for sand?',
+    c:[{e:'🩴',n:'Flip-flops',p:60},{e:'👟',n:'Sneakers',p:35},{e:'👠',n:'Heels',p:5}] },
+  { t:'🏖️ Beach Day', bg:'#0284c7', fg:'#e0f2fe',
+    q:'Accessory for the sun?',
+    c:[{e:'🕶️',n:'Sunglasses',p:60},{e:'👒',n:'Sun Hat',p:35},{e:'🧣',n:'Scarf',p:5}] },
+
+  // Snow Day
+  { t:'❄️ Snow Day', bg:'#475569', fg:'#e2e8f0',
+    q:'Staying warm outside?',
+    c:[{e:'🧥',n:'Puffer Coat',p:60},{e:'🧤',n:'Gloves Only',p:35},{e:'👙',n:'Bikini',p:5}] },
+  { t:'❄️ Snow Day', bg:'#475569', fg:'#e2e8f0',
+    q:'Best snow footwear?',
+    c:[{e:'🥾',n:'Snow Boots',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
+  { t:'❄️ Snow Day', bg:'#475569', fg:'#e2e8f0',
+    q:'Cozy snow day layer?',
+    c:[{e:'🧣',n:'Scarf & Hat',p:60},{e:'🕶️',n:'Shades',p:35},{e:'🩳',n:'Shorts',p:5}] },
+
+  // Date Night
+  { t:'🌙 Date Night', bg:'#1e1b4b', fg:'#e0e7ff',
+    q:'Dinner date look?',
+    c:[{e:'👗',n:'Little Black Dress',p:60},{e:'👚',n:'Casual Tee',p:35},{e:'🩲',n:'Swim Trunks',p:5}] },
+  { t:'🌙 Date Night', bg:'#1e1b4b', fg:'#e0e7ff',
+    q:'Date night shoes?',
+    c:[{e:'👠',n:'Heels',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
+  { t:'🌙 Date Night', bg:'#1e1b4b', fg:'#e0e7ff',
+    q:'Perfect date accessory?',
+    c:[{e:'💍',n:'Jewelry',p:60},{e:'🎒',n:'Backpack',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
+
+  // Job Interview
+  { t:'💼 Job Interview', bg:'#1f2937', fg:'#f1f5f9',
+    q:'Interview-ready outfit?',
+    c:[{e:'👔',n:'Button-up Shirt',p:60},{e:'👕',n:'Graphic Tee',p:35},{e:'🩱',n:'Swimsuit',p:5}] },
+  { t:'💼 Job Interview', bg:'#1f2937', fg:'#f1f5f9',
+    q:'Professional footwear?',
+    c:[{e:'👞',n:'Dress Shoes',p:60},{e:'👟',n:'Running Shoes',p:35},{e:'🩴',n:'Sandals',p:5}] },
+  { t:'💼 Job Interview', bg:'#1f2937', fg:'#f1f5f9',
+    q:'Interview accessory?',
+    c:[{e:'💼',n:'Briefcase',p:60},{e:'🎒',n:'Gym Bag',p:35},{e:'🪣',n:'Bucket',p:5}] },
+
+  // Birthday Party
+  { t:'🎉 Birthday Party', bg:'#7c3aed', fg:'#f3e8ff',
+    q:'Party outfit choice?',
+    c:[{e:'✨',n:'Sparkly Dress',p:60},{e:'👗',n:'Casual Dress',p:35},{e:'🩲',n:'PJs',p:5}] },
+  { t:'🎉 Birthday Party', bg:'#7c3aed', fg:'#f3e8ff',
+    q:'Party hat moment?',
+    c:[{e:'🎉',n:'Party Hat',p:60},{e:'👒',n:'Sun Hat',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
+  { t:'🎉 Birthday Party', bg:'#7c3aed', fg:'#f3e8ff',
+    q:'Shoes to dance in?',
+    c:[{e:'👠',n:'Block Heels',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🥾',n:'Hiking Boots',p:5}] },
+
+  // Gym Session
+  { t:'🏋️ Gym Session', bg:'#064e3b', fg:'#d1fae5',
+    q:'Workout outfit?',
+    c:[{e:'🩱',n:'Sports Set',p:60},{e:'👗',n:'Sundress',p:35},{e:'🤵',n:'Tuxedo',p:5}] },
+  { t:'🏋️ Gym Session', bg:'#064e3b', fg:'#d1fae5',
+    q:'Best gym shoes?',
+    c:[{e:'👟',n:'Trainers',p:60},{e:'👠',n:'Heels',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
+  { t:'🏋️ Gym Session', bg:'#064e3b', fg:'#d1fae5',
+    q:'Gym bag essential?',
+    c:[{e:'🎒',n:'Sports Bag',p:60},{e:'💼',n:'Briefcase',p:35},{e:'👛',n:'Evening Clutch',p:5}] },
+
+  // Art Gallery
+  { t:'🎨 Art Gallery', bg:'#292524', fg:'#fafaf9',
+    q:'Gallery opening look?',
+    c:[{e:'🧥',n:'Chic Blazer',p:60},{e:'👕',n:'Plain Tee',p:35},{e:'🩲',n:'Swim Shorts',p:5}] },
+  { t:'🎨 Art Gallery', bg:'#292524', fg:'#fafaf9',
+    q:'Artsy footwear pick?',
+    c:[{e:'👞',n:'Chelsea Boots',p:60},{e:'🩴',n:'Flip-flops',p:35},{e:'🥾',n:'Mud Boots',p:5}] },
+  { t:'🎨 Art Gallery', bg:'#292524', fg:'#fafaf9',
+    q:'Gallery accessory?',
+    c:[{e:'👜',n:'Structured Bag',p:60},{e:'🎒',n:'Backpack',p:35},{e:'🪣',n:'Bucket',p:5}] },
+
+  // Garden Picnic
+  { t:'🌿 Garden Picnic', bg:'#166534', fg:'#dcfce7',
+    q:'Picnic day outfit?',
+    c:[{e:'👗',n:'Flowy Dress',p:60},{e:'👔',n:'Business Suit',p:35},{e:'🩱',n:'Swimsuit',p:5}] },
+  { t:'🌿 Garden Picnic', bg:'#166534', fg:'#dcfce7',
+    q:'Comfy picnic shoes?',
+    c:[{e:'👡',n:'Flat Sandals',p:60},{e:'👠',n:'Stilettos',p:35},{e:'🥾',n:'Heavy Boots',p:5}] },
+  { t:'🌿 Garden Picnic', bg:'#166534', fg:'#dcfce7',
+    q:'Outdoor accessory?',
+    c:[{e:'🧺',n:'Picnic Basket',p:60},{e:'💼',n:'Briefcase',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
+
+  // Mountain Hike
+  { t:'🏔️ Mountain Hike', bg:'#44403c', fg:'#fafaf9',
+    q:'Hiking outfit?',
+    c:[{e:'🧥',n:'Windbreaker',p:60},{e:'👔',n:'Dress Shirt',p:35},{e:'🤵',n:'Tuxedo',p:5}] },
+  { t:'🏔️ Mountain Hike', bg:'#44403c', fg:'#fafaf9',
+    q:'Trail footwear?',
+    c:[{e:'🥾',n:'Hiking Boots',p:60},{e:'👟',n:'Casual Sneakers',p:35},{e:'👠',n:'Heels',p:5}] },
+  { t:'🏔️ Mountain Hike', bg:'#44403c', fg:'#fafaf9',
+    q:'Hike essential carry?',
+    c:[{e:'🎒',n:'Hiking Pack',p:60},{e:'👜',n:'Evening Bag',p:35},{e:'💼',n:'Briefcase',p:5}] },
+
+  // Theater Night
+  { t:'🎭 Theater Night', bg:'#3b0764', fg:'#f3e8ff',
+    q:'Opening night outfit?',
+    c:[{e:'🥻',n:'Elegant Gown',p:60},{e:'👗',n:'Day Dress',p:35},{e:'🩳',n:'Gym Shorts',p:5}] },
+  { t:'🎭 Theater Night', bg:'#3b0764', fg:'#f3e8ff',
+    q:'Theater footwear?',
+    c:[{e:'👠',n:'Dressy Heels',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
+  { t:'🎭 Theater Night', bg:'#3b0764', fg:'#f3e8ff',
+    q:'Theater accessory?',
+    c:[{e:'👛',n:'Clutch Purse',p:60},{e:'🎒',n:'Backpack',p:35},{e:'🪣',n:'Bucket',p:5}] },
+
+  // Tropical Resort
+  { t:'🌴 Tropical Resort', bg:'#0f766e', fg:'#ccfbf1',
+    q:'Resort day look?',
+    c:[{e:'🩱',n:'Bikini + Cover-up',p:60},{e:'🧥',n:'Winter Coat',p:35},{e:'🤵',n:'Tuxedo',p:5}] },
+  { t:'🌴 Tropical Resort', bg:'#0f766e', fg:'#ccfbf1',
+    q:'Resort footwear?',
+    c:[{e:'🩴',n:'Sandals',p:60},{e:'🥾',n:'Snow Boots',p:35},{e:'👠',n:'Stilettos',p:5}] },
+  { t:'🌴 Tropical Resort', bg:'#0f766e', fg:'#ccfbf1',
+    q:'Poolside accessory?',
+    c:[{e:'🕶️',n:'Sunnies',p:60},{e:'🧣',n:'Wool Scarf',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
+
+  // Halloween
+  { t:'🎃 Halloween', bg:'#7c2d12', fg:'#ffedd5',
+    q:'Trick-or-treat outfit?',
+    c:[{e:'🧛',n:'Vampire Cape',p:60},{e:'👔',n:'Business Casual',p:35},{e:'👙',n:'Bikini',p:5}] },
+  { t:'🎃 Halloween', bg:'#7c2d12', fg:'#ffedd5',
+    q:'Spooky footwear?',
+    c:[{e:'🥾',n:'Witch Boots',p:60},{e:'👟',n:'Plain Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
+  { t:'🎃 Halloween', bg:'#7c2d12', fg:'#ffedd5',
+    q:'Best Halloween prop?',
+    c:[{e:'🪄',n:'Magic Wand',p:60},{e:'💼',n:'Briefcase',p:35},{e:'🧺',n:'Laundry Basket',p:5}] },
+];
+
+// ── State ──
+let state = 'idle'; // idle | playing | result | gameover
+let score = 0;
+let bestScore = +localStorage.getItem('dti_best') || 0;
+let timeLeft = 60;
+let timerInterval = null;
+let currentQ = null;
+let shuffled = [];
+let answered = false;
+let resultTimer = null;
+let questionCount = 0;
+let lastTheme = '';
+
+// ── Particle system ──
+let particles = [];
+function spawnConfetti(x, y, count = 10) {
+  const colors = ['#a855f7','#ec4899','#f59e0b','#10b981','#3b82f6','#f43f5e'];
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 6,
+      vy: -Math.random() * 7 - 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 7 + 4,
+      life: 1,
+      rot: Math.random() * Math.PI * 2,
+      rspeed: (Math.random() - 0.5) * 0.3,
+    });
+  }
+}
+
+function updateParticles() {
+  particles = particles.filter(p => p.life > 0);
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.35;
+    p.life -= 0.022;
+    p.rot += p.rspeed;
+  }
+}
+function drawParticles() {
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+    ctx.restore();
+  }
+}
+
+// ── Draw helpers ──
+function rndf(min, max) { return min + Math.random() * (max - min); }
+
+function drawBg(q) {
+  const bg = q ? q.bg : '#7c3aed';
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // subtle pattern dots
+  ctx.globalAlpha = 0.07;
+  ctx.fillStyle = '#fff';
+  for (let r = 0; r < H; r += 40) {
+    for (let c = 0; c < W; c += 40) {
+      ctx.beginPath();
+      ctx.arc(c + 20, r + 20, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawIdleScreen() {
+  drawBg(null);
+
+  // Title
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 34px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Dressed to Impress', W / 2, 130);
+
+  ctx.font = '22px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.fillText('Pick the best outfit for each occasion!', W / 2, 178);
+
+  // Big fashion emoji
+  ctx.font = '90px serif';
+  ctx.fillText('👗', W / 2, 290);
+
+  // Best score
+  if (bestScore > 0) {
+    ctx.font = '15px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(`Best: ${bestScore} pts`, W / 2, 390);
+  }
+
+  // Desktop prompt
+  if (!isTouch) {
+    ctx.font = 'bold 16px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    const btn = { x: W/2 - 90, y: 420, w: 180, h: 44 };
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 12);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillText('👗 START', W / 2, btn.y + btn.h / 2);
+  }
+}
+
+function drawPlayScreen() {
+  if (!currentQ) return;
+  drawBg(currentQ);
+
+  // Theme label
+  ctx.font = 'bold 22px -apple-system, sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(currentQ.t, W / 2, 50);
+
+  // Timer bar
+  const barW = W - 60;
+  const barX = 30;
+  const barY = 82;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  roundRect(ctx, barX, barY, barW, 10, 5);
+  ctx.fill();
+  const pct = timeLeft / 60;
+  const barColor = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#facc15' : '#f87171';
+  ctx.fillStyle = barColor;
+  roundRect(ctx, barX, barY, barW * pct, 10, 5);
+  ctx.fill();
+
+  // Timer number
+  ctx.font = 'bold 15px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(`${timeLeft}s`, W / 2, 107);
+
+  // Score
+  ctx.font = 'bold 13px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${score} pts`, W - 20, 107);
+  ctx.textAlign = 'center';
+
+  // Question
+  ctx.font = 'bold 20px -apple-system, sans-serif';
+  ctx.fillStyle = '#fff';
+  const words = currentQ.q.split(' ');
+  let line = '', lines = [];
+  for (const w of words) {
+    const test = line + (line ? ' ' : '') + w;
+    if (ctx.measureText(test).width > W - 60 && line) { lines.push(line); line = w; }
+    else line = test;
+  }
+  lines.push(line);
+  const qY = 160;
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, qY + i * 28));
+
+  // Character figure
+  ctx.font = '88px serif';
+  ctx.fillText('👗', W / 2, 310);
+
+  // Q count
+  ctx.font = '13px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(`Q ${questionCount}`, W / 2, 410);
+
+  // Desktop choice buttons
+  if (!isTouch) {
+    const choices = shuffled;
+    const bh = 52, gap = 10;
+    const totalH = choices.length * bh + (choices.length - 1) * gap;
+    const startY = H - totalH - 14;
+    choices.forEach((ch, i) => {
+      const y = startY + i * (bh + gap);
+      const col = ch._result === 'correct' ? '#bbf7d0' :
+                  ch._result === 'partial'  ? '#fef08a' :
+                  ch._result === 'wrong'    ? '#fecaca' : 'rgba(255,255,255,0.92)';
+      ctx.fillStyle = col;
+      roundRect(ctx, 24, y, W - 48, bh, 12);
+      ctx.fill();
+      ctx.font = 'bold 17px -apple-system, sans-serif';
+      ctx.fillStyle = '#1e0936';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${ch.e}  ${ch.n}`, W / 2, y + bh / 2);
+    });
+  }
+
+  drawParticles();
+}
+
+function drawGameover() {
+  ctx.fillStyle = '#1e0936';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.font = '26px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✨👗✨', W / 2, 90);
+
+  ctx.font = 'bold 30px -apple-system, sans-serif';
+  ctx.fillStyle = '#e9d5ff';
+  ctx.fillText("Time's Up!", W / 2, 145);
+
+  ctx.font = 'bold 52px -apple-system, sans-serif';
+  ctx.fillStyle = '#c084fc';
+  ctx.fillText(`${score}`, W / 2, 215);
+
+  ctx.font = '17px -apple-system, sans-serif';
+  ctx.fillStyle = 'rgba(233,213,255,0.7)';
+  ctx.fillText('pts', W / 2, 250);
+
+  if (score >= bestScore && score > 0) {
+    ctx.font = 'bold 18px -apple-system, sans-serif';
+    ctx.fillStyle = '#fde68a';
+    ctx.fillText('🏆 New Best!', W / 2, 290);
+  } else if (bestScore > 0) {
+    ctx.font = '15px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(233,213,255,0.5)';
+    ctx.fillText(`Best: ${bestScore} pts`, W / 2, 290);
+  }
+
+  const grade = score >= 500 ? '👑 Fashion Icon' :
+                score >= 350 ? '💅 Style Star' :
+                score >= 200 ? '✨ Trend Setter' :
+                score >= 100 ? '👗 Getting There' : '🧺 Try Again';
+  ctx.font = 'bold 22px -apple-system, sans-serif';
+  ctx.fillStyle = '#f0abfc';
+  ctx.fillText(grade, W / 2, 340);
+
+  if (!isTouch) {
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    roundRect(ctx, W/2 - 90, 400, 180, 44, 12);
+    ctx.fill();
+    ctx.font = 'bold 16px -apple-system, sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('↺ PLAY AGAIN', W / 2, 422);
+  }
+
+  drawParticles();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+// ── Game logic ──
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickQuestion() {
+  const eligible = POOL.filter(q => q.t !== lastTheme);
+  const pool = eligible.length ? eligible : POOL;
+  const q = pool[Math.floor(Math.random() * pool.length)];
+  lastTheme = q.t;
+  return q;
+}
+
+function nextQuestion() {
+  answered = false;
+  currentQ = pickQuestion();
+  questionCount++;
+  shuffled = shuffle(currentQ.c.map(c => ({ ...c, _result: null })));
+  updateChoiceButtons();
+}
+
+function updateChoiceButtons() {
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach((btn, i) => {
+    const ch = shuffled[i];
+    btn.textContent = '';
+    btn.className = 'choice-btn';
+    const span = document.createElement('span');
+    span.style.fontSize = '26px';
+    span.textContent = ch.e;
+    const label = document.createElement('span');
+    label.style.fontSize = '17px';
+    label.textContent = ch.n;
+    btn.appendChild(span);
+    btn.appendChild(label);
+  });
+}
+
+function applyResultColors() {
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach((btn, i) => {
+    const ch = shuffled[i];
+    btn.classList.remove('correct', 'partial', 'wrong');
+    if (ch._result) btn.classList.add(ch._result);
+  });
+}
+
+function startGame() {
+  score = 0;
+  questionCount = 0;
+  timeLeft = 60;
+  particles = [];
+  lastTheme = '';
+  state = 'playing';
+
+  document.getElementById('btn-start').classList.add('hidden');
+  document.getElementById('btn-restart').classList.add('hidden');
+  document.getElementById('choice-area').style.display = 'flex';
+
+  nextQuestion();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      endGame();
+    }
+  }, 1000);
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  clearTimeout(resultTimer);
+  state = 'gameover';
+  if (score > bestScore) {
+    bestScore = score;
+    localStorage.setItem('dti_best', bestScore);
+  }
+  document.getElementById('choice-area').style.display = 'none';
+  document.getElementById('btn-restart').classList.remove('hidden');
+  spawnConfetti(W / 2, 200, 30);
+}
+
+function handleChoice(i) {
+  if (answered || state !== 'playing') return;
+  answered = true;
+
+  const ch = shuffled[i];
+  score += ch.p;
+
+  shuffled.forEach((c, j) => {
+    c._result = c.p === 60 ? 'correct' : c.p === 35 ? 'partial' : 'wrong';
+  });
+  shuffled[i]._result = ch.p === 60 ? 'correct' : ch.p === 35 ? 'partial' : 'wrong';
+
+  if (ch.p === 60) spawnConfetti(W / 2, 280, 18);
+
+  applyResultColors();
+
+  resultTimer = setTimeout(() => {
+    if (state === 'playing') {
+      nextQuestion();
+      const btns = document.querySelectorAll('.choice-btn');
+      btns.forEach(b => b.classList.remove('correct','partial','wrong'));
+    }
+  }, 900);
+}
+
+// ── Desktop click on canvas ──
+canvas.addEventListener('click', e => {
+  if (isTouch) return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = W / rect.width;
+  const sy = H / rect.height;
+  const x = (e.clientX - rect.left) * sx;
+  const y = (e.clientY - rect.top) * sy;
+
+  if (state === 'idle') { startGame(); return; }
+  if (state === 'gameover') { startGame(); return; }
+  if (state === 'playing' && !answered) {
+    const choices = shuffled;
+    const bh = 52, gap = 10;
+    const totalH = choices.length * bh + (choices.length - 1) * gap;
+    const startY = H - totalH - 14;
+    choices.forEach((ch, i) => {
+      const by = startY + i * (bh + gap);
+      if (x >= 24 && x <= W - 24 && y >= by && y <= by + bh) {
+        handleChoice(i);
+      }
+    });
+  }
+});
+
+// ── Touch controls ──
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-restart').addEventListener('click', startGame);
+document.querySelectorAll('.choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => handleChoice(+btn.dataset.i));
+});
+
+// ── Render loop ──
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  updateParticles();
+
+  if (state === 'idle')     drawIdleScreen();
+  else if (state === 'playing') drawPlayScreen();
+  else if (state === 'gameover') drawGameover();
+
+  requestAnimationFrame(draw);
+}
+
+// ── Canvas scale ──
+function fitCanvas() {
+  const area = document.getElementById('canvas-area');
+  const aw = area.clientWidth - 24;
+  const ah = area.clientHeight - 52;
+  const scale = Math.min(aw / W, ah / H);
+  canvas.style.width  = (W * scale) + 'px';
+  canvas.style.height = (H * scale) + 'px';
+}
+window.addEventListener('resize', fitCanvas);
+fitCanvas();
+
+draw();
+</script>
+</body>
+</html>

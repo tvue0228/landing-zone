@@ -15,6 +15,7 @@ An R&D repo for micro-tools and games. Each project lives in its own directory a
 | [Mafia](games/mafia/) | `games/mafia/` | Pass-the-phone Mafia with secret roles, day voting, and night actions |
 | [Imposter](games/imposter/) | `games/imposter/` | Spyfall-style — everyone gets a word except the Imposter |
 | [Dino](games/dino/) | `games/dino/` | Chrome's offline dinosaur game rebuilt in canvas |
+| [Dressed to Impress](games/dressed-to-impress/) | `games/dressed-to-impress/` | Fashion quiz — pick the perfect outfit for each occasion before time runs out |
 
 ## Tools
 
