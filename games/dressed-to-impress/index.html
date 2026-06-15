@@ -11,682 +11,1471 @@
 }
 html, body { height: 100%; overflow: hidden; }
 body {
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
   background: #fdf4ff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  user-select: none;
-  -webkit-user-select: none;
+  user-select: none; -webkit-user-select: none;
 }
-
 #canvas-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 44px 12px 8px;
-  position: relative;
-  min-height: 0;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 40px 12px 6px; position: relative; min-height: 0;
 }
 canvas {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(168,85,247,0.15);
+  display: block; max-width: 100%; max-height: 100%;
+  border-radius: 20px; box-shadow: 0 4px 24px rgba(168,85,247,0.18);
 }
 #back {
-  position: absolute;
-  top: 12px; left: 16px;
-  font-size: 13px; color: #c084fc;
-  text-decoration: none; z-index: 10;
+  position: absolute; top: 10px; left: 14px;
+  font-size: 13px; color: #c084fc; text-decoration: none; z-index: 10;
 }
-#back:hover { color: #a855f7; }
-
+/* Controls */
 #controls {
-  display: none;
-  flex-direction: column;
-  padding: 10px 14px max(20px, env(safe-area-inset-bottom));
-  gap: 8px;
-  flex-shrink: 0;
+  display: none; flex-direction: column; flex-shrink: 0;
+  background: #fff; border-top: 1px solid #f3e8ff;
 }
 @media (pointer: coarse) { #controls { display: flex; height: 46vh; } }
-
-.btn {
-  flex: 1; border: none; border-radius: 18px;
-  font-size: 20px; font-weight: 700; letter-spacing: 0.02em;
-  cursor: pointer; touch-action: none;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  color: #fff; transition: transform 0.08s, opacity 0.08s;
+/* Nav tabs */
+#nav-tabs {
+  display: flex; border-bottom: 1px solid #f3e8ff; flex-shrink: 0;
 }
-.btn:active { opacity: 0.82; transform: scale(0.97); }
-
-#btn-start, #btn-restart {
-  background: linear-gradient(135deg, #a855f7, #ec4899);
-  font-size: 22px;
-  box-shadow: 0 4px 0 #7c3aed;
+.ntb {
+  flex: 1; border: none; background: none; padding: 8px 2px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 18px; color: #d8b4fe; cursor: pointer; transition: color 0.15s;
+  touch-action: none;
 }
-#btn-start:active, #btn-restart:active {
-  transform: translateY(3px) scale(0.97);
-  box-shadow: 0 1px 0 #7c3aed;
+.ntb span { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.ntb.active { color: #a855f7; border-bottom: 2px solid #a855f7; }
+/* Tab panels */
+#tab-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.panel { display: none; flex-direction: column; height: 100%; }
+.panel.active { display: flex; }
+/* Category sub-tabs */
+.cat-tabs {
+  display: flex; gap: 4px; padding: 6px 10px 4px; flex-shrink: 0;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
 }
-
-#choice-area {
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
+.cat-tabs::-webkit-scrollbar { display: none; }
+.ctb {
+  border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px;
+  font-weight: 600; white-space: nowrap; cursor: pointer; touch-action: none;
+  background: #f3e8ff; color: #7c3aed; transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
 }
-
-.choice-btn {
-  flex: 1; border: 3px solid transparent; border-radius: 16px;
-  background: #fff;
-  font-size: 18px; font-weight: 600;
-  cursor: pointer; touch-action: none;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  color: #3b0764; transition: transform 0.06s, border-color 0.1s, background 0.1s;
-  padding: 0 14px;
-  box-shadow: 0 2px 8px rgba(168,85,247,0.1);
+.ctb.active { background: #a855f7; color: #fff; }
+/* Item grid */
+.item-grid {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  padding: 6px 10px 10px; align-content: start;
 }
-.choice-btn:active { transform: scale(0.97); }
-.choice-btn.correct  { background: #dcfce7; border-color: #16a34a; color: #14532d; }
-.choice-btn.partial  { background: #fef9c3; border-color: #ca8a04; color: #713f12; }
-.choice-btn.wrong    { background: #fee2e2; border-color: #dc2626; color: #7f1d1d; }
-
+.item-grid::-webkit-scrollbar { display: none; }
+.ibtn {
+  border: 2px solid #f3e8ff; border-radius: 12px; padding: 8px 4px 6px;
+  background: #fdf4ff; cursor: pointer; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: border-color 0.12s, background 0.12s; position: relative;
+}
+.ibtn .ie { font-size: 26px; line-height: 1; }
+.ibtn .in { font-size: 9px; font-weight: 600; color: #7c3aed; text-align: center; line-height: 1.2; }
+.ibtn.equipped { border-color: #a855f7; background: #f3e8ff; }
+.ibtn.locked { opacity: 0.45; }
+.vip-tag {
+  position: absolute; top: 3px; right: 3px;
+  font-size: 8px; font-weight: 700; color: #d97706; background: #fef3c7;
+  border-radius: 4px; padding: 1px 3px; line-height: 1.2;
+}
+/* Salon color grid */
+.color-grid {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px;
+}
+.swatch {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer; touch-action: none;
+  flex-shrink: 0; transition: transform 0.1s, border-color 0.1s;
+}
+.swatch.active { border-color: #a855f7; transform: scale(1.15); }
+/* Challenge panel */
+.chall-panel { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.theme-card {
+  border-radius: 14px; padding: 12px 16px; color: #fff;
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.theme-card .te { font-size: 36px; }
+.theme-card .td { flex: 1; }
+.theme-card .tn { font-weight: 700; font-size: 16px; }
+.theme-card .ts { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.timer-bar-wrap {
+  height: 10px; background: rgba(0,0,0,0.08); border-radius: 5px; overflow: hidden; flex-shrink: 0;
+}
+.timer-bar { height: 100%; border-radius: 5px; transition: width 1s linear, background 1s; }
+#timer-label { font-size: 13px; font-weight: 700; color: #7c3aed; text-align: center; }
+.big-btn {
+  border: none; border-radius: 16px; padding: 14px;
+  font-size: 17px; font-weight: 700; color: #fff; cursor: pointer;
+  touch-action: none; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg,#a855f7,#ec4899);
+  box-shadow: 0 3px 0 #7c3aed; transition: transform 0.08s, box-shadow 0.08s;
+  flex-shrink: 0;
+}
+.big-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #7c3aed; }
+.big-btn:disabled { opacity: 0.5; pointer-events: none; }
+/* Score result */
+#score-result { text-align: center; padding: 8px; display: none; }
+#score-result .sr-pts { font-size: 36px; font-weight: 900; color: #a855f7; }
+#score-result .sr-grade { font-size: 16px; font-weight: 700; color: #6d28d9; }
+/* Home panel */
+.home-panel { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.hm-title { font-size: 20px; font-weight: 800; color: #6d28d9; }
+.hm-sub { font-size: 12px; color: #9ca3af; line-height: 1.5; }
+.vip-badge-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: linear-gradient(135deg,#fef3c7,#fde68a); border-radius: 12px; }
+.vip-icon { font-size: 24px; }
+.vip-text { font-size: 12px; font-weight: 600; color: #92400e; }
+/* VIP panel */
+.vip-panel { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.vip-panel::-webkit-scrollbar { display: none; }
+/* Salon style grid */
+.style-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px 10px;
+  flex-shrink: 0;
+}
+.stb {
+  border: 2px solid #f3e8ff; border-radius: 10px; padding: 6px 4px;
+  background: #fdf4ff; cursor: pointer; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  transition: border-color 0.12s;
+}
+.stb .se { font-size: 20px; }
+.stb .sn { font-size: 9px; font-weight: 600; color: #7c3aed; text-align: center; }
+.stb.active { border-color: #a855f7; background: #f3e8ff; }
+.salon-label { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 10px 2px; flex-shrink: 0; }
 .hidden { display: none !important; }
-@media (pointer: fine) { body { cursor: pointer; } }
+@media (pointer: fine) { body { cursor: default; } }
 </style>
 </head>
 <body>
 
 <div id="canvas-area">
   <a href="../../" id="back">← Back</a>
-  <canvas id="c" width="400" height="460"></canvas>
+  <canvas id="c" width="400" height="480"></canvas>
 </div>
 
 <div id="controls">
-  <button class="btn" id="btn-start">👗 &nbsp;START</button>
-  <button class="btn hidden" id="btn-restart">↺ &nbsp;PLAY AGAIN</button>
-
-  <div id="choice-area">
-    <button class="choice-btn" data-i="0"></button>
-    <button class="choice-btn" data-i="1"></button>
-    <button class="choice-btn" data-i="2"></button>
+  <nav id="nav-tabs">
+    <button class="ntb active" data-tab="home">🏠<span>Home</span></button>
+    <button class="ntb" data-tab="lobby">👗<span>Lobby</span></button>
+    <button class="ntb" data-tab="salon">💅<span>Salon</span></button>
+    <button class="ntb" data-tab="challenge">🏆<span>Challenge</span></button>
+    <button class="ntb" data-tab="vip">✨<span>VIP</span></button>
+  </nav>
+  <div id="tab-content">
+    <!-- Panels built by JS -->
   </div>
 </div>
 
 <script>
+'use strict';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-const W = 400, H = 460;
+const W = 400, H = 480;
 
-const isTouch = window.matchMedia('(pointer: coarse)').matches;
+// ── Body geometry ──────────────────────────────────────────────────────────────
+const B = {
+  cx: 200,
+  // Head
+  hcx: 200, hcy: 72, hr: 30,
+  // Neck
+  neckX: 191, neckY: 102, neckW: 18, neckH: 22,
+  // Shoulders (top of torso)
+  shY: 124, shW: 120,  // total: left=140, right=260
+  // Waist
+  waistY: 234, waistW: 76,
+  // Hip bottom
+  hipY: 258, hipW: 98,
+  // Arms
+  laX: 96, raX: 264, armY: 124, armW: 44, armH: 166,
+  // Legs
+  legY: 258, legH: 148,
+  llX: 152, llW: 36, rlX: 212, rlW: 36,
+  // Feet
+  footY: 406, footH: 20,
+  lfX: 142, lfW: 56, rfX: 202, rfW: 56,
+};
 
-// ── Question pool: 12 themes × 3 questions each ──
-const POOL = [
-  // Beach Day
-  { t:'🏖️ Beach Day', bg:'#0284c7', fg:'#e0f2fe',
-    q:'Perfect beach outfit?',
-    c:[{e:'🩱',n:'Swimsuit',p:60},{e:'👗',n:'Sundress',p:35},{e:'🧥',n:'Wool Coat',p:5}] },
-  { t:'🏖️ Beach Day', bg:'#0284c7', fg:'#e0f2fe',
-    q:'Best footwear for sand?',
-    c:[{e:'🩴',n:'Flip-flops',p:60},{e:'👟',n:'Sneakers',p:35},{e:'👠',n:'Heels',p:5}] },
-  { t:'🏖️ Beach Day', bg:'#0284c7', fg:'#e0f2fe',
-    q:'Accessory for the sun?',
-    c:[{e:'🕶️',n:'Sunglasses',p:60},{e:'👒',n:'Sun Hat',p:35},{e:'🧣',n:'Scarf',p:5}] },
+// ── Item definitions ────────────────────────────────────────────────────────────
+// slv: 0=none, 0.35=short, 0.7=3q, 1=long | len: fraction of torso (0.5=crop, 1=full)
+// neck: 'crew'|'v'|'high'|'off' | btype: bottom style | stype: shoe style
+const SKIN = '#F5C5A3';
+const SKIN2 = '#E8A882';
 
-  // Snow Day
-  { t:'❄️ Snow Day', bg:'#475569', fg:'#e2e8f0',
-    q:'Staying warm outside?',
-    c:[{e:'🧥',n:'Puffer Coat',p:60},{e:'🧤',n:'Gloves Only',p:35},{e:'👙',n:'Bikini',p:5}] },
-  { t:'❄️ Snow Day', bg:'#475569', fg:'#e2e8f0',
-    q:'Best snow footwear?',
-    c:[{e:'🥾',n:'Snow Boots',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
-  { t:'❄️ Snow Day', bg:'#475569', fg:'#e2e8f0',
-    q:'Cozy snow day layer?',
-    c:[{e:'🧣',n:'Scarf & Hat',p:60},{e:'🕶️',n:'Shades',p:35},{e:'🩳',n:'Shorts',p:5}] },
-
-  // Date Night
-  { t:'🌙 Date Night', bg:'#1e1b4b', fg:'#e0e7ff',
-    q:'Dinner date look?',
-    c:[{e:'👗',n:'Little Black Dress',p:60},{e:'👚',n:'Casual Tee',p:35},{e:'🩲',n:'Swim Trunks',p:5}] },
-  { t:'🌙 Date Night', bg:'#1e1b4b', fg:'#e0e7ff',
-    q:'Date night shoes?',
-    c:[{e:'👠',n:'Heels',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
-  { t:'🌙 Date Night', bg:'#1e1b4b', fg:'#e0e7ff',
-    q:'Perfect date accessory?',
-    c:[{e:'💍',n:'Jewelry',p:60},{e:'🎒',n:'Backpack',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
-
-  // Job Interview
-  { t:'💼 Job Interview', bg:'#1f2937', fg:'#f1f5f9',
-    q:'Interview-ready outfit?',
-    c:[{e:'👔',n:'Button-up Shirt',p:60},{e:'👕',n:'Graphic Tee',p:35},{e:'🩱',n:'Swimsuit',p:5}] },
-  { t:'💼 Job Interview', bg:'#1f2937', fg:'#f1f5f9',
-    q:'Professional footwear?',
-    c:[{e:'👞',n:'Dress Shoes',p:60},{e:'👟',n:'Running Shoes',p:35},{e:'🩴',n:'Sandals',p:5}] },
-  { t:'💼 Job Interview', bg:'#1f2937', fg:'#f1f5f9',
-    q:'Interview accessory?',
-    c:[{e:'💼',n:'Briefcase',p:60},{e:'🎒',n:'Gym Bag',p:35},{e:'🪣',n:'Bucket',p:5}] },
-
-  // Birthday Party
-  { t:'🎉 Birthday Party', bg:'#7c3aed', fg:'#f3e8ff',
-    q:'Party outfit choice?',
-    c:[{e:'✨',n:'Sparkly Dress',p:60},{e:'👗',n:'Casual Dress',p:35},{e:'🩲',n:'PJs',p:5}] },
-  { t:'🎉 Birthday Party', bg:'#7c3aed', fg:'#f3e8ff',
-    q:'Party hat moment?',
-    c:[{e:'🎉',n:'Party Hat',p:60},{e:'👒',n:'Sun Hat',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
-  { t:'🎉 Birthday Party', bg:'#7c3aed', fg:'#f3e8ff',
-    q:'Shoes to dance in?',
-    c:[{e:'👠',n:'Block Heels',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🥾',n:'Hiking Boots',p:5}] },
-
-  // Gym Session
-  { t:'🏋️ Gym Session', bg:'#064e3b', fg:'#d1fae5',
-    q:'Workout outfit?',
-    c:[{e:'🩱',n:'Sports Set',p:60},{e:'👗',n:'Sundress',p:35},{e:'🤵',n:'Tuxedo',p:5}] },
-  { t:'🏋️ Gym Session', bg:'#064e3b', fg:'#d1fae5',
-    q:'Best gym shoes?',
-    c:[{e:'👟',n:'Trainers',p:60},{e:'👠',n:'Heels',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
-  { t:'🏋️ Gym Session', bg:'#064e3b', fg:'#d1fae5',
-    q:'Gym bag essential?',
-    c:[{e:'🎒',n:'Sports Bag',p:60},{e:'💼',n:'Briefcase',p:35},{e:'👛',n:'Evening Clutch',p:5}] },
-
-  // Art Gallery
-  { t:'🎨 Art Gallery', bg:'#292524', fg:'#fafaf9',
-    q:'Gallery opening look?',
-    c:[{e:'🧥',n:'Chic Blazer',p:60},{e:'👕',n:'Plain Tee',p:35},{e:'🩲',n:'Swim Shorts',p:5}] },
-  { t:'🎨 Art Gallery', bg:'#292524', fg:'#fafaf9',
-    q:'Artsy footwear pick?',
-    c:[{e:'👞',n:'Chelsea Boots',p:60},{e:'🩴',n:'Flip-flops',p:35},{e:'🥾',n:'Mud Boots',p:5}] },
-  { t:'🎨 Art Gallery', bg:'#292524', fg:'#fafaf9',
-    q:'Gallery accessory?',
-    c:[{e:'👜',n:'Structured Bag',p:60},{e:'🎒',n:'Backpack',p:35},{e:'🪣',n:'Bucket',p:5}] },
-
-  // Garden Picnic
-  { t:'🌿 Garden Picnic', bg:'#166534', fg:'#dcfce7',
-    q:'Picnic day outfit?',
-    c:[{e:'👗',n:'Flowy Dress',p:60},{e:'👔',n:'Business Suit',p:35},{e:'🩱',n:'Swimsuit',p:5}] },
-  { t:'🌿 Garden Picnic', bg:'#166534', fg:'#dcfce7',
-    q:'Comfy picnic shoes?',
-    c:[{e:'👡',n:'Flat Sandals',p:60},{e:'👠',n:'Stilettos',p:35},{e:'🥾',n:'Heavy Boots',p:5}] },
-  { t:'🌿 Garden Picnic', bg:'#166534', fg:'#dcfce7',
-    q:'Outdoor accessory?',
-    c:[{e:'🧺',n:'Picnic Basket',p:60},{e:'💼',n:'Briefcase',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
-
-  // Mountain Hike
-  { t:'🏔️ Mountain Hike', bg:'#44403c', fg:'#fafaf9',
-    q:'Hiking outfit?',
-    c:[{e:'🧥',n:'Windbreaker',p:60},{e:'👔',n:'Dress Shirt',p:35},{e:'🤵',n:'Tuxedo',p:5}] },
-  { t:'🏔️ Mountain Hike', bg:'#44403c', fg:'#fafaf9',
-    q:'Trail footwear?',
-    c:[{e:'🥾',n:'Hiking Boots',p:60},{e:'👟',n:'Casual Sneakers',p:35},{e:'👠',n:'Heels',p:5}] },
-  { t:'🏔️ Mountain Hike', bg:'#44403c', fg:'#fafaf9',
-    q:'Hike essential carry?',
-    c:[{e:'🎒',n:'Hiking Pack',p:60},{e:'👜',n:'Evening Bag',p:35},{e:'💼',n:'Briefcase',p:5}] },
-
-  // Theater Night
-  { t:'🎭 Theater Night', bg:'#3b0764', fg:'#f3e8ff',
-    q:'Opening night outfit?',
-    c:[{e:'🥻',n:'Elegant Gown',p:60},{e:'👗',n:'Day Dress',p:35},{e:'🩳',n:'Gym Shorts',p:5}] },
-  { t:'🎭 Theater Night', bg:'#3b0764', fg:'#f3e8ff',
-    q:'Theater footwear?',
-    c:[{e:'👠',n:'Dressy Heels',p:60},{e:'👟',n:'Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
-  { t:'🎭 Theater Night', bg:'#3b0764', fg:'#f3e8ff',
-    q:'Theater accessory?',
-    c:[{e:'👛',n:'Clutch Purse',p:60},{e:'🎒',n:'Backpack',p:35},{e:'🪣',n:'Bucket',p:5}] },
-
-  // Tropical Resort
-  { t:'🌴 Tropical Resort', bg:'#0f766e', fg:'#ccfbf1',
-    q:'Resort day look?',
-    c:[{e:'🩱',n:'Bikini + Cover-up',p:60},{e:'🧥',n:'Winter Coat',p:35},{e:'🤵',n:'Tuxedo',p:5}] },
-  { t:'🌴 Tropical Resort', bg:'#0f766e', fg:'#ccfbf1',
-    q:'Resort footwear?',
-    c:[{e:'🩴',n:'Sandals',p:60},{e:'🥾',n:'Snow Boots',p:35},{e:'👠',n:'Stilettos',p:5}] },
-  { t:'🌴 Tropical Resort', bg:'#0f766e', fg:'#ccfbf1',
-    q:'Poolside accessory?',
-    c:[{e:'🕶️',n:'Sunnies',p:60},{e:'🧣',n:'Wool Scarf',p:35},{e:'⛑️',n:'Hard Hat',p:5}] },
-
-  // Halloween
-  { t:'🎃 Halloween', bg:'#7c2d12', fg:'#ffedd5',
-    q:'Trick-or-treat outfit?',
-    c:[{e:'🧛',n:'Vampire Cape',p:60},{e:'👔',n:'Business Casual',p:35},{e:'👙',n:'Bikini',p:5}] },
-  { t:'🎃 Halloween', bg:'#7c2d12', fg:'#ffedd5',
-    q:'Spooky footwear?',
-    c:[{e:'🥾',n:'Witch Boots',p:60},{e:'👟',n:'Plain Sneakers',p:35},{e:'🩴',n:'Flip-flops',p:5}] },
-  { t:'🎃 Halloween', bg:'#7c2d12', fg:'#ffedd5',
-    q:'Best Halloween prop?',
-    c:[{e:'🪄',n:'Magic Wand',p:60},{e:'💼',n:'Briefcase',p:35},{e:'🧺',n:'Laundry Basket',p:5}] },
+const TOPS = [
+  {id:'tee-white',   name:'White Tee',     emoji:'👕', col:'#f8fafc', col2:'#e2e8f0', slv:0.35, len:0.95, neck:'crew', tags:['casual','everyday'],          vip:false},
+  {id:'crop-pink',   name:'Pink Crop',     emoji:'🩷', col:'#f9a8d4', col2:'#f472b6', slv:0,    len:0.5,  neck:'v',    tags:['casual','party','summer'],     vip:false},
+  {id:'blazer-blk',  name:'Black Blazer',  emoji:'🧥', col:'#1e1b4b', col2:'#312e81', slv:1,    len:1.0,  neck:'v',    tags:['formal','work','date'],        vip:false},
+  {id:'blouse-yel',  name:'Yellow Blouse', emoji:'🌼', col:'#fef08a', col2:'#fde047', slv:0.7,  len:0.95, neck:'v',    tags:['casual','garden','picnic'],    vip:false},
+  {id:'hoodie-red',  name:'Red Hoodie',    emoji:'❤️', col:'#dc2626', col2:'#b91c1c', slv:1,    len:1.0,  neck:'crew', tags:['casual','sporty','cozy'],      vip:false},
+  {id:'tank-blue',   name:'Sky Tank',      emoji:'🩵', col:'#bae6fd', col2:'#7dd3fc', slv:0,    len:0.95, neck:'crew', tags:['casual','beach','summer'],     vip:false},
+  {id:'stripe-nvy',  name:'Stripe Shirt',  emoji:'👔', col:'#dbeafe', col2:'#1e40af', slv:0.35, len:0.95, neck:'crew', tags:['casual','beach','work'],       vip:false},
+  {id:'trtl-prpl',   name:'Purple Turtle', emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:1,    len:1.0,  neck:'high', tags:['formal','winter','date'],      vip:true},
+  {id:'cami-grn',    name:'Sage Cami',     emoji:'🌿', col:'#86efac', col2:'#4ade80', slv:0,    len:0.95, neck:'v',    tags:['casual','garden','resort'],    vip:false},
+  {id:'bustier',     name:'Glam Bustier',  emoji:'✨', col:'#d97706', col2:'#b45309', slv:0,    len:0.5,  neck:'off',  tags:['party','date','night','glam'], vip:true},
 ];
 
-// ── State ──
-let state = 'idle'; // idle | playing | result | gameover
-let score = 0;
-let bestScore = +localStorage.getItem('dti_best') || 0;
-let timeLeft = 60;
-let timerInterval = null;
-let currentQ = null;
-let shuffled = [];
-let answered = false;
-let resultTimer = null;
-let questionCount = 0;
-let lastTheme = '';
+const BOTTOMS = [
+  {id:'jeans-blu',  name:'Blue Jeans',      emoji:'👖', col:'#1d4ed8', col2:'#1e3a8a', btype:'pants',      tags:['casual','everyday','work'],     vip:false},
+  {id:'skirt-red',  name:'Red Mini Skirt',  emoji:'❤️', col:'#dc2626', col2:'#b91c1c', btype:'skirt-mini', tags:['party','date','night'],         vip:false},
+  {id:'skirt-flrl', name:'Floral Skirt',    emoji:'🌸', col:'#c084fc', col2:'#a855f7', btype:'skirt-maxi', tags:['casual','garden','resort'],     vip:false},
+  {id:'shorts-dnm', name:'Denim Shorts',    emoji:'🩳', col:'#3b82f6', col2:'#2563eb', btype:'shorts',     tags:['casual','beach','summer'],      vip:false},
+  {id:'trouser-wht',name:'White Trousers',  emoji:'⬜', col:'#f1f5f9', col2:'#e2e8f0', btype:'pants',      tags:['formal','work','garden'],       vip:false},
+  {id:'skirt-plaid',name:'Plaid Skirt',     emoji:'🟫', col:'#b45309', col2:'#92400e', btype:'skirt-mini', tags:['casual','autumn','school'],     vip:false},
+  {id:'lthpant-blk',name:'Leather Pants',   emoji:'🖤', col:'#111827', col2:'#000',    btype:'pants',      tags:['date','night','rock','edgy'],   vip:true},
+  {id:'skirt-gold', name:'Gold Sequin',     emoji:'⭐', col:'#d97706', col2:'#f59e0b', btype:'skirt-mini', tags:['party','night','glam'],         vip:true},
+  {id:'bike-short', name:'Bike Shorts',     emoji:'🏃', col:'#1e293b', col2:'#0f172a', btype:'shorts',     tags:['sporty','gym','casual'],        vip:false},
+  {id:'skirt-midi', name:'Sage Midi Skirt', emoji:'🌿', col:'#86efac', col2:'#4ade80', btype:'skirt-midi', tags:['casual','garden','resort'],     vip:false},
+];
 
-// ── Particle system ──
-let particles = [];
-function spawnConfetti(x, y, count = 10) {
-  const colors = ['#a855f7','#ec4899','#f59e0b','#10b981','#3b82f6','#f43f5e'];
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x, y,
-      vx: (Math.random() - 0.5) * 6,
-      vy: -Math.random() * 7 - 2,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      size: Math.random() * 7 + 4,
-      life: 1,
-      rot: Math.random() * Math.PI * 2,
-      rspeed: (Math.random() - 0.5) * 0.3,
-    });
-  }
+const DRESSES = [
+  {id:'lbd',        name:'Little Black Dress',emoji:'🖤', col:'#111827', col2:'#1f2937', slv:0,    neck:'v',    dlen:0.75, tags:['date','night','formal','elegant'], vip:false},
+  {id:'sundress',   name:'Floral Sundress',  emoji:'🌻', col:'#22c55e', col2:'#16a34a', slv:0,    neck:'v',    dlen:1.0,  tags:['casual','beach','garden','summer'],vip:false},
+  {id:'partydress', name:'Pink Party Dress', emoji:'💗', col:'#f472b6', col2:'#ec4899', slv:0,    neck:'v',    dlen:0.75, tags:['party','date','night'],            vip:false},
+  {id:'gown-red',   name:'Red Gown',         emoji:'👑', col:'#dc2626', col2:'#b91c1c', slv:0.7,  neck:'off',  dlen:1.2,  tags:['formal','gala','glam','night'],   vip:true},
+  {id:'babydoll',   name:'Yellow Babydoll',  emoji:'🌟', col:'#fde68a', col2:'#fbbf24', slv:0.35, neck:'crew', dlen:0.75, tags:['casual','summer','date'],          vip:false},
+  {id:'bodycon-prp',name:'Purple Bodycon',   emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:0,    neck:'v',    dlen:0.75, tags:['party','night','date','glam'],     vip:true},
+  {id:'wrap-grn',   name:'Wrap Dress',       emoji:'🌿', col:'#059669', col2:'#047857', slv:0.35, neck:'v',    dlen:1.0,  tags:['casual','garden','work'],          vip:false},
+  {id:'slip-slvr',  name:'Silver Slip Dress',emoji:'💫', col:'#94a3b8', col2:'#64748b', slv:0,    neck:'v',    dlen:1.0,  tags:['night','date','glam','formal'],   vip:false},
+];
+
+const SHOES = [
+  {id:'snkr-wht',  name:'White Sneakers',  emoji:'👟', col:'#f8fafc', col2:'#e2e8f0', stype:'flat',      tags:['casual','sporty','everyday'], vip:false},
+  {id:'heel-blk',  name:'Black Heels',     emoji:'👠', col:'#111827', col2:'#000',    stype:'heels',     tags:['formal','date','night'],      vip:false},
+  {id:'boot-pink', name:'Pink Boots',      emoji:'🥿', col:'#f9a8d4', col2:'#f472b6', stype:'boot-ankle',tags:['casual','autumn','edgy'],     vip:false},
+  {id:'sandal-brn',name:'Brown Sandals',   emoji:'🩴', col:'#92400e', col2:'#78350f', stype:'sandal',    tags:['casual','beach','summer'],    vip:false},
+  {id:'stiletto-r',name:'Red Stilettos',   emoji:'💄', col:'#dc2626', col2:'#b91c1c', stype:'heels',     tags:['date','night','glam','party'],vip:true},
+  {id:'loafer-slv',name:'Silver Loafers',  emoji:'🥈', col:'#94a3b8', col2:'#64748b', stype:'flat',      tags:['casual','work','formal'],     vip:false},
+  {id:'platform',  name:'Platform Boots',  emoji:'💜', col:'#5b21b6', col2:'#4c1d95', stype:'boot-knee', tags:['edgy','party','night'],       vip:true},
+  {id:'flat-beige',name:'Ballet Flats',    emoji:'🩰', col:'#d6c5a7', col2:'#c4a882', stype:'flat',      tags:['casual','work','garden'],     vip:false},
+  {id:'mule-wht',  name:'White Mules',     emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', stype:'heels',     tags:['casual','resort','summer'],   vip:false},
+  {id:'boot-cowboy',name:'Cowboy Boots',   emoji:'🤠', col:'#92400e', col2:'#78350f', stype:'boot-knee', tags:['casual','country','edgy'],    vip:false},
+];
+
+const BAGS = [
+  {id:'tote-wht',  name:'White Tote',    emoji:'🛍️', col:'#f8fafc', col2:'#94a3b8', bstyle:'tote',     tags:['casual','everyday','beach'],  vip:false},
+  {id:'clutch-blk',name:'Black Clutch',  emoji:'👛', col:'#111827', col2:'#374151', bstyle:'clutch',   tags:['formal','date','night'],      vip:false},
+  {id:'mini-pink', name:'Pink Mini Bag', emoji:'💗', col:'#f9a8d4', col2:'#f472b6', bstyle:'mini',     tags:['casual','party','date'],      vip:false},
+  {id:'shoulder-br',name:'Shoulder Bag', emoji:'👜', col:'#92400e', col2:'#78350f', bstyle:'shoulder', tags:['casual','work','everyday'],   vip:false},
+  {id:'gold-eve',  name:'Gold Evening',  emoji:'✨', col:'#d97706', col2:'#b45309', bstyle:'clutch',   tags:['night','party','glam','gala'],vip:true},
+  {id:'backpack',  name:'Backpack',      emoji:'🎒', col:'#374151', col2:'#1f2937', bstyle:'backpack', tags:['casual','sporty','school'],   vip:false},
+  {id:'rattan',    name:'Rattan Bag',    emoji:'🌿', col:'#a16207', col2:'#854d0e', bstyle:'tote',     tags:['beach','summer','resort'],    vip:false},
+  {id:'slvr-chain',name:'Chain Bag',     emoji:'💫', col:'#94a3b8', col2:'#64748b', bstyle:'mini',     tags:['night','glam','date'],        vip:true},
+];
+
+const HATS = [
+  {id:'cap-blk',   name:'Black Cap',    emoji:'🧢', col:'#111827', col2:'#374151', hstyle:'cap',    tags:['casual','sporty','everyday'], vip:false},
+  {id:'bucket-bei',name:'Bucket Hat',   emoji:'⛑️', col:'#d6c5a7', col2:'#c4a882', hstyle:'bucket', tags:['casual','beach','summer'],    vip:false},
+  {id:'beret-red', name:'Red Beret',    emoji:'🎨', col:'#dc2626', col2:'#b91c1c', hstyle:'beret',  tags:['casual','garden','art'],      vip:false},
+  {id:'sun-hat',   name:'Sun Hat',      emoji:'👒', col:'#fde68a', col2:'#fbbf24', hstyle:'sun',    tags:['beach','summer','garden'],    vip:false},
+  {id:'crown-crys',name:'Crystal Crown',emoji:'👑', col:'#c084fc', col2:'#a855f7', hstyle:'crown',  tags:['party','glam','night'],       vip:true},
+  {id:'beanie-wht',name:'White Beanie', emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', hstyle:'beanie', tags:['winter','casual','cozy'],     vip:false},
+];
+
+const JEWELRY = [
+  {id:'necklace-gld',name:'Gold Chain',   emoji:'📿', col:'#d97706', jtype:'necklace', tags:['casual','formal','everyday'],  vip:false},
+  {id:'pearl-earr',  name:'Pearl Earrings',emoji:'🤍',col:'#f8fafc', jtype:'earrings', tags:['formal','elegant','classic'],  vip:false},
+  {id:'slvr-bangle', name:'Silver Bangle',emoji:'💍', col:'#94a3b8', jtype:'bracelet', tags:['casual','everyday'],           vip:false},
+  {id:'heart-pend',  name:'Heart Pendant',emoji:'🩷', col:'#f472b6', jtype:'necklace', tags:['date','casual','cute'],        vip:false},
+  {id:'gem-tiara',   name:'Gem Tiara',    emoji:'👑', col:'#a855f7', jtype:'tiara',    tags:['party','glam','night'],        vip:true},
+  {id:'diam-studs',  name:'Diamond Studs',emoji:'💎', col:'#bae6fd', jtype:'earrings', tags:['formal','elegant','gala'],     vip:true},
+  {id:'layered-nk',  name:'Layered Chains',emoji:'✨',col:'#f59e0b', jtype:'necklace', tags:['casual','boho','beach'],       vip:false},
+];
+
+// ── Salon data ─────────────────────────────────────────────────────────────────
+const HAIR_STYLES = [
+  {id:'long-str',  name:'Straight',  emoji:'💇'},
+  {id:'wavy',      name:'Wavy',      emoji:'🌊'},
+  {id:'curly',     name:'Curly',     emoji:'🌀'},
+  {id:'bob',       name:'Bob',       emoji:'✂️'},
+  {id:'ponytail',  name:'Ponytail',  emoji:'🎀'},
+  {id:'bun',       name:'Top Bun',   emoji:'🍩'},
+  {id:'braids',    name:'Braids',    emoji:'🎀'},
+  {id:'pixie',     name:'Pixie',     emoji:'⚡'},
+];
+
+const HAIR_COLORS = [
+  {id:'black',  name:'Black',  col:'#1a1a1a'},
+  {id:'brown',  name:'Brown',  col:'#7c3b1a'},
+  {id:'blonde', name:'Blonde', col:'#fbbf24'},
+  {id:'red',    name:'Auburn', col:'#c0392b'},
+  {id:'pink',   name:'Pink',   col:'#f472b6'},
+  {id:'blue',   name:'Blue',   col:'#3b82f6'},
+  {id:'purple', name:'Purple', col:'#a855f7'},
+  {id:'white',  name:'Silver', col:'#e2e8f0'},
+];
+
+const MAKEUP_LOOKS = [
+  {id:'none',   name:'No Makeup',  emoji:'🤍', lipCol:'#F5C5A3', eyeShadow:null,      blush:false},
+  {id:'natural',name:'Natural',    emoji:'🌸', lipCol:'#f9a8d4', eyeShadow:'#fce7f3', blush:true},
+  {id:'bold',   name:'Bold Red',   emoji:'💄', lipCol:'#dc2626', eyeShadow:'#1e1b4b', blush:true},
+  {id:'smoky',  name:'Smoky Eye',  emoji:'🖤', lipCol:'#d6c5a7', eyeShadow:'#1f2937', blush:false},
+  {id:'glam',   name:'Glam',       emoji:'✨', lipCol:'#f9a8d4', eyeShadow:'#d97706', blush:true},
+  {id:'colourful',name:'Colorful', emoji:'🎨', lipCol:'#c084fc', eyeShadow:'#3b82f6', blush:true},
+];
+
+const NAIL_COLORS = [
+  {id:'natural',name:'Natural',col:'#f5e0d3', vip:false},
+  {id:'red',    name:'Red',    col:'#dc2626', vip:false},
+  {id:'pink',   name:'Pink',   col:'#f472b6', vip:false},
+  {id:'purple', name:'Purple', col:'#7c3aed', vip:false},
+  {id:'black',  name:'Black',  col:'#111827', vip:false},
+  {id:'nude',   name:'Nude',   col:'#d6c5a7', vip:false},
+  {id:'glitter',name:'Glitter',col:'#d97706', vip:true},
+  {id:'french', name:'French', col:'#f8fafc', vip:false},
+];
+
+// ── Challenge themes ───────────────────────────────────────────────────────────
+const CHALLENGES = [
+  {name:'Beach Day',     emoji:'🏖️', bg:'#0284c7', preferred:['beach','summer','casual'], avoid:['formal','winter','glam']},
+  {name:'Date Night',    emoji:'🌙', bg:'#1e1b4b', preferred:['date','night','elegant'],  avoid:['sporty','casual','beach']},
+  {name:'Job Interview', emoji:'💼', bg:'#1f2937', preferred:['work','formal','classic'], avoid:['party','beach','edgy']},
+  {name:'Birthday Party',emoji:'🎉', bg:'#7c3aed', preferred:['party','glam','night'],   avoid:['sporty','work','winter']},
+  {name:'Gym Session',   emoji:'🏋️', bg:'#064e3b', preferred:['sporty','gym','casual'],  avoid:['formal','night','glam']},
+  {name:'Garden Picnic', emoji:'🌿', bg:'#166534', preferred:['garden','casual','summer'],avoid:['night','formal','edgy']},
+  {name:'Gala Night',    emoji:'👑', bg:'#3b0764', preferred:['gala','glam','formal'],   avoid:['casual','sporty','beach']},
+  {name:'Resort Vacay',  emoji:'🌴', bg:'#0f766e', preferred:['resort','summer','beach'],avoid:['formal','winter','edgy']},
+];
+
+// ── State ──────────────────────────────────────────────────────────────────────
+const outfit = { top:null, bottom:null, dress:null, shoes:null, bag:null, hat:null, jewelry:null };
+const salonState = {
+  hair: { style:'long-str', color:'#1a1a1a' },
+  makeup: MAKEUP_LOOKS[1],
+  nails: NAIL_COLORS[0],
+};
+let activeTab = 'home';
+let lobbyCategory = 'tops';
+let salonTab = 'hair';
+let challengeState = {
+  active: false,
+  themeIdx: 0,
+  timeLeft: 360,
+  timer: null,
+  score: null,
+};
+let isVip = false;
+let totalScore = 0;
+
+// Load save
+try {
+  const sv = JSON.parse(localStorage.getItem('dti_save') || '{}');
+  if (sv.outfit) Object.assign(outfit, sv.outfit);
+  if (sv.salon)  Object.assign(salonState, sv.salon);
+  if (sv.isVip)  isVip = sv.isVip;
+  if (sv.totalScore) totalScore = sv.totalScore;
+  // resolve item refs
+  if (outfit.top)     outfit.top     = TOPS.find(x=>x.id===outfit.top)||null;
+  if (outfit.bottom)  outfit.bottom  = BOTTOMS.find(x=>x.id===outfit.bottom)||null;
+  if (outfit.dress)   outfit.dress   = DRESSES.find(x=>x.id===outfit.dress)||null;
+  if (outfit.shoes)   outfit.shoes   = SHOES.find(x=>x.id===outfit.shoes)||null;
+  if (outfit.bag)     outfit.bag     = BAGS.find(x=>x.id===outfit.bag)||null;
+  if (outfit.hat)     outfit.hat     = HATS.find(x=>x.id===outfit.hat)||null;
+  if (outfit.jewelry) outfit.jewelry = JEWELRY.find(x=>x.id===outfit.jewelry)||null;
+  if (salonState.makeup) salonState.makeup = MAKEUP_LOOKS.find(x=>x.id===salonState.makeup)||MAKEUP_LOOKS[1];
+  if (salonState.nails)  salonState.nails  = NAIL_COLORS.find(x=>x.id===salonState.nails)||NAIL_COLORS[0];
+} catch(e){}
+
+function saveGame() {
+  try {
+    localStorage.setItem('dti_save', JSON.stringify({
+      outfit: {
+        top: outfit.top?.id||null, bottom: outfit.bottom?.id||null,
+        dress: outfit.dress?.id||null, shoes: outfit.shoes?.id||null,
+        bag: outfit.bag?.id||null, hat: outfit.hat?.id||null,
+        jewelry: outfit.jewelry?.id||null,
+      },
+      salon: {
+        hair: salonState.hair,
+        makeup: salonState.makeup?.id||null,
+        nails: salonState.nails?.id||null,
+      },
+      isVip, totalScore,
+    }));
+  } catch(e){}
 }
 
-function updateParticles() {
-  particles = particles.filter(p => p.life > 0);
-  for (const p of particles) {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.35;
-    p.life -= 0.022;
-    p.rot += p.rspeed;
-  }
-}
-function drawParticles() {
-  for (const p of particles) {
-    ctx.save();
-    ctx.globalAlpha = p.life;
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rot);
-    ctx.fillStyle = p.color;
-    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
-    ctx.restore();
-  }
-}
-
-// ── Draw helpers ──
-function rndf(min, max) { return min + Math.random() * (max - min); }
-
-function drawBg(q) {
-  const bg = q ? q.bg : '#7c3aed';
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // subtle pattern dots
-  ctx.globalAlpha = 0.07;
-  ctx.fillStyle = '#fff';
-  for (let r = 0; r < H; r += 40) {
-    for (let c = 0; c < W; c += 40) {
-      ctx.beginPath();
-      ctx.arc(c + 20, r + 20, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  ctx.globalAlpha = 1;
-}
-
-function drawIdleScreen() {
-  drawBg(null);
-
-  // Title
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 34px -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Dressed to Impress', W / 2, 130);
-
-  ctx.font = '22px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.fillText('Pick the best outfit for each occasion!', W / 2, 178);
-
-  // Big fashion emoji
-  ctx.font = '90px serif';
-  ctx.fillText('👗', W / 2, 290);
-
-  // Best score
-  if (bestScore > 0) {
-    ctx.font = '15px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(`Best: ${bestScore} pts`, W / 2, 390);
-  }
-
-  // Desktop prompt
-  if (!isTouch) {
-    ctx.font = 'bold 16px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    const btn = { x: W/2 - 90, y: 420, w: 180, h: 44 };
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 12);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.fillText('👗 START', W / 2, btn.y + btn.h / 2);
-  }
-}
-
-function drawPlayScreen() {
-  if (!currentQ) return;
-  drawBg(currentQ);
-
-  // Theme label
-  ctx.font = 'bold 22px -apple-system, sans-serif';
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(currentQ.t, W / 2, 50);
-
-  // Timer bar
-  const barW = W - 60;
-  const barX = 30;
-  const barY = 82;
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  roundRect(ctx, barX, barY, barW, 10, 5);
-  ctx.fill();
-  const pct = timeLeft / 60;
-  const barColor = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#facc15' : '#f87171';
-  ctx.fillStyle = barColor;
-  roundRect(ctx, barX, barY, barW * pct, 10, 5);
-  ctx.fill();
-
-  // Timer number
-  ctx.font = 'bold 15px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillText(`${timeLeft}s`, W / 2, 107);
-
-  // Score
-  ctx.font = 'bold 13px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.textAlign = 'right';
-  ctx.fillText(`${score} pts`, W - 20, 107);
-  ctx.textAlign = 'center';
-
-  // Question
-  ctx.font = 'bold 20px -apple-system, sans-serif';
-  ctx.fillStyle = '#fff';
-  const words = currentQ.q.split(' ');
-  let line = '', lines = [];
-  for (const w of words) {
-    const test = line + (line ? ' ' : '') + w;
-    if (ctx.measureText(test).width > W - 60 && line) { lines.push(line); line = w; }
-    else line = test;
-  }
-  lines.push(line);
-  const qY = 160;
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, qY + i * 28));
-
-  // Character figure
-  ctx.font = '88px serif';
-  ctx.fillText('👗', W / 2, 310);
-
-  // Q count
-  ctx.font = '13px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(`Q ${questionCount}`, W / 2, 410);
-
-  // Desktop choice buttons
-  if (!isTouch) {
-    const choices = shuffled;
-    const bh = 52, gap = 10;
-    const totalH = choices.length * bh + (choices.length - 1) * gap;
-    const startY = H - totalH - 14;
-    choices.forEach((ch, i) => {
-      const y = startY + i * (bh + gap);
-      const col = ch._result === 'correct' ? '#bbf7d0' :
-                  ch._result === 'partial'  ? '#fef08a' :
-                  ch._result === 'wrong'    ? '#fecaca' : 'rgba(255,255,255,0.92)';
-      ctx.fillStyle = col;
-      roundRect(ctx, 24, y, W - 48, bh, 12);
-      ctx.fill();
-      ctx.font = 'bold 17px -apple-system, sans-serif';
-      ctx.fillStyle = '#1e0936';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${ch.e}  ${ch.n}`, W / 2, y + bh / 2);
-    });
-  }
-
-  drawParticles();
-}
-
-function drawGameover() {
-  ctx.fillStyle = '#1e0936';
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.font = '26px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('✨👗✨', W / 2, 90);
-
-  ctx.font = 'bold 30px -apple-system, sans-serif';
-  ctx.fillStyle = '#e9d5ff';
-  ctx.fillText("Time's Up!", W / 2, 145);
-
-  ctx.font = 'bold 52px -apple-system, sans-serif';
-  ctx.fillStyle = '#c084fc';
-  ctx.fillText(`${score}`, W / 2, 215);
-
-  ctx.font = '17px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(233,213,255,0.7)';
-  ctx.fillText('pts', W / 2, 250);
-
-  if (score >= bestScore && score > 0) {
-    ctx.font = 'bold 18px -apple-system, sans-serif';
-    ctx.fillStyle = '#fde68a';
-    ctx.fillText('🏆 New Best!', W / 2, 290);
-  } else if (bestScore > 0) {
-    ctx.font = '15px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(233,213,255,0.5)';
-    ctx.fillText(`Best: ${bestScore} pts`, W / 2, 290);
-  }
-
-  const grade = score >= 500 ? '👑 Fashion Icon' :
-                score >= 350 ? '💅 Style Star' :
-                score >= 200 ? '✨ Trend Setter' :
-                score >= 100 ? '👗 Getting There' : '🧺 Try Again';
-  ctx.font = 'bold 22px -apple-system, sans-serif';
-  ctx.fillStyle = '#f0abfc';
-  ctx.fillText(grade, W / 2, 340);
-
-  if (!isTouch) {
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    roundRect(ctx, W/2 - 90, 400, 180, 44, 12);
-    ctx.fill();
-    ctx.font = 'bold 16px -apple-system, sans-serif';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('↺ PLAY AGAIN', W / 2, 422);
-  }
-
-  drawParticles();
-}
-
-function roundRect(ctx, x, y, w, h, r) {
+// ── Canvas draw helpers ─────────────────────────────────────────────────────────
+function rr(x,y,w,h,r=6) {
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arcTo(x + w, y, x + w, y + r, r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-  ctx.lineTo(x + r, y + h);
-  ctx.arcTo(x, y + h, x, y + h - r, r);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
+  ctx.roundRect(x,y,w,h,r);
+}
+function trap(cx, topY, topW, botY, botW) {
+  const ht = topW/2, hb = botW/2;
+  ctx.beginPath();
+  ctx.moveTo(cx-ht, topY);
+  ctx.lineTo(cx+ht, topY);
+  ctx.lineTo(cx+hb, botY);
+  ctx.lineTo(cx-hb, botY);
   ctx.closePath();
 }
+function ellipseF(cx,cy,rx,ry,col) {
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+  ctx.fill();
+}
+function darken(hex, amt=0.15) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.max(0,((n>>16)&255)*(1-amt)|0);
+  const g=Math.max(0,((n>>8)&255)*(1-amt)|0);
+  const b=Math.max(0,(n&255)*(1-amt)|0);
+  return `rgb(${r},${g},${b})`;
+}
+function lighten(hex, amt=0.2) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,((n>>16)&255)+(255*amt)|0);
+  const g=Math.min(255,((n>>8)&255)+(255*amt)|0);
+  const b=Math.min(255,(n&255)+(255*amt)|0);
+  return `rgb(${r},${g},${b})`;
+}
 
-// ── Game logic ──
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+// ── Avatar drawing ─────────────────────────────────────────────────────────────
+function drawBg() {
+  const theme = challengeState.active ? CHALLENGES[challengeState.themeIdx] : null;
+  const bgCol = theme ? theme.bg : '#f3e8ff';
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0,0,W,H);
+  // floor
+  ctx.fillStyle = theme ? darken(theme.bg, 0.3) : '#e9d5ff';
+  ctx.fillRect(0, H*0.88, W, H*0.12);
+  // shadow under avatar
+  ellipseF(B.cx, H*0.89, 65, 10, 'rgba(0,0,0,0.12)');
+}
+
+function drawSkinBase() {
+  const sk = SKIN;
+  // Left arm
+  ctx.fillStyle = sk;
+  rr(B.laX, B.armY, B.armW, B.armH, 12); ctx.fill();
+  // Right arm
+  rr(B.raX, B.armY, B.armW, B.armH, 12); ctx.fill();
+  // Left hand
+  ellipseF(B.laX+B.armW/2, B.armY+B.armH+8, B.armW/2, 10, sk);
+  // Right hand
+  ellipseF(B.raX+B.armW/2, B.armY+B.armH+8, B.armW/2, 10, sk);
+  // Torso
+  ctx.fillStyle = sk;
+  trap(B.cx, B.shY, B.shW, B.waistY, B.waistW); ctx.fill();
+  // Hip
+  trap(B.cx, B.waistY, B.waistW, B.hipY, B.hipW); ctx.fill();
+  // Neck
+  ctx.fillRect(B.neckX, B.neckY, B.neckW, B.neckH);
+  // Left leg
+  rr(B.llX, B.legY, B.llW, B.legH, 8); ctx.fill();
+  // Right leg
+  rr(B.rlX, B.legY, B.rlW, B.legH, 8); ctx.fill();
+  // Feet (bare)
+  rr(B.lfX, B.footY, B.lfW, B.footH, [4,10,10,4]); ctx.fill();
+  rr(B.rfX, B.footY, B.rfW, B.footH, [4,10,10,4]); ctx.fill();
+  // Head
+  ctx.beginPath();
+  ctx.arc(B.hcx, B.hcy, B.hr, 0, Math.PI*2);
+  ctx.fill();
+  // Ears
+  ellipseF(B.hcx-B.hr+2, B.hcy+2, 7, 9, sk);
+  ellipseF(B.hcx+B.hr-2, B.hcy+2, 7, 9, sk);
+}
+
+function drawShoes(shoes) {
+  if (!shoes) return;
+  const col = shoes.col, col2 = shoes.col2||darken(shoes.col);
+  ctx.fillStyle = col;
+  if (shoes.stype==='heels') {
+    // Shoe body
+    rr(B.lfX-2, B.footY, B.lfW, B.footH-4, [4,8,8,4]); ctx.fill();
+    rr(B.rfX-2, B.footY, B.rfW, B.footH-4, [4,8,8,4]); ctx.fill();
+    // Heel
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.footY+B.footH-6, 6, 10);
+    ctx.fillRect(B.rfX-2, B.footY+B.footH-6, 6, 10);
+  } else if (shoes.stype==='sandal') {
+    // Thin sole
+    ctx.fillStyle = col;
+    rr(B.lfX, B.footY+B.footH-6, B.lfW-4, 6, 3); ctx.fill();
+    rr(B.rfX, B.footY+B.footH-6, B.rfW-4, 6, 3); ctx.fill();
+    // Straps
+    ctx.strokeStyle = col; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(B.lfX+8, B.footY+4); ctx.lineTo(B.lfX+B.lfW-8, B.footY+4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(B.rfX+8, B.footY+4); ctx.lineTo(B.rfX+B.rfW-8, B.footY+4); ctx.stroke();
+  } else if (shoes.stype==='boot-ankle') {
+    const bh = 36;
+    rr(B.lfX-2, B.footY-bh+B.footH, B.lfW+2, bh+B.footH, [8,8,4,4]); ctx.fill();
+    rr(B.rfX-2, B.footY-bh+B.footH, B.rfW+2, bh+B.footH, [8,8,4,4]); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.footY-bh+B.footH, B.lfW+2, 4);
+    ctx.fillRect(B.rfX-2, B.footY-bh+B.footH, B.rfW+2, 4);
+  } else if (shoes.stype==='boot-knee') {
+    const bh = 90;
+    ctx.fillStyle = col;
+    rr(B.lfX-2, B.legY+B.legH-bh, B.llW+8, bh+B.footH, [6,6,4,4]); ctx.fill();
+    rr(B.rlX-2, B.legY+B.legH-bh, B.rlW+8, bh+B.footH, [6,6,4,4]); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.legY+B.legH-bh, B.llW+8, 4);
+    ctx.fillRect(B.rlX-2, B.legY+B.legH-bh, B.rlW+8, 4);
+  } else {
+    // Flat/sneakers
+    rr(B.lfX-2, B.footY, B.lfW+2, B.footH+4, [4,10,10,4]); ctx.fill();
+    rr(B.rfX-2, B.footY, B.rfW+2, B.footH+4, [4,10,10,4]); ctx.fill();
+    // Sole line
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.footY+B.footH, B.lfW+2, 4);
+    ctx.fillRect(B.rfX-2, B.footY+B.footH, B.rfW+2, 4);
   }
-  return a;
 }
 
-function pickQuestion() {
-  const eligible = POOL.filter(q => q.t !== lastTheme);
-  const pool = eligible.length ? eligible : POOL;
-  const q = pool[Math.floor(Math.random() * pool.length)];
-  lastTheme = q.t;
-  return q;
-}
-
-function nextQuestion() {
-  answered = false;
-  currentQ = pickQuestion();
-  questionCount++;
-  shuffled = shuffle(currentQ.c.map(c => ({ ...c, _result: null })));
-  updateChoiceButtons();
-}
-
-function updateChoiceButtons() {
-  const btns = document.querySelectorAll('.choice-btn');
-  btns.forEach((btn, i) => {
-    const ch = shuffled[i];
-    btn.textContent = '';
-    btn.className = 'choice-btn';
-    const span = document.createElement('span');
-    span.style.fontSize = '26px';
-    span.textContent = ch.e;
-    const label = document.createElement('span');
-    label.style.fontSize = '17px';
-    label.textContent = ch.n;
-    btn.appendChild(span);
-    btn.appendChild(label);
-  });
-}
-
-function applyResultColors() {
-  const btns = document.querySelectorAll('.choice-btn');
-  btns.forEach((btn, i) => {
-    const ch = shuffled[i];
-    btn.classList.remove('correct', 'partial', 'wrong');
-    if (ch._result) btn.classList.add(ch._result);
-  });
-}
-
-function startGame() {
-  score = 0;
-  questionCount = 0;
-  timeLeft = 60;
-  particles = [];
-  lastTheme = '';
-  state = 'playing';
-
-  document.getElementById('btn-start').classList.add('hidden');
-  document.getElementById('btn-restart').classList.add('hidden');
-  document.getElementById('choice-area').style.display = 'flex';
-
-  nextQuestion();
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    if (timeLeft <= 0) {
-      timeLeft = 0;
-      endGame();
-    }
-  }, 1000);
-}
-
-function endGame() {
-  clearInterval(timerInterval);
-  clearTimeout(resultTimer);
-  state = 'gameover';
-  if (score > bestScore) {
-    bestScore = score;
-    localStorage.setItem('dti_best', bestScore);
+function drawBottom(item) {
+  if (!item) return;
+  const col=item.col, col2=item.col2||darken(item.col);
+  ctx.fillStyle = col;
+  if (item.btype==='pants') {
+    // Waistband
+    trap(B.cx, B.hipY-14, B.hipW, B.hipY, B.hipW+4); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-B.hipW/2, B.hipY-14, B.hipW, 4);
+    ctx.fillStyle = col;
+    rr(B.llX-2, B.legY, B.llW+4, B.legH, 4); ctx.fill();
+    rr(B.rlX-2, B.legY, B.rlW+4, B.legH, 4); ctx.fill();
+  } else if (item.btype==='shorts') {
+    trap(B.cx, B.hipY-14, B.hipW, B.hipY, B.hipW+4); ctx.fill();
+    rr(B.llX-2, B.legY, B.llW+4, 58, 4); ctx.fill();
+    rr(B.rlX-2, B.legY, B.rlW+4, 58, 4); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-B.hipW/2, B.hipY-14, B.hipW, 4);
+  } else if (item.btype==='skirt-mini') {
+    trap(B.cx, B.waistY-8, B.waistW+8, B.waistY+70, B.hipW+30); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-(B.waistW+8)/2, B.waistY-8, B.waistW+8, 5);
+  } else if (item.btype==='skirt-midi') {
+    trap(B.cx, B.waistY-8, B.waistW+8, B.waistY+130, B.hipW+50); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-(B.waistW+8)/2, B.waistY-8, B.waistW+8, 5);
+  } else if (item.btype==='skirt-maxi') {
+    trap(B.cx, B.waistY-8, B.waistW+8, B.footY+8, B.hipW+70); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-(B.waistW+8)/2, B.waistY-8, B.waistW+8, 5);
+    // Hem detail
+    ctx.fillStyle = lighten(col, 0.1);
+    ctx.fillRect(B.cx-(B.hipW+70)/2, B.footY, B.hipW+70, 6);
   }
-  document.getElementById('choice-area').style.display = 'none';
-  document.getElementById('btn-restart').classList.remove('hidden');
-  spawnConfetti(W / 2, 200, 30);
 }
 
-function handleChoice(i) {
-  if (answered || state !== 'playing') return;
-  answered = true;
+function drawTop(item, overDress=false) {
+  if (!item) return;
+  const col=item.col, col2=item.col2||darken(item.col);
+  const botY = item.len<=0.5 ? B.shY+54 : item.len<=0.75 ? B.waistY-10 : item.len>=1 ? B.hipY+2 : B.waistY+14;
+  const botW = item.len<=0.5 ? B.waistW+20 : item.len>=1 ? B.hipW+4 : B.waistW+8;
 
-  const ch = shuffled[i];
-  score += ch.p;
+  if (item.neck==='off') {
+    // off-shoulder: draw wider top starting from mid-arm
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY+16, B.shW+24, botY, botW); ctx.fill();
+    // shoulder straps
+    ctx.fillRect(B.laX+4, B.shY+10, B.armW-4, 20);
+    ctx.fillRect(B.raX+4, B.shY+10, B.armW-4, 20);
+  } else {
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY, B.shW+4, botY, botW); ctx.fill();
+  }
 
-  shuffled.forEach((c, j) => {
-    c._result = c.p === 60 ? 'correct' : c.p === 35 ? 'partial' : 'wrong';
-  });
-  shuffled[i]._result = ch.p === 60 ? 'correct' : ch.p === 35 ? 'partial' : 'wrong';
-
-  if (ch.p === 60) spawnConfetti(W / 2, 280, 18);
-
-  applyResultColors();
-
-  resultTimer = setTimeout(() => {
-    if (state === 'playing') {
-      nextQuestion();
-      const btns = document.querySelectorAll('.choice-btn');
-      btns.forEach(b => b.classList.remove('correct','partial','wrong'));
+  // Sleeves
+  const slvH = B.armH * item.slv;
+  if (slvH > 0) {
+    ctx.fillStyle = col;
+    rr(B.laX, B.armY, B.armW, slvH, 6); ctx.fill();
+    rr(B.raX, B.armY, B.armW, slvH, 6); ctx.fill();
+    if (item.slv >= 0.9) {
+      ctx.fillStyle = col2;
+      ctx.fillRect(B.laX, B.armY+slvH-4, B.armW, 4);
+      ctx.fillRect(B.raX, B.armY+slvH-4, B.armW, 4);
     }
-  }, 900);
+  }
+
+  // Neckline
+  const nkCol = SKIN;
+  if (item.neck==='high') {
+    ctx.fillStyle = col;
+    ctx.fillRect(B.neckX-2, B.neckY-4, B.neckW+4, B.neckH+10);
+  } else if (item.neck==='v') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath();
+    ctx.moveTo(B.cx-10, B.shY); ctx.lineTo(B.cx, B.shY+32); ctx.lineTo(B.cx+10, B.shY); ctx.fill();
+  } else if (item.neck==='crew') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath();
+    ctx.arc(B.cx, B.shY+10, 16, 0, Math.PI); ctx.fill();
+  }
+
+  // Blazer lapels
+  if (item.id==='blazer-blk') {
+    ctx.strokeStyle = lighten(col, 0.2); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(B.cx, B.shY+20); ctx.lineTo(B.cx-18, B.shY+54); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(B.cx, B.shY+20); ctx.lineTo(B.cx+18, B.shY+54); ctx.stroke();
+  }
 }
 
-// ── Desktop click on canvas ──
-canvas.addEventListener('click', e => {
-  if (isTouch) return;
-  const rect = canvas.getBoundingClientRect();
-  const sx = W / rect.width;
-  const sy = H / rect.height;
-  const x = (e.clientX - rect.left) * sx;
-  const y = (e.clientY - rect.top) * sy;
+function drawDress(item) {
+  if (!item) return;
+  const col=item.col, col2=item.col2||darken(item.col);
+  const maxLen = item.dlen||1;
+  const skirtBot = Math.min(B.footY+4, B.shY + (B.footY - B.shY) * maxLen);
+  const skirtW = maxLen >= 1.1 ? B.hipW + 80 : maxLen >= 1 ? B.hipW + 50 : B.hipW + 20;
 
-  if (state === 'idle') { startGame(); return; }
-  if (state === 'gameover') { startGame(); return; }
-  if (state === 'playing' && !answered) {
-    const choices = shuffled;
-    const bh = 52, gap = 10;
-    const totalH = choices.length * bh + (choices.length - 1) * gap;
-    const startY = H - totalH - 14;
-    choices.forEach((ch, i) => {
-      const by = startY + i * (bh + gap);
-      if (x >= 24 && x <= W - 24 && y >= by && y <= by + bh) {
-        handleChoice(i);
-      }
+  if (item.neck==='off') {
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY+16, B.shW+24, skirtBot, skirtW); ctx.fill();
+  } else {
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY, B.shW+4, skirtBot, skirtW); ctx.fill();
+  }
+
+  // Sleeves
+  const slvH = B.armH * (item.slv||0);
+  if (slvH > 0) {
+    ctx.fillStyle = col;
+    rr(B.laX, B.armY, B.armW, slvH, 6); ctx.fill();
+    rr(B.raX, B.armY, B.armW, slvH, 6); ctx.fill();
+  }
+
+  // Waist seam
+  ctx.fillStyle = col2;
+  ctx.fillRect(B.cx-B.waistW/2-2, B.waistY-2, B.waistW+4, 3);
+
+  // Hem
+  if (maxLen >= 1) {
+    ctx.fillStyle = lighten(col, 0.12);
+    ctx.fillRect(B.cx-skirtW/2, skirtBot-4, skirtW, 5);
+  }
+
+  // Neckline
+  const nkCol = SKIN;
+  if (item.neck==='v') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath();
+    ctx.moveTo(B.cx-10, B.shY); ctx.lineTo(B.cx, B.shY+32); ctx.lineTo(B.cx+10, B.shY); ctx.fill();
+  } else if (item.neck==='crew') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath(); ctx.arc(B.cx, B.shY+10, 16, 0, Math.PI); ctx.fill();
+  }
+}
+
+function drawHat(hat) {
+  if (!hat) return;
+  const col=hat.col, col2=hat.col2||darken(hat.col);
+  const hx=B.hcx, hy=B.hcy, hr=B.hr;
+  ctx.fillStyle = col;
+  if (hat.hstyle==='cap') {
+    ctx.beginPath(); ctx.arc(hx, hy, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    // Brim
+    rr(hx-hr-10, hy+2, (hr+10)*2, 10, 3); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(hx-6, hy-hr, 12, 6);
+  } else if (hat.hstyle==='bucket') {
+    ctx.beginPath(); ctx.arc(hx, hy-2, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    rr(hx-hr-16, hy, (hr+16)*2, 10, 5); ctx.fill();
+  } else if (hat.hstyle==='beret') {
+    ctx.save(); ctx.translate(hx+8, hy-hr+4);
+    ctx.scale(1.3, 0.8);
+    ctx.beginPath(); ctx.arc(0, 0, hr, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    ellipseF(hx, hy-hr+6, 5, 4, col2);
+  } else if (hat.hstyle==='sun') {
+    // Wide brim
+    ellipseF(hx, hy-hr+10, hr+24, 10, col);
+    // Crown
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+4, Math.PI, 2*Math.PI); ctx.fill();
+    // Ribbon
+    ctx.fillStyle = col2;
+    ctx.fillRect(hx-hr-2, hy-hr+6, (hr+2)*2, 6);
+  } else if (hat.hstyle==='crown') {
+    const pts = [hx-20, hy-hr-2, hx-20, hy-hr-18, hx-6, hy-hr-10, hx, hy-hr-24, hx+6, hy-hr-10, hx+20, hy-hr-18, hx+20, hy-hr-2];
+    ctx.beginPath(); ctx.moveTo(pts[0],pts[1]);
+    for(let i=2;i<pts.length;i+=2) ctx.lineTo(pts[i],pts[i+1]);
+    ctx.closePath(); ctx.fill();
+    // gems
+    ellipseF(hx, hy-hr-18, 4, 4, '#fff');
+    ellipseF(hx-13, hy-hr-12, 3, 3, '#fff');
+    ellipseF(hx+13, hy-hr-12, 3, 3, '#fff');
+  } else if (hat.hstyle==='beanie') {
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+4, Math.PI*1.1, 2*Math.PI*0.9); ctx.fill();
+    // Brim fold
+    ctx.fillStyle = col2;
+    rr(hx-hr-3, hy+4, (hr+3)*2, 12, 4); ctx.fill();
+    // Pom
+    ellipseF(hx, hy-hr-8, 8, 8, col);
+  }
+}
+
+function drawBag(bag) {
+  if (!bag) return;
+  const col=bag.col, col2=bag.col2||darken(bag.col);
+  const bx = B.laX-36, by = B.armY+B.armH-20;
+  ctx.fillStyle = col;
+  if (bag.bstyle==='tote') {
+    rr(bx-4, by, 42, 52, 4); ctx.fill();
+    ctx.strokeStyle=col2; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(bx+8,by); ctx.lineTo(bx+8,by-16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx+28,by); ctx.lineTo(bx+28,by-16); ctx.stroke();
+  } else if (bag.bstyle==='clutch') {
+    rr(bx+2, by+10, 34, 22, 6); ctx.fill();
+    ctx.fillStyle=col2; ellipseF(bx+19, by+21, 4, 4, col2);
+  } else if (bag.bstyle==='mini') {
+    rr(bx+4, by+8, 26, 28, 6); ctx.fill();
+    ctx.strokeStyle=col2; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(bx+10,by+8); ctx.quadraticCurveTo(bx+17,by-2,bx+24,by+8); ctx.stroke();
+  } else if (bag.bstyle==='shoulder') {
+    rr(bx-2, by+4, 38, 44, 8); ctx.fill();
+    ctx.strokeStyle=col2; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(bx+16,by+4); ctx.quadraticCurveTo(bx-14,by-24,B.raX+B.armW/2,by-40); ctx.stroke();
+  } else if (bag.bstyle==='backpack') {
+    // Backpack on right side
+    const bpx = B.raX+2, bpy = B.armY+10;
+    rr(bpx, bpy, 34, 52, 8); ctx.fill();
+    ctx.fillStyle=col2;
+    rr(bpx+5, bpy+20, 24, 16, 4); ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(bpx+8,bpy); ctx.lineTo(bpx+8,bpy-14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bpx+26,bpy); ctx.lineTo(bpx+26,bpy-14); ctx.stroke();
+  }
+}
+
+function drawJewelry(j) {
+  if (!j) return;
+  const col = j.col;
+  if (j.jtype==='necklace') {
+    ctx.strokeStyle=col; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(B.cx, B.shY+2, 18, 0.1*Math.PI, 0.9*Math.PI); ctx.stroke();
+    ellipseF(B.cx, B.shY+20, 4, 4, col);
+  } else if (j.jtype==='earrings') {
+    ellipseF(B.hcx-B.hr+2, B.hcy+6, 4, 5, col);
+    ellipseF(B.hcx+B.hr-2, B.hcy+6, 4, 5, col);
+  } else if (j.jtype==='bracelet') {
+    ctx.strokeStyle=col; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(B.laX+B.armW/2, B.armY+B.armH-10, B.armW/2, Math.PI*0.3, Math.PI*1.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(B.raX+B.armW/2, B.armY+B.armH-10, B.armW/2, Math.PI*0.3, Math.PI*1.7); ctx.stroke();
+  } else if (j.jtype==='tiara') {
+    ctx.fillStyle = col;
+    const ty = B.hcy - B.hr + 4;
+    const pts = [B.cx-22,ty, B.cx-16,ty-10, B.cx-8,ty-4, B.cx,ty-16, B.cx+8,ty-4, B.cx+16,ty-10, B.cx+22,ty];
+    ctx.beginPath(); ctx.moveTo(pts[0],pts[1]);
+    for(let i=2;i<pts.length;i+=2) ctx.lineTo(pts[i],pts[i+1]);
+    ctx.lineTo(B.cx+22, ty+5); ctx.lineTo(B.cx-22, ty+5);
+    ctx.closePath(); ctx.fill();
+    ellipseF(B.cx, ty-14, 4, 4, '#fff');
+  }
+}
+
+function drawNails(nails) {
+  if (!nails) return;
+  const col = nails.col;
+  // Left hand fingertips
+  const lhx = B.laX+B.armW/2, hY = B.armY+B.armH+14;
+  for (let i=-1; i<=1; i++) {
+    ellipseF(lhx + i*6, hY, 3, 4, col);
+  }
+  // Right hand
+  const rhx = B.raX+B.armW/2;
+  for (let i=-1; i<=1; i++) {
+    ellipseF(rhx + i*6, hY, 3, 4, col);
+  }
+}
+
+function drawHair(hairS) {
+  const col = hairS.color || '#1a1a1a';
+  const dark = darken(col, 0.18);
+  const hx=B.hcx, hy=B.hcy, hr=B.hr;
+  ctx.fillStyle = col;
+
+  if (hairS.style==='long-str') {
+    // Long straight: side panels + back
+    ctx.fillStyle = dark;
+    ctx.fillRect(hx-hr-8, hy-6, 14, B.shY-hy+60);
+    ctx.fillRect(hx+hr-6, hy-6, 14, B.shY-hy+60);
+    ctx.fillStyle = col;
+    ctx.fillRect(hx-hr-4, hy-4, 12, B.shY-hy+56);
+    ctx.fillRect(hx+hr-8, hy-4, 12, B.shY-hy+56);
+    // Top
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    // Center part line
+    ctx.strokeStyle=dark; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(hx,hy-hr-2); ctx.lineTo(hx,hy-4); ctx.stroke();
+  } else if (hairS.style==='wavy') {
+    ctx.fillStyle = dark;
+    // Wavy panels using bezier
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-4, hy-8);
+    ctx.bezierCurveTo(hx-hr-12,hy+30, hx-hr,hy+60, hx-hr-8, B.shY+40);
+    ctx.lineTo(hx-hr+8, B.shY+40);
+    ctx.bezierCurveTo(hx-hr+4,hy+56, hx-hr+12,hy+26, hx-hr+4,hy-8);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(hx+hr-4, hy-8);
+    ctx.bezierCurveTo(hx+hr+12,hy+30, hx+hr,hy+60, hx+hr+8, B.shY+40);
+    ctx.lineTo(hx+hr-8, B.shY+40);
+    ctx.bezierCurveTo(hx+hr-4,hy+56, hx+hr-12,hy+26, hx+hr-4,hy-8);
+    ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillRect(hx-hr-2, hy-8, 10, B.shY-hy+42);
+    ctx.fillRect(hx+hr-8, hy-8, 10, B.shY-hy+42);
+  } else if (hairS.style==='curly') {
+    // Big curly mass
+    ctx.fillStyle = col;
+    ellipseF(hx, hy-8, hr+18, hr+14, col);
+    ellipseF(hx-hr-8, hy+10, 14, 18, col);
+    ellipseF(hx+hr+8, hy+10, 14, 18, col);
+    ellipseF(hx-hr, hy+28, 16, 18, col);
+    ellipseF(hx+hr, hy+28, 16, 18, col);
+    ellipseF(hx, hy+34, 18, 16, col);
+  } else if (hairS.style==='bob') {
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-6, hy-8);
+    ctx.lineTo(hx-hr-6, hy+22);
+    ctx.lineTo(hx-hr+4, hy+30);
+    ctx.lineTo(hx+hr-4, hy+30);
+    ctx.lineTo(hx+hr+6, hy+22);
+    ctx.lineTo(hx+hr+6, hy-8);
+    ctx.arc(hx, hy-4, hr+6, 0, Math.PI, true);
+    ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-2, hy-6);
+    ctx.lineTo(hx-hr-2, hy+20);
+    ctx.lineTo(hx-hr+6, hy+28);
+    ctx.lineTo(hx+hr-6, hy+28);
+    ctx.lineTo(hx+hr+2, hy+20);
+    ctx.lineTo(hx+hr+2, hy-6);
+    ctx.arc(hx, hy-4, hr+2, 0, Math.PI, true);
+    ctx.fill();
+  } else if (hairS.style==='ponytail') {
+    // Cap + ponytail
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillRect(hx-hr-2, hy-4, 8, 22);
+    ctx.fillRect(hx+hr-6, hy-4, 8, 22);
+    // Ponytail behind
+    ctx.fillStyle = dark;
+    rr(hx-8, hy-hr+4, 16, 80, 8); ctx.fill();
+    // Band
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(hx-8, hy-hr+26, 16, 5);
+  } else if (hairS.style==='bun') {
+    // Hair cap
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillRect(hx-hr-2, hy-4, B.armW, 18);
+    // Bun on top
+    ellipseF(hx, hy-hr-10, 18, 14, col);
+    ctx.strokeStyle=dark; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(hx, hy-hr-10, 12, 0, Math.PI*2); ctx.stroke();
+  } else if (hairS.style==='braids') {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    // Left braid
+    for(let y=hy+16; y<B.shY+80; y+=14) {
+      ellipseF(hx-hr-2, y, 7, 6, col);
+    }
+    // Right braid
+    for(let y=hy+16; y<B.shY+80; y+=14) {
+      ellipseF(hx+hr+2, y, 7, 6, col);
+    }
+    // Part
+    ctx.strokeStyle=dark; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(hx,hy-hr-2); ctx.lineTo(hx,hy-4); ctx.stroke();
+  } else if (hairS.style==='pixie') {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+3, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillStyle = dark;
+    rr(hx-hr-2, hy-4, 12, 24, 4); ctx.fill();
+    rr(hx+hr-10, hy-4, 12, 24, 4); ctx.fill();
+    // Side swept
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(hx-6, hy-hr-2);
+    ctx.quadraticCurveTo(hx-hr-12, hy-hr+10, hx-hr-2, hy+8);
+    ctx.lineTo(hx-hr+8, hy+8);
+    ctx.lineTo(hx+4, hy-hr);
+    ctx.fill();
+  }
+}
+
+function drawFace(makeup) {
+  const mk = makeup || MAKEUP_LOOKS[1];
+  const hx=B.hcx, hy=B.hcy;
+  // Eyes
+  const eyeY = hy+2;
+  const eyeXL = hx-10, eyeXR = hx+10;
+  // Eyeshadow
+  if (mk.eyeShadow) {
+    ellipseF(eyeXL, eyeY-2, 9, 5, mk.eyeShadow+'88');
+    ellipseF(eyeXR, eyeY-2, 9, 5, mk.eyeShadow+'88');
+  }
+  // Eye whites
+  ellipseF(eyeXL, eyeY, 7, 5, '#fff');
+  ellipseF(eyeXR, eyeY, 7, 5, '#fff');
+  // Pupils
+  ellipseF(eyeXL, eyeY, 3.5, 4, '#1a0a00');
+  ellipseF(eyeXR, eyeY, 3.5, 4, '#1a0a00');
+  // Shine
+  ellipseF(eyeXL+1, eyeY-1, 1.5, 1.5, '#fff');
+  ellipseF(eyeXR+1, eyeY-1, 1.5, 1.5, '#fff');
+  // Lashes (simple lines)
+  ctx.strokeStyle = '#1a0a00'; ctx.lineWidth = 1.2;
+  for(let i=-2;i<=2;i++) {
+    ctx.beginPath();
+    ctx.moveTo(eyeXL+i*2.5, eyeY-5);
+    ctx.lineTo(eyeXL+i*2.8, eyeY-8+(Math.abs(i)*0.5));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(eyeXR+i*2.5, eyeY-5);
+    ctx.lineTo(eyeXR+i*2.8, eyeY-8+(Math.abs(i)*0.5));
+    ctx.stroke();
+  }
+  // Eyebrows
+  ctx.strokeStyle = '#3d1a08'; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(eyeXL-7,eyeY-9); ctx.quadraticCurveTo(eyeXL,eyeY-12,eyeXL+7,eyeY-9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(eyeXR-7,eyeY-9); ctx.quadraticCurveTo(eyeXR,eyeY-12,eyeXR+7,eyeY-9); ctx.stroke();
+  // Nose
+  ctx.strokeStyle = SKIN2; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(hx-3,hy+6); ctx.lineTo(hx-3,hy+12); ctx.lineTo(hx+3,hy+12); ctx.stroke();
+  // Blush
+  if (mk.blush) {
+    ellipseF(eyeXL-3, hy+9, 9, 5, '#f9a8d4aa');
+    ellipseF(eyeXR+3, hy+9, 9, 5, '#f9a8d4aa');
+  }
+  // Lips
+  ctx.fillStyle = mk.lipCol;
+  ctx.beginPath();
+  ctx.moveTo(hx-9, hy+16);
+  ctx.quadraticCurveTo(hx-4, hy+13, hx, hy+15);
+  ctx.quadraticCurveTo(hx+4, hy+13, hx+9, hy+16);
+  ctx.quadraticCurveTo(hx+4, hy+21, hx, hy+21);
+  ctx.quadraticCurveTo(hx-4, hy+21, hx-9, hy+16);
+  ctx.fill();
+  // Cupid's bow highlight
+  ctx.strokeStyle = '#fff5'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(hx-5,hy+15); ctx.quadraticCurveTo(hx,hy+13,hx+5,hy+15); ctx.stroke();
+}
+
+function drawHUD() {
+  if (!challengeState.active) return;
+  const pct = challengeState.timeLeft / 360;
+  const barW = W-40, barX=20, barY=16;
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  rr(barX, barY, barW, 10, 5); ctx.fill();
+  const barCol = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#facc15' : '#f87171';
+  ctx.fillStyle = barCol;
+  rr(barX, barY, barW*pct, 10, 5); ctx.fill();
+  const m = Math.floor(challengeState.timeLeft/60);
+  const s = (challengeState.timeLeft%60).toString().padStart(2,'0');
+  ctx.font = 'bold 13px -apple-system,sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(`${m}:${s}`, W/2, barY+5);
+  const theme = CHALLENGES[challengeState.themeIdx];
+  ctx.font = '12px -apple-system,sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(`${theme.emoji} ${theme.name}`, W/2, barY+22);
+}
+
+function drawIdleHint() {
+  if (challengeState.active || isTouch) return;
+  ctx.font = '13px -apple-system,sans-serif';
+  ctx.fillStyle = 'rgba(100,50,150,0.4)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('Use the tabs below to dress up ✨', W/2, H-10);
+}
+
+function drawVipBadge() {
+  if (!isVip) return;
+  ctx.font = 'bold 12px -apple-system,sans-serif';
+  ctx.fillStyle = '#d97706';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('✨ VIP', W-14, 12);
+}
+
+function redraw() {
+  ctx.clearRect(0,0,W,H);
+  drawBg();
+  // Draw hair behind body first
+  const hs = salonState.hair;
+  if (['long-str','wavy','braids'].includes(hs.style)) {
+    ctx.save(); drawHairFarLayer(hs); ctx.restore();
+  }
+  // Draw bag behind on left
+  if (outfit.bag && outfit.bag.bstyle !== 'backpack') drawBag(outfit.bag);
+  drawSkinBase();
+  drawShoes(outfit.shoes);
+  if (outfit.dress) {
+    drawDress(outfit.dress);
+  } else {
+    drawBottom(outfit.bottom);
+    drawTop(outfit.top);
+  }
+  if (outfit.hat) drawHat(outfit.hat);
+  drawFace(salonState.makeup);
+  drawHair(salonState.hair);
+  if (outfit.jewelry) drawJewelry(outfit.jewelry);
+  if (salonState.nails) drawNails(salonState.nails);
+  if (outfit.bag && outfit.bag.bstyle === 'backpack') drawBag(outfit.bag);
+  drawHUD();
+  drawVipBadge();
+  drawIdleHint();
+}
+
+function drawHairFarLayer(hs) {
+  const col = hs.color || '#1a1a1a';
+  const dark = darken(col, 0.18);
+  const hx=B.hcx, hy=B.hcy, hr=B.hr;
+  if (hs.style==='long-str') {
+    ctx.fillStyle = dark;
+    ctx.fillRect(hx-hr-8, hy, 14, B.shY-hy+58);
+    ctx.fillRect(hx+hr-6, hy, 14, B.shY-hy+58);
+  } else if (hs.style==='wavy') {
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-8,hy); ctx.lineTo(hx-hr-8,B.shY+38); ctx.lineTo(hx-hr+2,B.shY+38); ctx.lineTo(hx-hr+2,hy);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(hx+hr-2,hy); ctx.lineTo(hx+hr-2,B.shY+38); ctx.lineTo(hx+hr+8,B.shY+38); ctx.lineTo(hx+hr+8,hy);
+    ctx.fill();
+  } else if (hs.style==='braids') {
+    ctx.fillStyle = darken(col,0.25);
+    ctx.fillRect(hx-hr-8, hy+16, 14, B.shY-hy+64);
+    ctx.fillRect(hx+hr-6, hy+16, 14, B.shY-hy+64);
+  }
+}
+
+// ── UI Builder ─────────────────────────────────────────────────────────────────
+const TC = document.getElementById('tab-content');
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+function buildUI() {
+  TC.innerHTML = '';
+  TC.appendChild(buildHomePanel());
+  TC.appendChild(buildLobbyPanel());
+  TC.appendChild(buildSalonPanel());
+  TC.appendChild(buildChallengePanel());
+  TC.appendChild(buildVipPanel());
+  setTab(activeTab);
+}
+
+function buildHomePanel() {
+  const p = panel('home');
+  p.innerHTML = `
+    <div class="home-panel">
+      <div class="hm-title">👗 Dressed to Impress</div>
+      <div class="hm-sub">Dress up your avatar using the Lobby and Lana's Salon, then take on the 6-minute style challenge!</div>
+      <div class="vip-badge-row ${isVip?'':'hidden'}" id="vip-row">
+        <span class="vip-icon">✨</span>
+        <span class="vip-text">VIP Member — exclusive items unlocked!</span>
+      </div>
+      ${!isVip?`<div class="vip-badge-row" style="background:linear-gradient(135deg,#f3e8ff,#e9d5ff)">
+        <span class="vip-icon">🔒</span>
+        <span class="vip-text" style="color:#7c3aed">Score 300+ in a challenge to unlock VIP!</span>
+      </div>`:''}
+      <button class="big-btn" id="btn-reset-outfit">🔄 Reset Outfit</button>
+    </div>`;
+  p.querySelector('#btn-reset-outfit').addEventListener('click', resetOutfit);
+  if (!isVip) p.querySelector('.vip-badge-row')?.classList.remove('hidden');
+  return p;
+}
+
+function buildLobbyPanel() {
+  const p = panel('lobby');
+  const categories = [
+    {id:'tops',   label:'👕 Tops'},
+    {id:'bottoms',label:'👖 Bottoms'},
+    {id:'dresses',label:'👗 Dresses'},
+    {id:'shoes',  label:'👟 Shoes'},
+    {id:'bags',   label:'👜 Bags'},
+    {id:'hats',   label:'🎩 Hats'},
+    {id:'jewelry',label:'💍 Jewelry'},
+  ];
+  const catTabs = document.createElement('div');
+  catTabs.className = 'cat-tabs';
+  categories.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'ctb' + (c.id===lobbyCategory?' active':'');
+    btn.textContent = c.label;
+    btn.addEventListener('click', () => { lobbyCategory=c.id; buildLobbyGrid(); });
+    catTabs.appendChild(btn);
+  });
+  p.appendChild(catTabs);
+  const grid = document.createElement('div');
+  grid.className = 'item-grid';
+  grid.id = 'lobby-grid';
+  p.appendChild(grid);
+  return p;
+}
+
+function buildLobbyGrid() {
+  const grid = document.getElementById('lobby-grid');
+  if (!grid) return;
+  // Update category tabs
+  document.querySelectorAll('#tab-lobby .ctb').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase().includes(lobbyCategory.replace('tops','top').replace('bottoms','bottom')));
+  });
+  const items = {tops:TOPS,bottoms:BOTTOMS,dresses:DRESSES,shoes:SHOES,bags:BAGS,hats:HATS,jewelry:JEWELRY}[lobbyCategory]||[];
+  grid.innerHTML='';
+  items.forEach(item => {
+    const locked = item.vip && !isVip;
+    const equipped = isEquipped(lobbyCategory, item);
+    const btn = document.createElement('button');
+    btn.className = 'ibtn'+(equipped?' equipped':'')+(locked?' locked':'');
+    btn.innerHTML = `<span class="ie">${item.emoji}</span><span class="in">${item.name}</span>${item.vip?'<span class="vip-tag">VIP</span>':''}`;
+    if (!locked) btn.addEventListener('click', () => toggleItem(lobbyCategory, item));
+    grid.appendChild(btn);
+  });
+}
+
+function buildSalonPanel() {
+  const p = panel('salon');
+  p.id = 'tab-salon';
+  // Sub-tabs
+  const sTabs = ['hair','makeup','nails'];
+  const tabRow = document.createElement('div');
+  tabRow.className = 'cat-tabs';
+  sTabs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'ctb'+(t===salonTab?' active':'');
+    btn.textContent = t==='hair'?'💇 Hair':t==='makeup'?'💄 Makeup':'💅 Nails';
+    btn.addEventListener('click', () => { salonTab=t; buildSalonContent(); });
+    tabRow.appendChild(btn);
+  });
+  p.appendChild(tabRow);
+  const content = document.createElement('div');
+  content.id = 'salon-content';
+  content.style.flex='1'; content.style.overflowY='auto';
+  p.appendChild(content);
+  return p;
+}
+
+function buildSalonContent() {
+  const c = document.getElementById('salon-content');
+  if (!c) return;
+  c.innerHTML='';
+  document.querySelectorAll('#tab-salon .ctb').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase().includes(salonTab));
+  });
+  if (salonTab==='hair') {
+    const lbl1 = document.createElement('div'); lbl1.className='salon-label'; lbl1.textContent='Style';
+    c.appendChild(lbl1);
+    const sg = document.createElement('div'); sg.className='style-grid';
+    HAIR_STYLES.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className='stb'+(salonState.hair.style===s.id?' active':'');
+      btn.innerHTML=`<span class="se">${s.emoji}</span><span class="sn">${s.name}</span>`;
+      btn.addEventListener('click', () => { salonState.hair.style=s.id; buildSalonContent(); redraw(); saveGame(); });
+      sg.appendChild(btn);
     });
+    c.appendChild(sg);
+    const lbl2 = document.createElement('div'); lbl2.className='salon-label'; lbl2.textContent='Color';
+    c.appendChild(lbl2);
+    const cg = document.createElement('div'); cg.className='color-grid'; cg.style.padding='4px 10px 10px';
+    HAIR_COLORS.forEach(hc => {
+      const sw = document.createElement('button');
+      sw.className='swatch'+(salonState.hair.color===hc.col?' active':'');
+      sw.style.background=hc.col;
+      sw.title=hc.name;
+      sw.addEventListener('click', () => { salonState.hair.color=hc.col; buildSalonContent(); redraw(); saveGame(); });
+      cg.appendChild(sw);
+    });
+    c.appendChild(cg);
+  } else if (salonTab==='makeup') {
+    const lbl=document.createElement('div'); lbl.className='salon-label'; lbl.textContent='Look';
+    c.appendChild(lbl);
+    const sg=document.createElement('div'); sg.className='style-grid';
+    MAKEUP_LOOKS.forEach(mk => {
+      const btn=document.createElement('button');
+      btn.className='stb'+(salonState.makeup?.id===mk.id?' active':'');
+      btn.innerHTML=`<span class="se">${mk.emoji}</span><span class="sn">${mk.name}</span>`;
+      btn.addEventListener('click', () => { salonState.makeup=mk; buildSalonContent(); redraw(); saveGame(); });
+      sg.appendChild(btn);
+    });
+    c.appendChild(sg);
+  } else {
+    const lbl=document.createElement('div'); lbl.className='salon-label'; lbl.textContent='Nail Color';
+    c.appendChild(lbl);
+    const cg=document.createElement('div'); cg.className='color-grid'; cg.style.flexWrap='wrap'; cg.style.padding='6px 10px 10px';
+    NAIL_COLORS.forEach(nc => {
+      const locked=nc.vip&&!isVip;
+      const wrap=document.createElement('div'); wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.alignItems='center'; wrap.style.gap='2px';
+      const sw=document.createElement('button');
+      sw.className='swatch'+(salonState.nails?.id===nc.id?' active':'')+(locked?' locked':'');
+      sw.style.background=nc.col; sw.style.position='relative';
+      if (nc.vip) { const tag=document.createElement('span'); tag.style.cssText='position:absolute;bottom:-4px;right:-4px;font-size:8px;';tag.textContent='✨'; sw.appendChild(tag); }
+      if (!locked) sw.addEventListener('click', () => { salonState.nails=nc; buildSalonContent(); redraw(); saveGame(); });
+      const nm=document.createElement('span'); nm.style.cssText='font-size:8px;color:#7c3aed;font-weight:600;'; nm.textContent=nc.name;
+      wrap.appendChild(sw); wrap.appendChild(nm);
+      cg.appendChild(wrap);
+    });
+    c.appendChild(cg);
   }
-});
-
-// ── Touch controls ──
-document.getElementById('btn-start').addEventListener('click', startGame);
-document.getElementById('btn-restart').addEventListener('click', startGame);
-document.querySelectorAll('.choice-btn').forEach(btn => {
-  btn.addEventListener('click', () => handleChoice(+btn.dataset.i));
-});
-
-// ── Render loop ──
-function draw() {
-  ctx.clearRect(0, 0, W, H);
-  updateParticles();
-
-  if (state === 'idle')     drawIdleScreen();
-  else if (state === 'playing') drawPlayScreen();
-  else if (state === 'gameover') drawGameover();
-
-  requestAnimationFrame(draw);
 }
 
-// ── Canvas scale ──
+function buildChallengePanel() {
+  const p = panel('challenge');
+  p.id='tab-challenge';
+  const content=document.createElement('div'); content.className='chall-panel'; content.id='chall-inner';
+  p.appendChild(content);
+  return p;
+}
+
+function buildChallengeContent() {
+  const c=document.getElementById('chall-inner'); if(!c) return;
+  c.innerHTML='';
+  const theme=CHALLENGES[challengeState.themeIdx];
+  if (challengeState.score !== null) {
+    // Results
+    const sc=challengeState.score;
+    c.innerHTML=`
+      <div class="theme-card" style="background:${theme.bg}">\
+        <span class="te">${theme.emoji}</span>\
+        <div class="td"><div class="tn">${theme.name}</div><div class="ts">Challenge complete!</div></div>\
+      </div>
+      <div id="score-result" style="display:block;padding:16px 8px;">
+        <div class="sr-pts">${sc} pts</div>
+        <div class="sr-grade">${scoreGrade(sc)}</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:6px;">Best: ${Math.max(sc,totalScore)} pts total</div>
+      </div>`;
+    const nb=document.createElement('button'); nb.className='big-btn';
+    nb.textContent='▶ Next Challenge'; nb.addEventListener('click',nextChallenge); c.appendChild(nb);
+    const ag=document.createElement('button'); ag.className='big-btn';
+    ag.style.background='linear-gradient(135deg,#6b7280,#4b5563)'; ag.style.boxShadow='0 3px 0 #374151';
+    ag.textContent='↺ Retry'; ag.addEventListener('click',() => {challengeState.score=null;startChallenge();});
+    c.appendChild(ag);
+    return;
+  }
+  // Theme card
+  const tc=document.createElement('div'); tc.className='theme-card'; tc.style.background=theme.bg;
+  tc.innerHTML=`<span class="te">${theme.emoji}</span><div class="td"><div class="tn">${theme.name}</div><div class="ts">Dress your avatar for this occasion!</div></div>`;
+  c.appendChild(tc);
+  // Theme nav
+  const nav=document.createElement('div'); nav.style.cssText='display:flex;gap:8px;flex-shrink:0;';
+  const prev=document.createElement('button'); prev.className='big-btn'; prev.style.cssText='flex:1;font-size:14px;background:linear-gradient(135deg,#6b7280,#4b5563);box-shadow:0 3px 0 #374151;';
+  prev.textContent='◀ Prev'; prev.addEventListener('click',()=>{challengeState.themeIdx=(challengeState.themeIdx-1+CHALLENGES.length)%CHALLENGES.length;buildChallengeContent();});
+  const next=document.createElement('button'); next.className='big-btn'; next.style.cssText='flex:1;font-size:14px;background:linear-gradient(135deg,#6b7280,#4b5563);box-shadow:0 3px 0 #374151;';
+  next.textContent='Next ▶'; next.addEventListener('click',()=>{challengeState.themeIdx=(challengeState.themeIdx+1)%CHALLENGES.length;buildChallengeContent();});
+  nav.appendChild(prev); nav.appendChild(next); c.appendChild(nav);
+  // Timer
+  if (challengeState.active) {
+    const tw=document.createElement('div'); tw.className='timer-bar-wrap';
+    const tb=document.createElement('div'); tb.className='timer-bar'; tb.id='chall-bar';
+    const pct=challengeState.timeLeft/360;
+    tb.style.width=(pct*100)+'%';
+    tb.style.background=pct>0.5?'#4ade80':pct>0.25?'#facc15':'#f87171';
+    tw.appendChild(tb); c.appendChild(tw);
+    const tl=document.createElement('div'); tl.id='timer-label';
+    const m=Math.floor(challengeState.timeLeft/60), s=(challengeState.timeLeft%60).toString().padStart(2,'0');
+    tl.textContent=`⏱ ${m}:${s} remaining`;
+    c.appendChild(tl);
+    const tip=document.createElement('div'); tip.style.cssText='font-size:11px;color:#9ca3af;text-align:center;flex-shrink:0;';
+    tip.textContent='Go to Lobby & Salon to dress up, then submit!';
+    c.appendChild(tip);
+    const sub=document.createElement('button'); sub.className='big-btn'; sub.style.marginTop='auto';
+    sub.textContent='✅ Submit Look'; sub.addEventListener('click',submitChallenge);
+    c.appendChild(sub);
+  } else {
+    const st=document.createElement('button'); st.className='big-btn';
+    st.textContent='▶ Start Challenge (6 min)';
+    st.addEventListener('click',startChallenge);
+    c.appendChild(st);
+  }
+}
+
+function buildVipPanel() {
+  const p=panel('vip');
+  p.id='tab-vip';
+  const inner=document.createElement('div'); inner.className='vip-panel';
+  if (!isVip) {
+    inner.innerHTML=`<div style="text-align:center;padding:20px;"><div style="font-size:40px">🔒</div><div style="font-weight:700;color:#7c3aed;margin:8px 0">VIP Locked</div><div style="font-size:12px;color:#9ca3af">Score 300+ in a challenge to unlock exclusive items!</div></div>`;
+  } else {
+    inner.innerHTML=`<div style="text-align:center;padding:10px;font-weight:700;color:#d97706;font-size:14px;">✨ VIP Member — All items unlocked!</div>`;
+    const allVip=[...TOPS,...BOTTOMS,...DRESSES,...SHOES,...BAGS,...HATS,...JEWELRY].filter(x=>x.vip);
+    const grid=document.createElement('div'); grid.className='item-grid';
+    allVip.forEach(item => {
+      const cat=getCat(item);
+      const equipped=isEquipped(cat,item);
+      const btn=document.createElement('button');
+      btn.className='ibtn'+(equipped?' equipped':'');
+      btn.innerHTML=`<span class="ie">${item.emoji}</span><span class="in">${item.name}</span><span class="vip-tag">VIP</span>`;
+      btn.addEventListener('click',()=>toggleItem(cat,item));
+      grid.appendChild(btn);
+    });
+    inner.appendChild(grid);
+  }
+  p.appendChild(inner);
+  return p;
+}
+
+function panel(id) {
+  const div=document.createElement('div');
+  div.className='panel';
+  div.id='tab-'+id;
+  return div;
+}
+
+function getCat(item) {
+  if (TOPS.includes(item)) return 'tops';
+  if (BOTTOMS.includes(item)) return 'bottoms';
+  if (DRESSES.includes(item)) return 'dresses';
+  if (SHOES.includes(item)) return 'shoes';
+  if (BAGS.includes(item)) return 'bags';
+  if (HATS.includes(item)) return 'hats';
+  if (JEWELRY.includes(item)) return 'jewelry';
+  return null;
+}
+
+function isEquipped(cat, item) {
+  return outfit[catToSlot(cat)]?.id === item.id;
+}
+
+function catToSlot(cat) {
+  return {tops:'top',bottoms:'bottom',dresses:'dress',shoes:'shoes',bags:'bag',hats:'hat',jewelry:'jewelry'}[cat];
+}
+
+function toggleItem(cat, item) {
+  const slot=catToSlot(cat);
+  if (outfit[slot]?.id === item.id) {
+    outfit[slot]=null;
+  } else {
+    outfit[slot]=item;
+    // dress clears top/bottom; top/bottom clears dress
+    if (slot==='dress') { outfit.top=null; outfit.bottom=null; }
+    if (slot==='top'||slot==='bottom') outfit.dress=null;
+  }
+  redraw(); saveGame();
+  if (activeTab==='lobby') buildLobbyGrid();
+  if (activeTab==='vip') { buildVipPanel(); setTab('vip'); }
+}
+
+function resetOutfit() {
+  Object.keys(outfit).forEach(k=>outfit[k]=null);
+  redraw(); saveGame();
+  if (activeTab==='lobby') buildLobbyGrid();
+}
+
+// ── Challenge logic ────────────────────────────────────────────────────────────
+function startChallenge() {
+  challengeState.active=true; challengeState.timeLeft=360; challengeState.score=null;
+  clearInterval(challengeState.timer);
+  challengeState.timer=setInterval(()=>{
+    challengeState.timeLeft--;
+    updateTimerUI();
+    redraw();
+    if(challengeState.timeLeft<=0) submitChallenge();
+  },1000);
+  buildChallengeContent(); redraw();
+}
+
+function nextChallenge() {
+  challengeState.themeIdx=(challengeState.themeIdx+1)%CHALLENGES.length;
+  challengeState.score=null; challengeState.active=false;
+  clearInterval(challengeState.timer);
+  buildChallengeContent(); redraw();
+}
+
+function updateTimerUI() {
+  const tb=document.getElementById('chall-bar');
+  const tl=document.getElementById('timer-label');
+  if (!tb||!tl) return;
+  const pct=challengeState.timeLeft/360;
+  tb.style.width=(pct*100)+'%';
+  tb.style.background=pct>0.5?'#4ade80':pct>0.25?'#facc15':'#f87171';
+  const m=Math.floor(challengeState.timeLeft/60), s=(challengeState.timeLeft%60).toString().padStart(2,'0');
+  tl.textContent=`⏱ ${m}:${s} remaining`;
+}
+
+function scoreOutfit() {
+  const theme=CHALLENGES[challengeState.themeIdx];
+  const pref=theme.preferred, avoid=theme.avoid;
+  let total=0, max=0;
+  const slots=[outfit.top,outfit.bottom,outfit.dress,outfit.shoes,outfit.bag,outfit.hat,outfit.jewelry];
+  slots.filter(Boolean).forEach(item=>{
+    max+=60;
+    const tags=item.tags||[];
+    const hasPref=tags.some(t=>pref.includes(t));
+    const hasAvoid=tags.some(t=>avoid.includes(t));
+    if(hasAvoid) total+=5;
+    else if(hasPref) total+=60;
+    else total+=25;
+  });
+  // Salon bonus: makeup & nails matching
+  if(salonState.makeup?.id!=='none') { total+=20; max+=20; }
+  if(salonState.nails) { total+=15; max+=15; }
+  // Completeness bonus (at least 4 items)
+  const count=slots.filter(Boolean).length;
+  if(count>=4) total+=30;
+  return Math.min(total, 600);
+}
+
+function submitChallenge() {
+  clearInterval(challengeState.timer);
+  challengeState.active=false;
+  const sc=scoreOutfit();
+  challengeState.score=sc;
+  totalScore+=sc;
+  if(!isVip && sc>=300) {
+    isVip=true;
+    buildUI(); // Rebuild to show VIP content
+  }
+  saveGame();
+  buildChallengeContent(); redraw();
+}
+
+function scoreGrade(sc) {
+  if(sc>=450) return '👑 Fashion Icon — Flawless!';
+  if(sc>=350) return '💅 Style Star — Stunning!';
+  if(sc>=250) return '✨ Trend Setter — Chic!';
+  if(sc>=150) return '👗 Getting There — Keep styling!';
+  return '🧺 Try Again — More items help!';
+}
+
+// ── Tab navigation ─────────────────────────────────────────────────────────────
+function setTab(name) {
+  activeTab=name;
+  document.querySelectorAll('.ntb').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if(name==='lobby') { document.querySelectorAll('#tab-lobby .ctb').forEach(b=>{b.classList.toggle('active',b.textContent.toLowerCase().includes(lobbyCategory.slice(0,-1)));});buildLobbyGrid();}
+  if(name==='salon') buildSalonContent();
+  if(name==='challenge') buildChallengeContent();
+}
+
+document.getElementById('nav-tabs').addEventListener('click',e=>{
+  const btn=e.target.closest('.ntb'); if(!btn) return;
+  setTab(btn.dataset.tab);
+});
+
+// ── Canvas fit ─────────────────────────────────────────────────────────────────
 function fitCanvas() {
-  const area = document.getElementById('canvas-area');
-  const aw = area.clientWidth - 24;
-  const ah = area.clientHeight - 52;
-  const scale = Math.min(aw / W, ah / H);
-  canvas.style.width  = (W * scale) + 'px';
-  canvas.style.height = (H * scale) + 'px';
+  const area=document.getElementById('canvas-area');
+  const aw=area.clientWidth-24, ah=area.clientHeight-50;
+  const sc=Math.min(aw/W,ah/H);
+  canvas.style.width=(W*sc)+'px'; canvas.style.height=(H*sc)+'px';
 }
-window.addEventListener('resize', fitCanvas);
+window.addEventListener('resize',fitCanvas);
 fitCanvas();
 
-draw();
+// ── Desktop click handler (when controls not shown) ───────────────────────────
+if (!isTouch) {
+  // Show a simple sidebar for desktop (not implemented — tablet/desktop can use touch sim)
+  document.getElementById('controls').style.display='flex';
+  document.getElementById('controls').style.height='42vh';
+}
+
+// ── Loop ───────────────────────────────────────────────────────────────────────
+function loop() { redraw(); requestAnimationFrame(loop); }
+
+buildUI();
+loop();
 </script>
 </body>
 </html>
