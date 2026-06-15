@@ -107,29 +107,48 @@ const C = {
 
 // ── Grade zones (dip progress 0..1) ──────────────────────────────
 const GRADES = [
-  { max: 0.20, key: 'low',     label: 'TOO LITTLE', pts: 8,  stars: 1, color: '#64748b' },
-  { max: 0.40, key: 'good',    label: 'GOOD',       pts: 30, stars: 2, color: '#2563eb' },
-  { max: 0.60, key: 'perfect', label: 'PERFECT!',   pts: 60, stars: 3, color: '#16a34a' },
-  { max: 0.78, key: 'high',    label: 'TOO MUCH',   pts: 15, stars: 1, color: '#f59e0b' },
-  { max: 1.00, key: 'burnt',   label: 'BURNT! 🔥',  pts: 0,  stars: 0, color: '#dc2626' },
+  { max: 0.12, key: 'low',     label: 'Needs More!',    pts: 12, stars: 1, color: '#94a3b8' },
+  { max: 0.42, key: 'good',    label: 'Nicely Coated',  pts: 35, stars: 2, color: '#3b82f6' },
+  { max: 0.68, key: 'perfect', label: 'PERFECT! ✨',    pts: 60, stars: 3, color: '#16a34a' },
+  { max: 0.88, key: 'high',    label: 'Extra Choc! 🍫', pts: 28, stars: 2, color: '#f59e0b' },
+  { max: 1.00, key: 'burnt',   label: 'Oops! 🔥',       pts: 5,  stars: 1, color: '#ef4444' },
 ];
 function gradeOf(p) { return GRADES.find(g => p <= g.max) || GRADES.at(-1); }
 
+// ── Foods ─────────────────────────────────────────────────────────
+const FOODS = [
+  { emoji: '🍓', name: 'Strawberry' },
+  { emoji: '🍌', name: 'Banana'     },
+  { emoji: '🍇', name: 'Grapes'     },
+  { emoji: '🍒', name: 'Cherry'     },
+  { emoji: '🍊', name: 'Orange'     },
+  { emoji: '🍑', name: 'Peach'      },
+  { emoji: '🫐', name: 'Blueberry'  },
+  { emoji: '🍍', name: 'Pineapple'  },
+  { emoji: '🍎', name: 'Apple'      },
+  { emoji: '🥝', name: 'Kiwi'       },
+];
+
+function pickFood(exclude) {
+  const pool = exclude ? FOODS.filter(f => f !== exclude) : FOODS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ── State ─────────────────────────────────────────────────────────
-let state       = 'idle';   // idle | ready | dipping | result | gameover
+let state       = 'idle';
 let score       = 0;
 let combo       = 0;
 let timeLeft    = 60;
-let dipProg     = 0;        // 0..1
+let dipProg     = 0;
 let result      = null;
 let resultTimer = 0;
 let servedCount = 0;
 let bestScore   = +localStorage.getItem('sc_best') || 0;
+let currentFood = FOODS[0]; // strawberry on idle screen
 let particles   = [];
 let bubbles     = [];
 let steamTick   = 0;
 
-for (let i = 0; i < 9; i++) resetBubble({ x:0, y:0, r:0, vy:0, life:0 }, true);
 function resetBubble(b, init) {
   b.x    = 152 + Math.random() * 96;
   b.y    = init ? 290 + Math.random() * 70 : 355;
@@ -138,11 +157,7 @@ function resetBubble(b, init) {
   b.life = 0.6 + Math.random() * 0.4;
   return b;
 }
-// Actually, let's pre-fill bubbles array properly
-bubbles = [];
-for (let i = 0; i < 9; i++) {
-  bubbles.push(resetBubble({ x:0, y:0, r:0, vy:0, life:0 }, true));
-}
+bubbles = Array.from({ length: 9 }, () => resetBubble({ x:0, y:0, r:0, vy:0, life:0 }, true));
 
 const isTouch = window.matchMedia('(pointer: coarse)').matches;
 
@@ -169,22 +184,33 @@ function showControls() {
 
 // ── Input ─────────────────────────────────────────────────────────
 function onPress() {
-  if (state === 'idle')     { state = 'ready'; score = 0; combo = 0; timeLeft = 60; servedCount = 0; dipProg = 0; showControls(); }
-  else if (state === 'ready')   { state = 'dipping'; }
-  else if (state === 'gameover') { state = 'idle'; showControls(); }
+  if (state === 'idle') {
+    state = 'ready'; score = 0; combo = 0; timeLeft = 60; servedCount = 0; dipProg = 0;
+    currentFood = pickFood();
+    updateDipBtn();
+    showControls();
+  } else if (state === 'ready') {
+    state = 'dipping';
+  } else if (state === 'gameover') {
+    state = 'idle'; showControls();
+  }
 }
 function onRelease() {
   if (state !== 'dipping') return;
   result      = gradeOf(dipProg);
   const mult  = combo > 1 ? combo : 1;
   score      += result.pts * mult;
-  if (result.key === 'perfect' || result.key === 'good') combo++;
-  else combo = 0;
+  // Only completely bare dips break the combo
+  if (result.key === 'low') combo = 0; else combo++;
   servedCount++;
   if (result.key === 'perfect') burst(W / 2, strawY());
   state       = 'result';
-  resultTimer = 1.1;
+  resultTimer = 1.0;
   showControls();
+}
+
+function updateDipBtn() {
+  elDip.innerHTML = `${currentFood.emoji} &nbsp;HOLD TO DIP`;
 }
 
 // Mobile
@@ -361,61 +387,37 @@ function drawSkewer(sy) {
   ctx.fill();
 }
 
-function drawStrawberry(cx, cy, coat) {
-  const sz = 38;
+function drawFood(cx, cy, food, coat) {
+  const sz = 52;
 
-  // Leaves
-  ctx.fillStyle = '#15803d';
-  ctx.beginPath(); ctx.ellipse(cx - sz*0.22, cy - sz*0.55, sz*0.22, sz*0.11, -0.5, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(cx + sz*0.22, cy - sz*0.55, sz*0.22, sz*0.11, 0.5, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.62, sz*0.13, sz*0.2, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#166534';
-  ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.48, sz*0.24, sz*0.1, 0, 0, Math.PI*2); ctx.fill();
+  // 1. Base emoji
+  ctx.font = `${sz}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(food.emoji, cx, cy);
 
-  // Body (red)
-  ctx.fillStyle = C.red;
-  ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.05, sz*0.44, sz*0.52, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(cx - sz*0.22, cy + sz*0.38);
-  ctx.lineTo(cx, cy + sz*0.72);
-  ctx.lineTo(cx + sz*0.22, cy + sz*0.38);
-  ctx.closePath(); ctx.fill();
-
-  // Seeds
-  ctx.fillStyle = '#fde047';
-  const seeds = [[-0.18,-0.22],[0.14,-0.30],[0.24,0.00],[-0.24,0.06],[0.06,0.28],[-0.1,0.44],[0.19,0.40]];
-  for (const [sx, sy] of seeds) {
-    ctx.beginPath();
-    ctx.ellipse(cx + sx*sz, cy + sy*sz, sz*0.057, sz*0.04, 0.3, 0, Math.PI*2);
-    ctx.fill();
-  }
-  // Shine
-  ctx.fillStyle = 'rgba(255,255,255,0.22)';
-  ctx.beginPath(); ctx.ellipse(cx - sz*0.12, cy - sz*0.18, sz*0.14, sz*0.21, -0.3, 0, Math.PI*2); ctx.fill();
-
-  // Chocolate coating (rises from bottom as coat 0→1)
+  // 2. Chocolate coating over the bottom portion
   if (coat > 0.02) {
-    const clipTop = (cy + sz * 0.76) - coat * sz * 1.4;
+    const clipTop = cy + sz * 0.48 - coat * sz * 0.98;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(cx - sz, clipTop, sz * 2, sz * 2.5);
+    ctx.rect(cx - sz * 0.7, clipTop, sz * 1.4, sz * 1.6);
     ctx.clip();
-    ctx.fillStyle = C.choc;
-    ctx.beginPath(); ctx.ellipse(cx, cy - sz*0.05, sz*0.46, sz*0.54, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(42, 14, 0, 0.84)';
     ctx.beginPath();
-    ctx.moveTo(cx - sz*0.24, cy + sz*0.36);
-    ctx.lineTo(cx, cy + sz*0.74);
-    ctx.lineTo(cx + sz*0.24, cy + sz*0.36);
-    ctx.closePath(); ctx.fill();
-    // Drips
-    if (coat > 0.12) {
-      ctx.fillStyle = C.chocDrip;
-      ctx.beginPath(); ctx.ellipse(cx - sz*0.18, clipTop + 5, sz*0.065, sz*0.11, 0, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx + sz*0.22, clipTop + 8, sz*0.055, sz*0.09, 0, 0, Math.PI*2); ctx.fill();
-    }
+    ctx.ellipse(cx, cy + sz * 0.04, sz * 0.54, sz * 0.54, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
+    // Drips
+    if (coat > 0.16) {
+      ctx.fillStyle = C.chocDrip;
+      const db = cy + sz * 0.54;
+      ctx.beginPath(); ctx.ellipse(cx - sz*0.16, db + coat*sz*0.12, sz*0.06, sz*0.13, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + sz*0.20, db + coat*sz*0.09, sz*0.05, sz*0.10, 0, 0, Math.PI*2); ctx.fill();
+    }
   }
 }
+
 
 function drawMeter() {
   const mx = 346, my = 82, mw = 22, mh = 210;
@@ -428,11 +430,11 @@ function drawMeter() {
   ctx.clip();
   // Zone fills
   const zones = [
-    [0,    0.20, '#94a3b8'],
-    [0.20, 0.40, '#86efac'],
-    [0.40, 0.60, '#22c55e'],
-    [0.60, 0.78, '#fb923c'],
-    [0.78, 1.00, '#ef4444'],
+    [0,    0.12, '#94a3b8'],
+    [0.12, 0.42, '#86efac'],
+    [0.42, 0.68, '#22c55e'],
+    [0.68, 0.88, '#fb923c'],
+    [0.88, 1.00, '#ef4444'],
   ];
   for (const [f, t, col] of zones) {
     ctx.fillStyle = col;
@@ -491,11 +493,17 @@ function drawHud() {
   ctx.font = '600 10px -apple-system, sans-serif';
   ctx.fillText('TIME', W - 50, 80);
 
+  // Current food label (center, below combo)
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = C.sub;
+  ctx.font = '500 11px -apple-system, sans-serif';
+  ctx.fillText(currentFood.name, W / 2 - 10, 80);
+
   // Timer bar
   ctx.fillStyle = C.timerBg;
-  rr(18, 86, W - 36, 5, 3);
+  rr(18, 88, W - 36, 5, 3);
   ctx.fillStyle = timeLeft < 15 ? '#e11d48' : C.timerFg;
-  rr(18, 86, (W - 36) * Math.max(0, timeLeft / 60), 5, 3);
+  rr(18, 88, (W - 36) * Math.max(0, timeLeft / 60), 5, 3);
 }
 
 function drawResultOverlay() {
@@ -524,8 +532,8 @@ function drawIdleScreen() {
   ctx.fillStyle = C.ddpink;
   ctx.font = '700 30px -apple-system, sans-serif';
   ctx.fillText('Strawberry Café', W / 2, 128);
-  ctx.font = '28px serif';
-  ctx.fillText('🍓🍫', W / 2, 170);
+  ctx.font = '26px serif';
+  ctx.fillText('🍓🍒🍇🍌🍊🥝', W / 2, 170);
   ctx.fillStyle = C.dpink;
   ctx.font = '500 14px -apple-system, sans-serif';
   if (isTouch) {
@@ -605,7 +613,12 @@ function update(dt) {
 
   if (state === 'result') {
     resultTimer -= dt;
-    if (resultTimer <= 0) { dipProg = 0; result = null; state = 'ready'; showControls(); }
+    if (resultTimer <= 0) {
+      dipProg = 0; result = null; state = 'ready';
+      currentFood = pickFood(currentFood);
+      updateDipBtn();
+      showControls();
+    }
   }
 }
 
@@ -630,16 +643,16 @@ function draw() {
   const sy   = strawY();
   const coat = (state === 'dipping' || state === 'result') ? dipProg : 0;
 
-  drawSkewer(sy - 38 * 0.55);
+  drawSkewer(sy - 52 * 0.5);
   drawPot();
 
-  // Draw strawberry (clipped above liquid when submerged)
+  // Draw food (clipped above liquid when submerged)
   if (sy < POT_TOP - 20) {
-    drawStrawberry(W / 2, sy, coat);
+    drawFood(W / 2, sy, currentFood, coat);
   } else {
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, W, POT_TOP + 6); ctx.clip();
-    drawStrawberry(W / 2, sy, coat);
+    drawFood(W / 2, sy, currentFood, coat);
     ctx.restore();
   }
 
