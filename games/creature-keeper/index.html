@@ -670,7 +670,7 @@ function createCreature(defId) {
 function spawnEnemy() {
   const z = ZONES[zone];
   const w = z.waves[wave];
-  enemy = { ...w, curHp: w.hp };
+  enemy = { ...w, curHp: w.hp, atkTimer: 2.5 };
 }
 
 function doAutoAttack(c) {
@@ -708,6 +708,8 @@ function killEnemy() {
   if (wave >= zone_waves) { wave = 0; zone = (zone + 1) % ZONES.length; }
   const abs = zone * 10 + wave + 1;
   if (abs > bestWave) bestWave = abs;
+  // Partial heal on wave clear (20% of max HP)
+  party.forEach(c => { if (c) c.hp = Math.min(c.maxHp, c.hp + Math.floor(c.maxHp * 0.2)); });
   spawnEnemy();
   updateResources();
   updateHomeStat();
@@ -731,6 +733,18 @@ function gameTick() {
     c.atkTimer -= dt;
     if (c.atkTimer <= 0) { c.atkTimer += def.spd; doAutoAttack(c); }
     if (c.charge < 1) c.charge = Math.min(1, c.charge + dt / def.charge);
+  }
+  // Enemy attacks a random alive party member
+  if (enemy) {
+    enemy.atkTimer -= dt;
+    if (enemy.atkTimer <= 0) {
+      enemy.atkTimer = 2.5;
+      const alive = party.filter(c => c && c.hp > 0);
+      if (alive.length > 0) {
+        const target = alive[Math.floor(Math.random() * alive.length)];
+        target.hp = Math.max(0, target.hp - enemy.atk);
+      }
+    }
   }
   updateGrid();
   updateResources();
