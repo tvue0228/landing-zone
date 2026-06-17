@@ -298,16 +298,16 @@ const isTouch = window.matchMedia('(pointer:coarse)').matches;
 
 // ─── Pixel helpers ────────────────────────────────────────────────────────────
 // P(ctx, ox, oy, pw): returns a fill helper
-const P = (ox,oy,pw) => (x,y,w,h,c) => {
-  ctx.fillStyle = c;
-  ctx.fillRect(ox+x*pw, oy+y*pw, w*pw, h*pw);
+const P = (drawCtx,ox,oy,pw) => (x,y,w,h,c) => {
+  drawCtx.fillStyle = c;
+  drawCtx.fillRect(ox+x*pw, oy+y*pw, w*pw, h*pw);
 };
 
 // ─── Creature sprite drawing functions (12×10 grid, pw=4 → 48×40) ────────────
 // Grid: x=0..11, y=0..9
 
 function drawSlime(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [D,M,B,L] = ['#0a5c0a','#1aac1a','#26e026','#72ff72'];
   f(4,0,4,1,M); f(5,0,2,1,B);                    // top dome
   f(3,1,6,1,M); f(4,1,3,1,B);
@@ -321,7 +321,7 @@ function drawSlime(ctx, ox, oy, pw) {
 }
 
 function drawSprout(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   // leaf
   f(2,2,5,3,'#1aac1a'); f(3,1,3,2,'#26e026'); f(2,2,2,1,'#72ff72');
   // bud
@@ -333,7 +333,7 @@ function drawSprout(ctx, ox, oy, pw) {
 }
 
 function drawFoxkit(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [O,LO,W2,D2] = ['#d97706','#fbbf24','#fef3c7','#92400e'];
   // ears
   f(2,0,2,2,O); f(8,0,2,2,O);
@@ -356,7 +356,7 @@ function drawFoxkit(ctx, ox, oy, pw) {
 }
 
 function drawMushy(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   // cap
   f(3,0,6,1,'#dc2626'); f(2,1,8,1,'#dc2626'); f(1,2,10,3,'#dc2626');
   f(4,0,4,1,'#ef4444'); // highlight
@@ -373,7 +373,7 @@ function drawMushy(ctx, ox, oy, pw) {
 }
 
 function drawGolem(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [S,L2,D2,C] = ['#64748b','#94a3b8','#334155','#22d3ee'];
   // body block
   f(1,1,10,8,S);
@@ -391,7 +391,7 @@ function drawGolem(ctx, ox, oy, pw) {
 }
 
 function drawWisp(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [P2,L2,G,W2] = ['#7c3aed','#a855f7','#c4b5fd','#fff'];
   // tail (bottom)
   f(5,8,2,2,P2); f(4,7,1,2,P2); f(7,7,1,2,P2); f(3,7,1,1,P2); f(8,7,1,1,P2);
@@ -409,7 +409,7 @@ function drawWisp(ctx, ox, oy, pw) {
 }
 
 function drawShadowPup(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [D2,M2,G] = ['#0f0a1e','#1e1040','#fbbf24'];
   // ears
   f(3,0,2,2,D2); f(8,0,2,2,D2);
@@ -431,7 +431,7 @@ function drawShadowPup(ctx, ox, oy, pw) {
 }
 
 function drawScrapBot(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [S,L2,D2,O2] = ['#475569','#94a3b8','#1e293b','#f97316'];
   // antenna
   f(6,0,1,2,S); f(5,0,3,1,L2); f(6,0,1,1,O2);  // tip glows
@@ -476,7 +476,7 @@ const SUMMON_COST = 50;
 
 // ─── Enemy drawing functions (larger pw on canvas) ────────────────────────────
 function drawEnemyGoblin(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   // body (shifted down 1 row so feet reach row 10 = ground)
   f(3,5,6,5,'#4d7c0f'); f(3,5,6,1,'#84cc16');
   // head
@@ -495,7 +495,7 @@ function drawEnemyGoblin(ctx, ox, oy, pw) {
 }
 
 function drawEnemySlime(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   f(4,0,6,1,'#7c3aed'); f(3,1,8,1,'#7c3aed');
   f(2,2,10,2,'#7c3aed'); f(2,2,8,1,'#a855f7');
   f(1,4,12,3,'#7c3aed');
@@ -510,7 +510,7 @@ function drawEnemySlime(ctx, ox, oy, pw) {
 }
 
 function drawEnemyTroll(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [D,M,H] = ['#14532d','#166534','#22c55e'];
   // feet
   f(2,9,3,1,D); f(8,9,3,1,D);
@@ -532,7 +532,7 @@ function drawEnemyTroll(ctx, ox, oy, pw) {
 }
 
 function drawEnemyBoss(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [D,M,H,G] = ['#1e293b','#334155','#64748b','#22d3ee'];
   // base
   f(2,8,10,2,D);
@@ -553,7 +553,7 @@ function drawEnemyBoss(ctx, ox, oy, pw) {
 }
 
 function drawEnemyWraith(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   f(5,1,4,1,'#6d28d9');
   f(4,2,6,2,'#7c3aed'); f(4,2,4,1,'#a78bfa');
   f(3,3,8,4,'#7c3aed'); f(3,3,6,1,'#a78bfa');
@@ -566,7 +566,7 @@ function drawEnemyWraith(ctx, ox, oy, pw) {
 }
 
 function drawEnemyDrake(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [D,M,H,F] = ['#7f1d1d','#dc2626','#ef4444','#f97316'];
   f(4,5,7,5,M); f(4,5,7,1,H);
   f(7,2,4,4,M); f(7,2,3,1,H);
@@ -579,7 +579,7 @@ function drawEnemyDrake(ctx, ox, oy, pw) {
 }
 
 function drawEnemyCrystal(ctx, ox, oy, pw) {
-  const f = P(ox,oy,pw);
+  const f = P(ctx,ox,oy,pw);
   const [D,M,H,G] = ['#0e7490','#0891b2','#22d3ee','#a5f3fc'];
   f(3,4,8,6,M); f(3,4,8,1,H);
   f(4,1,6,3,M); f(4,1,6,1,H);
