@@ -759,8 +759,8 @@ function drawBg() {
 
 function drawEnemy() {
   if (!enemy) return;
-  const pw = 8;
-  const ew = 14*pw, eh = 10*pw; // 112 × 80px
+  const pw = 6;
+  const ew = 14*pw, eh = 10*pw; // 84 × 60px
   // Enemy stands on the ground line
   let ex = (W - ew) / 2;
   let ey = Math.floor(H * 0.75) - eh;
@@ -819,7 +819,7 @@ function renderCanvas() {
 }
 
 // ─── Battle grid UI ───────────────────────────────────────────────────────────
-const CELL_SPR_W = 48, CELL_SPR_H = 40;
+const CELL_SPR_W = 36, CELL_SPR_H = 30;
 
 function buildGrid() {
   const grid = document.getElementById('battle-grid');
@@ -854,7 +854,7 @@ function updateGrid() {
         </div>`;
       cell._lastUid = c.uid;
       const sc = document.getElementById('spr-'+s);
-      if (sc) { const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=false; def.draw(sctx,0,0,4); }
+      if (sc) { const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=false; def.draw(sctx,0,0,3); }
     }
     const hpEl=document.getElementById('hp-'+s), spEl=document.getElementById('sp-'+s), lvEl=document.getElementById('clvl-'+s);
     if (hpEl) hpEl.style.width = Math.max(0,(c.hp/c.maxHp)*100)+'%';
@@ -890,7 +890,7 @@ function buildCollection() {
       <button class="lvlup-small${canLvl?'':' cant-afford'}" data-uid="${c.uid}" data-action="lvl">❆${cost} LV UP</button>
       <button class="lvlup-small party-btn${inParty?' in':''}" data-uid="${c.uid}" data-action="party">${inParty?'REMOVE':(party.indexOf(null)===-1?'FULL':'ADD')}</button>`;
     const sc = card.querySelector('canvas');
-    const sctx = sc.getContext('2d'); sctx.imageSmoothingEnabled = false; def.draw(sctx,0,0,4);
+    const sctx = sc.getContext('2d'); sctx.imageSmoothingEnabled = false; def.draw(sctx,0,0,3);
     card.querySelector('.cc-main').addEventListener('click', () => openDetail(c.uid));
     card.querySelector('[data-action="lvl"]').addEventListener('click', e => { e.stopPropagation(); doLevelUp(c.uid); });
     card.querySelector('[data-action="party"]').addEventListener('click', e => { e.stopPropagation(); toggleParty(c); buildCollection(); });
@@ -915,7 +915,7 @@ function openDetail(uid) {
     evRows+=`<div class="ev-row"><span class="ev-stat">${label}</span><span class="ev-val">${statVal}</span><div class="ev-bar-wrap"><div class="ev-bar-fill" style="width:${(ev/252)*100}%;background:${col}"></div></div><button class="ev-plus-btn${canAdd?'':' dim'}" data-uid="${uid}" data-stat="${key}">+</button></div>`;
     ivRows+=`<div class="iv-row"><span class="iv-stat-lbl" style="font-size:5px;color:#4a3d7a">${label}</span><span class="iv-num" style="color:${ivColor(iv)}">${iv}</span><div class="iv-bar-wrap"><div class="iv-bar-fill" style="width:${(iv/31)*100}%;background:${ivColor(iv)}"></div></div></div>`;
   }
-  const spW=64, spH=56, pw=Math.floor(spW/14);
+  const spW=60, spH=50, pw=5;
   const grid = document.getElementById('coll-grid');
   grid.style.cssText = 'display:block;overflow-y:auto;grid-template-columns:unset;padding:0';
   grid.innerHTML = `<div class="detail-panel">
@@ -970,7 +970,7 @@ function doSummon() {
   const resultEl=document.getElementById('summon-result');
   resultEl.innerHTML='';
   const sc=document.createElement('canvas'); sc.width=CELL_SPR_W; sc.height=CELL_SPR_H; sc.style.imageRendering='pixelated';
-  const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=false; def.draw(sctx,0,0,4);
+  const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=false; def.draw(sctx,0,0,3);
   resultEl.appendChild(sc);
   const lbl=document.createElement('div'); lbl.style.color=rarityCol; lbl.textContent=def.name+' ['+def.rarity.toUpperCase()+']';
   resultEl.appendChild(lbl);
