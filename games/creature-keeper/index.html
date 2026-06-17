@@ -842,7 +842,7 @@ function updateGrid() {
     const cell = document.getElementById('cell-'+s);
     if (!cell) continue;
     if (!c) {
-      if (cell.dataset.filled) { cell.innerHTML=''; cell.className='cell empty'; cell.dataset.filled=''; }
+      if (cell.dataset.filled) { cell.innerHTML=''; cell.className='cell empty'; cell.dataset.filled=''; cell._lastUid=null; }
       continue;
     }
     const def = DEFS.find(d => d.id === c.defId);
@@ -987,6 +987,7 @@ document.getElementById('btn-summon').addEventListener('click', doSummon);
 function switchTab(name) {
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='tab-'+name));
+  if (name==='battle') updateGrid();
   if (name==='collection') { detailUid=null; buildCollection(); }
   if (name==='home') updateHomeStat();
 }
