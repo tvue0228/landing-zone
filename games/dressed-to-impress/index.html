@@ -593,7 +593,7 @@ function drawSkinBase() {
   ctx.fillStyle = sk;
   ctx.beginPath();
   // Upper arc: left → top → right (anticlockwise in canvas Y-down = through top)
-  ctx.arc(hcx, hcy - 4, B.hr + 1, Math.PI, 0, true);
+  ctx.arc(hcx, hcy - 4, B.hr + 1, Math.PI, 0);
   // Right cheek flares then tapers toward jaw
   ctx.bezierCurveTo(hcx + B.hr + 4, hcy + 12, hcx + 22, hcy + 22, hcx + 14, hcy + B.hr + 1);
   // Right jaw → pointed chin
@@ -610,79 +610,6 @@ function drawSkinBase() {
   ctx.strokeStyle = 'rgba(160,88,50,0.12)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.arc(hcx - B.hr + 1, hcy + 2, 4, 0.5, Math.PI*1.5); ctx.stroke();
   ctx.beginPath(); ctx.arc(hcx + B.hr - 1, hcy + 2, 4, -0.5, Math.PI*0.5); ctx.stroke();
-
-  // ── ANIME FACE FEATURES ──────────────────────────────────────────────────
-  const eyeY = hcy - 2;
-  const leX = hcx - 17, reX = hcx + 17;
-  const eyeW = 11, eyeH = 9;
-
-  // Eyebrows (thin arched)
-  ctx.strokeStyle = '#3d1f08'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(leX - 12, eyeY - 16); ctx.quadraticCurveTo(leX - 1, eyeY - 21, leX + 10, eyeY - 17); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(reX - 10, eyeY - 17); ctx.quadraticCurveTo(reX + 1, eyeY - 21, reX + 12, eyeY - 16); ctx.stroke();
-
-  // Eye whites
-  ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
-
-  // Left iris + pupil clipped to eye white
-  ctx.save();
-  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
-  ctx.fillStyle = '#6b4fa0';
-  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#9b72d8';
-  ctx.beginPath(); ctx.arc(leX - 1, eyeY - 0.5, 5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#150922';
-  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
-
-  // Right iris + pupil
-  ctx.save();
-  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
-  ctx.fillStyle = '#6b4fa0';
-  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#9b72d8';
-  ctx.beginPath(); ctx.arc(reX - 1, eyeY - 0.5, 5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#150922';
-  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
-
-  // Eye shine highlights
-  ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.ellipse(leX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(leX + 4, eyeY + 3, 1.2, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(reX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(reX + 4, eyeY + 3, 1.2, 0, Math.PI*2); ctx.fill();
-
-  // Upper eyelash (thick, top half of ellipse)
-  ctx.strokeStyle = '#12070f'; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
-  // Corner lash flicks
-  ctx.lineWidth = 1.6;
-  ctx.beginPath(); ctx.moveTo(leX - eyeW, eyeY); ctx.lineTo(leX - eyeW - 3, eyeY - 4); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(reX + eyeW, eyeY); ctx.lineTo(reX + eyeW + 3, eyeY - 4); ctx.stroke();
-  // Lower lash (thin, bottom half)
-  ctx.strokeStyle = '#4a2a3a'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW - 1, eyeH - 2, 0, 0, Math.PI); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW - 1, eyeH - 2, 0, 0, Math.PI); ctx.stroke();
-  ctx.lineCap = 'butt';
-
-  // Tiny anime nose (two subtle shadow dots)
-  ctx.fillStyle = 'rgba(175,95,65,0.28)';
-  ctx.beginPath(); ctx.arc(hcx - 3, hcy + 18, 2.2, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(hcx + 3, hcy + 18, 2.2, 0, Math.PI*2); ctx.fill();
-
-  // Small lips
-  ctx.strokeStyle = 'rgba(195,85,90,0.65)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(hcx - 7, hcy + 27); ctx.quadraticCurveTo(hcx, hcy + 31, hcx + 7, hcy + 27); ctx.stroke();
-  ctx.lineCap = 'butt';
-
-  // Blush (soft anime cheek flush)
-  ctx.fillStyle = 'rgba(255,148,120,0.18)';
-  ctx.beginPath(); ctx.ellipse(hcx - 23, eyeY + 14, 12, 6, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(hcx + 23, eyeY + 14, 12, 6, 0, 0, Math.PI*2); ctx.fill();
 
   // ── LEGS ─────────────────────────────────────────────────────────────────
   ctx.fillStyle = sk;
@@ -1167,60 +1094,95 @@ function drawHair(hairS) {
 
 function drawFace(makeup) {
   const mk = makeup || MAKEUP_LOOKS[1];
-  const hx=B.hcx, hy=B.hcy;
-  // Eyes
-  const eyeY = hy+2;
-  const eyeXL = hx-10, eyeXR = hx+10;
+  const hx = B.hcx, hy = B.hcy;
+  const eyeY = hy + 2;
+  const leX = hx - 16, reX = hx + 16;
+  const eyeW = 11, eyeH = 9;
+
   // Eyeshadow
   if (mk.eyeShadow) {
-    ellipseF(eyeXL, eyeY-2, 9, 5, mk.eyeShadow+'88');
-    ellipseF(eyeXR, eyeY-2, 9, 5, mk.eyeShadow+'88');
+    ellipseF(leX, eyeY - 1, eyeW + 1, eyeH + 2, mk.eyeShadow + '66');
+    ellipseF(reX, eyeY - 1, eyeW + 1, eyeH + 2, mk.eyeShadow + '66');
   }
+
   // Eye whites
-  ellipseF(eyeXL, eyeY, 7, 5, '#fff');
-  ellipseF(eyeXR, eyeY, 7, 5, '#fff');
-  // Pupils
-  ellipseF(eyeXL, eyeY, 3.5, 4, '#1a0a00');
-  ellipseF(eyeXR, eyeY, 3.5, 4, '#1a0a00');
-  // Shine
-  ellipseF(eyeXL+1, eyeY-1, 1.5, 1.5, '#fff');
-  ellipseF(eyeXR+1, eyeY-1, 1.5, 1.5, '#fff');
-  // Lashes (simple lines)
-  ctx.strokeStyle = '#1a0a00'; ctx.lineWidth = 1.2;
-  for(let i=-2;i<=2;i++) {
-    ctx.beginPath();
-    ctx.moveTo(eyeXL+i*2.5, eyeY-5);
-    ctx.lineTo(eyeXL+i*2.8, eyeY-8+(Math.abs(i)*0.5));
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(eyeXR+i*2.5, eyeY-5);
-    ctx.lineTo(eyeXR+i*2.8, eyeY-8+(Math.abs(i)*0.5));
-    ctx.stroke();
-  }
-  // Eyebrows
-  ctx.strokeStyle = '#3d1a08'; ctx.lineWidth = 1.8;
-  ctx.beginPath(); ctx.moveTo(eyeXL-7,eyeY-9); ctx.quadraticCurveTo(eyeXL,eyeY-12,eyeXL+7,eyeY-9); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(eyeXR-7,eyeY-9); ctx.quadraticCurveTo(eyeXR,eyeY-12,eyeXR+7,eyeY-9); ctx.stroke();
-  // Nose
-  ctx.strokeStyle = SKIN2; ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.moveTo(hx-3,hy+6); ctx.lineTo(hx-3,hy+12); ctx.lineTo(hx+3,hy+12); ctx.stroke();
-  // Blush
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
+
+  // Left iris + pupil (clipped)
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#6b4fa0';
+  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#9b72d8';
+  ctx.beginPath(); ctx.arc(leX - 1, eyeY, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#150922';
+  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Right iris + pupil
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#6b4fa0';
+  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#9b72d8';
+  ctx.beginPath(); ctx.arc(reX - 1, eyeY, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#150922';
+  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Eye shine
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(leX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(leX + 4, eyeY + 3, 1.2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(reX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(reX + 4, eyeY + 3, 1.2, 0, Math.PI*2); ctx.fill();
+
+  // Upper eyelash (top half arc, drawn on top of hair)
+  ctx.strokeStyle = '#12070f'; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(leX - eyeW, eyeY); ctx.lineTo(leX - eyeW - 3, eyeY - 4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(reX + eyeW, eyeY); ctx.lineTo(reX + eyeW + 3, eyeY - 4); ctx.stroke();
+  // Lower lash
+  ctx.strokeStyle = '#4a2a3a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW - 1, eyeH - 2, 0, 0, Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW - 1, eyeH - 2, 0, 0, Math.PI); ctx.stroke();
+
+  // Eyebrows (drawn after hair so always visible)
+  ctx.strokeStyle = '#3d1f08'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(leX - 12, eyeY - 14); ctx.quadraticCurveTo(leX, eyeY - 19, leX + 10, eyeY - 14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(reX - 10, eyeY - 14); ctx.quadraticCurveTo(reX, eyeY - 19, reX + 12, eyeY - 14); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Nose (tiny two-dot shadow)
+  ctx.fillStyle = 'rgba(175,95,65,0.28)';
+  ctx.beginPath(); ctx.arc(hx - 3, hy + 18, 2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx + 3, hy + 18, 2, 0, Math.PI*2); ctx.fill();
+
+  // Blush (base soft flush + makeup blush overlay)
+  ctx.fillStyle = 'rgba(255,148,120,0.15)';
+  ctx.beginPath(); ctx.ellipse(hx - 22, eyeY + 14, 12, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx + 22, eyeY + 14, 12, 6, 0, 0, Math.PI*2); ctx.fill();
   if (mk.blush) {
-    ellipseF(eyeXL-3, hy+9, 9, 5, '#f9a8d4aa');
-    ellipseF(eyeXR+3, hy+9, 9, 5, '#f9a8d4aa');
+    ctx.fillStyle = '#f9a8d466';
+    ctx.beginPath(); ctx.ellipse(hx - 22, eyeY + 14, 15, 8, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hx + 22, eyeY + 14, 15, 8, 0, 0, Math.PI*2); ctx.fill();
   }
+
   // Lips
-  ctx.fillStyle = mk.lipCol;
+  ctx.fillStyle = mk.lipCol || 'rgba(195,85,90,0.75)';
   ctx.beginPath();
-  ctx.moveTo(hx-9, hy+16);
-  ctx.quadraticCurveTo(hx-4, hy+13, hx, hy+15);
-  ctx.quadraticCurveTo(hx+4, hy+13, hx+9, hy+16);
-  ctx.quadraticCurveTo(hx+4, hy+21, hx, hy+21);
-  ctx.quadraticCurveTo(hx-4, hy+21, hx-9, hy+16);
+  ctx.moveTo(hx - 8, hy + 28);
+  ctx.quadraticCurveTo(hx - 3, hy + 25, hx, hy + 27);
+  ctx.quadraticCurveTo(hx + 3, hy + 25, hx + 8, hy + 28);
+  ctx.quadraticCurveTo(hx + 3, hy + 33, hx, hy + 33);
+  ctx.quadraticCurveTo(hx - 3, hy + 33, hx - 8, hy + 28);
   ctx.fill();
-  // Cupid's bow highlight
-  ctx.strokeStyle = '#fff5'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(hx-5,hy+15); ctx.quadraticCurveTo(hx,hy+13,hx+5,hy+15); ctx.stroke();
+  ctx.strokeStyle = '#fff5'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(hx - 4, hy + 27); ctx.quadraticCurveTo(hx, hy + 25, hx + 4, hy + 27); ctx.stroke();
 }
 
 function drawHUD() {
@@ -1286,8 +1248,8 @@ function redraw() {
     drawTop(outfit.top);
   }
   if (outfit.hat) drawHat(outfit.hat);
-  drawFace(salonState.makeup);
   drawHair(salonState.hair);
+  drawFace(salonState.makeup);
   if (outfit.jewelry) drawJewelry(outfit.jewelry);
   if (salonState.nails) drawNails(salonState.nails);
   if (outfit.bag && outfit.bag.bstyle === 'backpack') drawBag(outfit.bag);
