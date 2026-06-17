@@ -141,6 +141,92 @@ body{
   #controls{display:flex;height:42vh;}
 }
 .hidden{display:none!important;}
+/* ── Resources bar ── */
+#res-bar{
+  display:flex;justify-content:space-around;align-items:center;
+  padding:4px 8px;border-bottom:1px solid #1a1840;
+  flex-shrink:0;background:#0a0818;
+  font-family:'Press Start 2P',monospace;
+}
+.res-item{font-size:7px;display:flex;align-items:center;gap:4px;}
+.res-gold{color:#fbbf24;} .res-shard{color:#22d3ee;} .res-ev{color:#a78bfa;}
+/* ── Updated collection card ── */
+.ccard{padding:0;gap:0;flex-direction:column;overflow:hidden;}
+.cc-main{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;flex:1;cursor:pointer;}
+.cc-main:active{background:#1a1840;}
+.lvlup-small{
+  width:100%;border:none;border-top:1px solid #1a1840;
+  background:#0d0b1e;color:#22d3ee;
+  font-family:'Press Start 2P',monospace;
+  font-size:5px;padding:3px 2px;cursor:pointer;
+  touch-action:none;line-height:1.5;letter-spacing:.03em;
+}
+.lvlup-small.cant-afford{color:#2a2560;}
+.lvlup-small.party-btn{color:#22c55e;}
+.lvlup-small.party-btn.in{color:#ef4444;}
+/* ── Creature detail panel ── */
+.detail-panel{
+  display:flex;flex-direction:column;height:100%;overflow:hidden;
+  padding:5px 6px;gap:4px;
+}
+.detail-header{
+  display:flex;align-items:flex-start;gap:6px;flex-shrink:0;
+}
+.detail-back{
+  background:#1a1840;border:1px solid #2a2560;
+  color:#a78bfa;font-family:'Press Start 2P',monospace;
+  font-size:6px;padding:4px 6px;border-radius:4px;
+  cursor:pointer;touch-action:none;flex-shrink:0;
+}
+.detail-title{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.dn-name{font-size:9px;color:#e2d9f3;}
+.dn-lv{font-size:6px;color:#7c6faa;}
+.dn-type{font-size:5px;color:#4a3d7a;letter-spacing:.04em;}
+.detail-body{display:flex;gap:6px;flex:1;min-height:0;}
+.detail-left{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  flex-shrink:0;width:78px;
+}
+.detail-left canvas{image-rendering:pixelated;}
+.det-type-badge{
+  font-size:5px;color:#7c6faa;padding:2px 4px;
+  background:#1a1840;border-radius:3px;text-align:center;
+}
+.detail-right{flex:1;display:flex;flex-direction:column;gap:4px;overflow-y:auto;min-height:0;}
+.detail-right::-webkit-scrollbar{display:none;}
+.detail-section-lbl{font-size:5px;color:#2a2560;letter-spacing:.06em;flex-shrink:0;}
+.ev-row{display:flex;align-items:center;gap:3px;flex-shrink:0;margin-bottom:1px;}
+.ev-stat{font-size:6px;color:#7c6faa;width:22px;flex-shrink:0;}
+.ev-val{font-size:7px;color:#e2d9f3;width:26px;text-align:right;flex-shrink:0;}
+.ev-bar-wrap{flex:1;height:5px;background:#0d0b1e;border-radius:2px;overflow:hidden;}
+.ev-bar-fill{height:100%;border-radius:2px;transition:width .2s;}
+.ev-plus-btn{
+  width:16px;height:16px;
+  background:#1a1840;border:1px solid #3a2d7a;
+  color:#a78bfa;font-family:'Press Start 2P',monospace;font-size:9px;
+  border-radius:3px;cursor:pointer;touch-action:none;
+  display:flex;align-items:center;justify-content:center;
+  padding:0;flex-shrink:0;line-height:1;
+}
+.ev-plus-btn.dim{color:#2a2560;border-color:#1a1840;}
+.iv-row{display:flex;align-items:center;gap:3px;flex-shrink:0;margin-bottom:3px;}
+.iv-stat-lbl{width:22px;flex-shrink:0;}
+.iv-num{font-size:5px;width:26px;text-align:right;flex-shrink:0;}
+.iv-bar-wrap{flex:1;height:3px;background:#0d0b1e;border-radius:1px;overflow:hidden;}
+.iv-bar-fill{height:100%;border-radius:1px;}
+.ev-num{font-size:5px;color:#2a2560;width:26px;text-align:right;flex-shrink:0;}
+.detail-footer{flex-shrink:0;display:flex;flex-direction:column;gap:3px;}
+.ev-total-row{font-size:5px;color:#3a2d7a;text-align:center;letter-spacing:.03em;}
+.lvlup-big{
+  border:none;border-radius:6px;padding:8px;
+  background:linear-gradient(135deg,#4c1d95,#7c3aed);
+  color:#fbbf24;font-family:'Press Start 2P',monospace;
+  font-size:7px;cursor:pointer;touch-action:none;
+  box-shadow:0 2px 0 #2d1a6e;transition:transform .08s;
+  letter-spacing:.03em;
+}
+.lvlup-big:active{transform:translateY(1px);box-shadow:0 1px 0 #2d1a6e;}
+.lvlup-big.dim{background:#1a1840;color:#2a2560;box-shadow:none;}
 </style>
 </head>
 <body>
@@ -151,6 +237,11 @@ body{
 </div>
 
 <div id="controls">
+  <div id="res-bar">
+    <span class="res-item res-gold">💰 <span id="gold-count">0</span></span>
+    <span class="res-item res-shard">✦ <span id="shard-count">0</span></span>
+    <span class="res-item res-ev">★ <span id="ev-count">0</span></span>
+  </div>
   <nav id="nav">
     <button class="nb active" data-tab="battle">⚔️<span>BATTLE</span></button>
     <button class="nb" data-tab="summon">🥚<span>SUMMON</span></button>
@@ -165,7 +256,7 @@ body{
     <!-- Summon panel -->
     <div class="panel" id="tab-summon">
       <div class="summon-wrap">
-        <div class="gold-display">💰 <span id="gold-count">0</span> GOLD</div>
+        <div class="gold-display">💰 <span id="summon-gold">0</span> GOLD</div>
         <button class="egg-btn" id="btn-summon">🥚</button>
         <div class="summon-cost">50 GOLD PER SUMMON</div>
         <div class="summon-result" id="summon-result"></div>
@@ -356,21 +447,21 @@ function drawScrapBot(ctx, ox, oy, pw) {
 
 // ─── Creature definitions ─────────────────────────────────────────────────────
 const DEFS = [
-  {id:'slime',     name:'SLIME',    type:'forest', rarity:'common',   col:'#1aac1a',
+  {id:'slime',     name:'SLIME',    type:'forest', rarity:'common',   col:'#1aac1a', ivBias:'hp',
    atk:8,  def:4, hp:90,  spd:2.5, charge:8,  spec:'BOUNCE',   sfx:'dmg3x',  evolveAt:15, evolvesTo:'megaslime', draw:drawSlime},
-  {id:'sprout',    name:'SPROUT',   type:'forest', rarity:'common',   col:'#22c55e',
+  {id:'sprout',    name:'SPROUT',   type:'forest', rarity:'common',   col:'#22c55e', ivBias:'def',
    atk:6,  def:6, hp:100, spd:3.0, charge:10, spec:'BLOOM',    sfx:'dmg3x',  evolveAt:null,evolvesTo:null, draw:drawSprout},
-  {id:'foxkit',    name:'FOXKIT',   type:'forest', rarity:'uncommon', col:'#d97706',
+  {id:'foxkit',    name:'FOXKIT',   type:'forest', rarity:'uncommon', col:'#d97706', ivBias:'atk',
    atk:14, def:3, hp:70,  spd:1.8, charge:7,  spec:'SWIFT',    sfx:'dmg2x',  evolveAt:12, evolvesTo:'elderfox', draw:drawFoxkit},
-  {id:'mushy',     name:'MUSHY',    type:'forest', rarity:'common',   col:'#dc2626',
+  {id:'mushy',     name:'MUSHY',    type:'forest', rarity:'common',   col:'#dc2626', ivBias:'def',
    atk:7,  def:8, hp:110, spd:3.5, charge:12, spec:'SPORES',   sfx:'dmg2x',  evolveAt:null,evolvesTo:null, draw:drawMushy},
-  {id:'golem',     name:'GOLEM',    type:'ruins',  rarity:'common',   col:'#64748b',
+  {id:'golem',     name:'GOLEM',    type:'ruins',  rarity:'common',   col:'#64748b', ivBias:'def',
    atk:12, def:12,hp:150, spd:4.0, charge:14, spec:'SLAM',     sfx:'dmg4x',  evolveAt:null,evolvesTo:null, draw:drawGolem},
-  {id:'wisp',      name:'WISP',     type:'ruins',  rarity:'uncommon', col:'#a855f7',
+  {id:'wisp',      name:'WISP',     type:'ruins',  rarity:'uncommon', col:'#a855f7', ivBias:'atk',
    atk:16, def:2, hp:60,  spd:2.0, charge:9,  spec:'BURST',    sfx:'dmg3x',  evolveAt:10, evolvesTo:null, draw:drawWisp},
-  {id:'shadowpup', name:'SHAD-PUP', type:'void',   rarity:'uncommon', col:'#1e1040',
+  {id:'shadowpup', name:'SHAD-PUP', type:'void',   rarity:'uncommon', col:'#1e1040', ivBias:'atk',
    atk:18, def:5, hp:80,  spd:2.2, charge:8,  spec:'FANG',     sfx:'dmg3x',  evolveAt:null,evolvesTo:null, draw:drawShadowPup},
-  {id:'scrapbot',  name:'SCRAPBOT', type:'waste',  rarity:'common',   col:'#475569',
+  {id:'scrapbot',  name:'SCRAPBOT', type:'waste',  rarity:'common',   col:'#475569', ivBias:'hp',
    atk:10, def:10,hp:120, spd:3.2, charge:11, spec:'ZAPPER',   sfx:'dmg3x',  evolveAt:null,evolvesTo:null, draw:drawScrapBot},
 ];
 
@@ -488,38 +579,93 @@ const ZONES = [
 ];
 
 // ─── State ─────────────────────────────────────────────────────────────────────
-let gold = 0, zone = 0, wave = 0, bestWave = 1;
-let party = Array(9).fill(null);   // creature instances or null
-let collection = [];               // all owned creature instances
+let gold = 0, shards = 0, evPoints = 0;
+let zone = 0, wave = 0, bestWave = 1;
+let party = Array(9).fill(null);
+let collection = [];
 let enemy = null;
 let floats = [];
-let hitFlash = 0; // frames remaining for enemy flash
+let hitFlash = 0;
 let nextId = 1;
+let detailUid = null;
+
+// ─── IV / EV / Stat formulas ──────────────────────────────────────────────────
+function rollIV(bias, stat) {
+  if (bias === stat) return 20 + Math.floor(Math.random() * 12);
+  return Math.floor(Math.random() * 32);
+}
+function ivColor(iv) {
+  if (iv >= 28) return '#22c55e';
+  if (iv >= 21) return '#3b82f6';
+  if (iv >= 11) return '#f59e0b';
+  return '#ef4444';
+}
+function getStat0(base, iv, ev, level) {
+  return Math.floor(base * (1 + 0.08 * (level - 1)) * (1 + iv / 62)) + Math.floor(ev / 4);
+}
+function getStat(c, stat) {
+  const dfn = DEFS.find(d => d.id === c.defId);
+  const ivMap = {atk:c.ivAtk, def:c.ivDef, hp:c.ivHp, spd:c.ivSpd};
+  const evMap = {atk:c.evAtk||0, def:c.evDef||0, hp:c.evHp||0, spd:c.evSpd||0};
+  return getStat0(dfn[stat], ivMap[stat]||0, evMap[stat]||0, c.level);
+}
+function calcAtk(c) { return getStat(c, 'atk'); }
+
+// ─── Level-up / EV ────────────────────────────────────────────────────────────
+function levelUpCost(c) {
+  const dfn = DEFS.find(d => d.id === c.defId);
+  const mult = {common:1, uncommon:1.8, rare:3, epic:6}[dfn.rarity] || 1;
+  return Math.floor(20 * Math.pow(1.2, c.level - 1) * mult);
+}
+function doLevelUp(uid) {
+  const c = collection.find(c => c.uid === uid);
+  if (!c) return;
+  const cost = levelUpCost(c);
+  if (shards < cost) return;
+  shards -= cost;
+  c.level++;
+  c.maxHp = getStat(c, 'hp');
+  c.hp = Math.min(c.hp, c.maxHp);
+  updateResources();
+  if (detailUid === uid) openDetail(uid); else buildCollection();
+  saveGame();
+}
+function addEV(uid, stat) {
+  const c = collection.find(c => c.uid === uid);
+  if (!c || evPoints < 1) return;
+  const key = 'ev' + stat.charAt(0).toUpperCase() + stat.slice(1);
+  const total = (c.evAtk||0) + (c.evDef||0) + (c.evHp||0) + (c.evSpd||0);
+  if (total >= 510 || (c[key]||0) >= 252) return;
+  evPoints--;
+  c[key] = (c[key]||0) + 4;
+  if (stat === 'hp') { c.maxHp = getStat(c, 'hp'); c.hp = Math.min(c.hp, c.maxHp); }
+  updateResources();
+  openDetail(uid);
+  saveGame();
+}
 
 function createCreature(defId) {
   const def = DEFS.find(d => d.id === defId);
   if (!def) return null;
-  return {
-    uid: nextId++,
-    defId,
-    level: 1,
-    hp: def.hp,
-    maxHp: def.hp,
-    charge: 0,
-    atkTimer: def.spd * (0.5 + Math.random() * 0.5), // stagger starts
-    slot: null,
+  const ivAtk = rollIV(def.ivBias, 'atk');
+  const ivDef = rollIV(def.ivBias, 'def');
+  const ivHp  = rollIV(def.ivBias, 'hp');
+  const ivSpd = rollIV(def.ivBias, 'spd');
+  const c = {
+    uid: nextId++, defId, level: 1,
+    ivAtk, ivDef, ivHp, ivSpd,
+    evAtk: 0, evDef: 0, evHp: 0, evSpd: 0,
+    charge: 0, atkTimer: def.spd * (0.5 + Math.random() * 0.5), slot: null,
   };
+  c.maxHp = getStat(c, 'hp');
+  c.hp = c.maxHp;
+  return c;
 }
 
 function spawnEnemy() {
   const z = ZONES[zone];
   const w = z.waves[wave];
-  enemy = { ...w, curHp: w.hp, flashTimer: 0 };
-}
-
-function calcAtk(c) {
-  const def = DEFS.find(d => d.id === c.defId);
-  return Math.floor(def.atk * (1 + 0.12 * (c.level - 1)));
+  enemy = { ...w, curHp: w.hp };
 }
 
 function doAutoAttack(c) {
@@ -535,42 +681,35 @@ function doSpecial(c) {
   if (!enemy || c.charge < 1) return;
   const def = DEFS.find(d => d.id === c.defId);
   let dmg = calcAtk(c);
-  if (def.sfx === 'dmg3x') dmg *= 3;
-  else if (def.sfx === 'dmg4x') dmg *= 4;
+  if (def.sfx === 'dmg4x') dmg *= 4;
+  else if (def.sfx === 'dmg3x') dmg *= 3;
   else if (def.sfx === 'dmg2x') dmg *= 2;
   enemy.curHp -= dmg;
   c.charge = 0;
   hitFlash = 12;
-  spawnFloat(dmg, '#fbbf24', true);
+  spawnFloat(dmg+'!', '#fbbf24', true);
   if (enemy.curHp <= 0) killEnemy();
 }
 
 function killEnemy() {
   gold += enemy.gold;
+  const earnedShards = enemy.boss ? 20 : Math.max(2, Math.floor(enemy.hp / 20));
+  const earnedEV = enemy.boss ? 10 : Math.max(1, Math.floor(enemy.hp / 35));
+  shards += earnedShards;
+  evPoints += earnedEV;
+  spawnFloat('+' + earnedShards + '❆', '#22d3ee');
   wave++;
   const zone_waves = ZONES[zone].waves.length;
-  if (wave >= zone_waves) {
-    wave = 0;
-    zone = (zone + 1) % ZONES.length;
-  }
+  if (wave >= zone_waves) { wave = 0; zone = (zone + 1) % ZONES.length; }
   const abs = zone * 10 + wave + 1;
   if (abs > bestWave) bestWave = abs;
   spawnEnemy();
+  updateResources();
   updateHomeStat();
 }
 
 function spawnFloat(val, col, big=false) {
-  floats.push({
-    x: W/2 + (Math.random()-0.5)*40,
-    y: H*0.45,
-    val: big ? def_special_label(val) : val,
-    col, big,
-    life: 1.0,
-  });
-}
-
-function def_special_label(val) {
-  return val + '!';
+  floats.push({ x: W/2 + (Math.random()-0.5)*40, y: H*0.45, val, col, big, life: 1.0 });
 }
 
 // ─── Game loop ────────────────────────────────────────────────────────────────
@@ -580,25 +719,16 @@ function gameTick() {
   const now = performance.now();
   const dt = Math.min((now - lastTick) / 1000, 0.2);
   lastTick = now;
-
   for (let s = 0; s < 9; s++) {
     const c = party[s];
     if (!c || c.hp <= 0) continue;
     const def = DEFS.find(d => d.id === c.defId);
-
     c.atkTimer -= dt;
-    if (c.atkTimer <= 0) {
-      c.atkTimer += def.spd;
-      doAutoAttack(c);
-    }
-
-    if (c.charge < 1) {
-      c.charge = Math.min(1, c.charge + dt / def.charge);
-    }
+    if (c.atkTimer <= 0) { c.atkTimer += def.spd; doAutoAttack(c); }
+    if (c.charge < 1) c.charge = Math.min(1, c.charge + dt / def.charge);
   }
-
   updateGrid();
-  updateGoldDisplay();
+  updateResources();
 }
 
 setInterval(gameTick, 80);
@@ -606,38 +736,23 @@ setInterval(gameTick, 80);
 // ─── Canvas rendering ─────────────────────────────────────────────────────────
 function drawBg() {
   const z = ZONES[zone];
-  // Sky gradient
   const grd = ctx.createLinearGradient(0,0,0,H*0.75);
-  grd.addColorStop(0, z.bgTop);
-  grd.addColorStop(1, z.bgBot);
-  ctx.fillStyle = grd;
-  ctx.fillRect(0,0,W,H);
-  // Ground
-  ctx.fillStyle = z.ground;
-  ctx.fillRect(0, H*0.75, W, H*0.25);
-  // Pixel ground line
-  ctx.fillStyle = '#ffffff18';
-  ctx.fillRect(0, Math.floor(H*0.75), W, 2);
-  // Zone-specific decorations
+  grd.addColorStop(0, z.bgTop); grd.addColorStop(1, z.bgBot);
+  ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = z.ground; ctx.fillRect(0, H*0.75, W, H*0.25);
+  ctx.fillStyle = '#ffffff18'; ctx.fillRect(0, Math.floor(H*0.75), W, 2);
   if (zone === 0) {
-    // pixel trees
     for (let i=0; i<4; i++) {
       const tx = 20 + i*90;
-      ctx.fillStyle = '#0a2e0a';
-      ctx.fillRect(tx, H*0.75-40, 8, 40); // trunk
-      ctx.fillStyle = '#0d4a0d';
-      ctx.fillRect(tx-12, H*0.75-80, 32, 44);
-      ctx.fillStyle = '#0f5c0f';
-      ctx.fillRect(tx-8, H*0.75-96, 24, 20);
+      ctx.fillStyle = '#0a2e0a'; ctx.fillRect(tx, H*0.75-40, 8, 40);
+      ctx.fillStyle = '#0d4a0d'; ctx.fillRect(tx-12, H*0.75-80, 32, 44);
+      ctx.fillStyle = '#0f5c0f'; ctx.fillRect(tx-8, H*0.75-96, 24, 20);
     }
   } else {
-    // ruins pillars
     for (let i=0; i<3; i++) {
       const tx = 30 + i*130;
-      ctx.fillStyle = '#1e1b4b';
-      ctx.fillRect(tx, H*0.3, 18, H*0.45);
-      ctx.fillStyle = '#2e2b5b';
-      ctx.fillRect(tx-4, H*0.28, 26, 10);
+      ctx.fillStyle = '#1e1b4b'; ctx.fillRect(tx, H*0.3, 18, H*0.45);
+      ctx.fillStyle = '#2e2b5b'; ctx.fillRect(tx-4, H*0.28, 26, 10);
     }
   }
 }
@@ -645,90 +760,73 @@ function drawBg() {
 function drawEnemy() {
   if (!enemy) return;
   const pw = 8;
-  const ew = 14*pw, eh = 10*pw; // enemy draw size: 14 wide × 10 tall units
+  const ew = 14*pw, eh = 10*pw; // 112 × 80px
+  // Enemy stands on the ground line
   let ex = (W - ew) / 2;
-  let ey = H*0.12;
-  // Hit flash: shake
+  let ey = Math.floor(H * 0.75) - eh;
   if (hitFlash > 0) {
     hitFlash--;
     ex += (Math.random()-0.5)*4;
-    if (hitFlash > 6) {
-      ctx.globalAlpha = 0.6;
-    }
+    if (hitFlash > 6) ctx.globalAlpha = 0.6;
   }
-  // Draw sprite
-  ctx.save();
-  ctx.translate(ex, ey);
+  ctx.save(); ctx.translate(ex, ey);
   enemy.draw(ctx, 0, 0, pw);
-  ctx.restore();
-  ctx.globalAlpha = 1;
+  ctx.restore(); ctx.globalAlpha = 1;
 
-  // HP bar
-  const barX = W/2 - 70, barY = H*0.12 + eh + 6;
-  const barW = 140;
-  ctx.fillStyle = '#1a1840';
-  ctx.fillRect(barX-1, barY-1, barW+2, 10);
-  ctx.fillStyle = enemy.boss ? '#f59e0b' : '#22c55e';
+  // Enemy name above HP bar at top
+  ctx.fillStyle = enemy.boss ? '#fbbf24' : '#e2d9f3';
+  ctx.font = '7px "Press Start 2P"';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(enemy.name, W/2, 11);
+
+  // HP bar at very top of canvas
+  const barX = 4, barY = 18, barW = W - 8;
+  ctx.fillStyle = '#1a1840'; ctx.fillRect(barX-1, barY-1, barW+2, 10);
   const pct = Math.max(0, enemy.curHp / enemy.hp);
   ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
   ctx.fillRect(barX, barY, barW * pct, 8);
-
-  // Enemy name
-  ctx.fillStyle = enemy.boss ? '#fbbf24' : '#e2d9f3';
-  ctx.font = '7px "Press Start 2P"';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(enemy.name, W/2, barY - 8);
 }
 
 function drawHUD() {
   const z = ZONES[zone];
   ctx.font = '6px "Press Start 2P"';
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillStyle = '#a78bfa';
-  ctx.fillText(z.name, 8, 8);
-  ctx.fillStyle = '#7c6faa';
-  ctx.fillText(`WAVE ${wave+1}/10`, 8, 18);
-
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#fbbf24';
-  ctx.fillText(`💰 ${gold}`, W-8, 8);
+  ctx.fillStyle = '#a78bfa'; ctx.fillText(z.name, 8, H - 26);
+  ctx.fillStyle = '#7c6faa'; ctx.fillText('WAVE '+(wave+1)+'/10', 8, H - 16);
+  if (wave === 9) {
+    ctx.textAlign = 'right'; ctx.fillStyle = '#fbbf24';
+    ctx.fillText('⚠ BOSS', W-8, H - 26);
+  }
 }
 
 function drawFloats() {
   floats = floats.filter(f => f.life > 0);
   for (const f of floats) {
     ctx.globalAlpha = f.life;
-    ctx.font = `${f.big ? 11 : 8}px "Press Start 2P"`;
+    ctx.font = (f.big ? 11 : 8)+'px "Press Start 2P"';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = f.col;
     ctx.fillText(f.val, f.x, f.y);
-    f.y -= 0.9;
-    f.life -= 0.02;
+    f.y -= 0.9; f.life -= 0.02;
   }
   ctx.globalAlpha = 1;
 }
 
 function renderCanvas() {
   ctx.clearRect(0,0,W,H);
-  drawBg();
-  drawEnemy();
-  drawHUD();
-  drawFloats();
+  drawBg(); drawEnemy(); drawHUD(); drawFloats();
   requestAnimationFrame(renderCanvas);
 }
 
 // ─── Battle grid UI ───────────────────────────────────────────────────────────
-const CELL_SPR_W = 48, CELL_SPR_H = 40; // pw=4
+const CELL_SPR_W = 48, CELL_SPR_H = 40;
 
 function buildGrid() {
   const grid = document.getElementById('battle-grid');
   grid.innerHTML = '';
   for (let s = 0; s < 9; s++) {
     const cell = document.createElement('div');
-    cell.className = 'cell empty';
-    cell.dataset.slot = s;
-    cell.id = `cell-${s}`;
+    cell.className = 'cell empty'; cell.dataset.slot = s; cell.id = 'cell-'+s;
     cell.addEventListener('click', () => onCellClick(s));
     grid.appendChild(cell);
   }
@@ -737,145 +835,146 @@ function buildGrid() {
 function updateGrid() {
   for (let s = 0; s < 9; s++) {
     const c = party[s];
-    const cell = document.getElementById(`cell-${s}`);
+    const cell = document.getElementById('cell-'+s);
     if (!cell) continue;
     if (!c) {
-      if (cell.dataset.filled) {
-        cell.innerHTML = '';
-        cell.className = 'cell empty';
-        cell.dataset.filled = '';
-      }
+      if (cell.dataset.filled) { cell.innerHTML=''; cell.className='cell empty'; cell.dataset.filled=''; }
       continue;
     }
     const def = DEFS.find(d => d.id === c.defId);
-    const charged = c.charge >= 1;
-    const dead = c.hp <= 0;
-    cell.className = `cell${charged?' charged':''}${dead?' dead':''}`;
+    cell.className = 'cell'+(c.charge>=1?' charged':'')+(c.hp<=0?' dead':'');
     cell.dataset.filled = '1';
-
-    // Rebuild cell content if first time or if creature changed
     if (!cell._lastUid || cell._lastUid !== c.uid) {
-      cell.innerHTML = `
-        <canvas width="${CELL_SPR_W}" height="${CELL_SPR_H}" id="spr-${s}"></canvas>
+      cell.innerHTML = `<canvas width="${CELL_SPR_W}" height="${CELL_SPR_H}" id="spr-${s}"></canvas>
         <div class="cname">${def.name}</div>
-        <div class="clvl">Lv.${c.level}</div>
+        <div class="clvl" id="clvl-${s}">Lv.${c.level}</div>
         <div class="bar-row">
-          <div class="bar" style="background:#1a1840"><div class="bar-fill hp-fill" id="hp-${s}" style="width:100%"></div></div>
-          <div class="bar" style="background:#1a1840"><div class="bar-fill sp-fill" id="sp-${s}" style="width:0%"></div></div>
+          <div class="bar"><div class="bar-fill hp-fill" id="hp-${s}" style="width:100%"></div></div>
+          <div class="bar"><div class="bar-fill sp-fill" id="sp-${s}" style="width:0%"></div></div>
         </div>`;
       cell._lastUid = c.uid;
-      // Draw sprite
-      const sc = document.getElementById(`spr-${s}`);
-      if (sc) {
-        const sctx = sc.getContext('2d');
-        sctx.imageSmoothingEnabled = false;
-        def.draw(sctx, 0, 0, 4);
-      }
+      const sc = document.getElementById('spr-'+s);
+      if (sc) { const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=false; def.draw(sctx,0,0,4); }
     }
-    // Update bars
-    const hpEl = document.getElementById(`hp-${s}`);
-    const spEl = document.getElementById(`sp-${s}`);
+    const hpEl=document.getElementById('hp-'+s), spEl=document.getElementById('sp-'+s), lvEl=document.getElementById('clvl-'+s);
     if (hpEl) hpEl.style.width = Math.max(0,(c.hp/c.maxHp)*100)+'%';
-    if (spEl) { spEl.style.width = (c.charge*100)+'%'; spEl.style.background = c.charge>=1?'#fbbf24':'#3b82f6'; }
+    if (spEl) { spEl.style.width=(c.charge*100)+'%'; spEl.style.background=c.charge>=1?'#fbbf24':'#3b82f6'; }
+    if (lvEl) lvEl.textContent = 'Lv.'+c.level;
   }
 }
 
 function onCellClick(slot) {
   const c = party[slot];
-  if (!c) {
-    // Switch to collection to pick
-    switchTab('collection');
-    return;
-  }
-  if (c.charge >= 1) {
-    doSpecial(c);
-    updateGrid();
-  }
+  if (!c) { switchTab('collection'); return; }
+  if (c.charge >= 1) { doSpecial(c); updateGrid(); }
 }
 
 // ─── Collection UI ────────────────────────────────────────────────────────────
 function buildCollection() {
+  if (detailUid !== null) { openDetail(detailUid); return; }
   const grid = document.getElementById('coll-grid');
+  grid.style.cssText = '';
   grid.innerHTML = '';
   for (const c of collection) {
     const def = DEFS.find(d => d.id === c.defId);
     const inParty = c.slot !== null;
+    const cost = levelUpCost(c);
+    const canLvl = shards >= cost;
     const card = document.createElement('div');
-    card.className = `ccard${inParty?' in-party':''}`;
-    card.innerHTML = `
-      <canvas width="${CELL_SPR_W}" height="${CELL_SPR_H}"></canvas>
-      <div class="cc-name">${def.name}</div>
-      <div class="cc-lv">Lv.${c.level}</div>
-      <div class="cc-party">${inParty?`SLOT ${c.slot+1}`:''}</div>`;
+    card.className = 'ccard'+(inParty?' in-party':'');
+    card.innerHTML = `<div class="cc-main">
+        <canvas width="${CELL_SPR_W}" height="${CELL_SPR_H}"></canvas>
+        <div class="cc-name">${def.name}</div>
+        <div class="cc-lv">Lv.${c.level}</div>
+      </div>
+      <button class="lvlup-small${canLvl?'':' cant-afford'}" data-uid="${c.uid}" data-action="lvl">❆${cost} LV UP</button>
+      <button class="lvlup-small party-btn${inParty?' in':''}" data-uid="${c.uid}" data-action="party">${inParty?'REMOVE':(party.indexOf(null)===-1?'FULL':'ADD')}</button>`;
     const sc = card.querySelector('canvas');
-    const sctx = sc.getContext('2d');
-    sctx.imageSmoothingEnabled = false;
-    def.draw(sctx, 0, 0, 4);
-    card.addEventListener('click', () => {
-      toggleParty(c);
-      buildCollection();
-    });
+    const sctx = sc.getContext('2d'); sctx.imageSmoothingEnabled = false; def.draw(sctx,0,0,4);
+    card.querySelector('.cc-main').addEventListener('click', () => openDetail(c.uid));
+    card.querySelector('[data-action="lvl"]').addEventListener('click', e => { e.stopPropagation(); doLevelUp(c.uid); });
+    card.querySelector('[data-action="party"]').addEventListener('click', e => { e.stopPropagation(); toggleParty(c); buildCollection(); });
     grid.appendChild(card);
   }
 }
 
-function toggleParty(c) {
-  if (c.slot !== null) {
-    party[c.slot] = null;
-    c.slot = null;
-  } else {
-    const empty = party.indexOf(null);
-    if (empty === -1) return;
-    party[empty] = c;
-    c.slot = empty;
+function openDetail(uid) {
+  detailUid = uid;
+  const c = collection.find(c => c.uid === uid);
+  if (!c) { detailUid = null; buildCollection(); return; }
+  const def = DEFS.find(d => d.id === c.defId);
+  const cost = levelUpCost(c);
+  const canLvl = shards >= cost;
+  const totalEV = (c.evAtk||0)+(c.evDef||0)+(c.evHp||0)+(c.evSpd||0);
+  const STATS = [{key:'atk',label:'ATK',col:'#ef4444'},{key:'def',label:'DEF',col:'#3b82f6'},{key:'hp',label:'HP',col:'#22c55e'},{key:'spd',label:'SPD',col:'#f59e0b'}];
+  let evRows='', ivRows='';
+  for (const {key,label,col} of STATS) {
+    const ivKey='iv'+key[0].toUpperCase()+key.slice(1), evKey='ev'+key[0].toUpperCase()+key.slice(1);
+    const iv=c[ivKey]||0, ev=c[evKey]||0, statVal=getStat(c,key);
+    const canAdd = evPoints>0 && totalEV<510 && ev<252;
+    evRows+=`<div class="ev-row"><span class="ev-stat">${label}</span><span class="ev-val">${statVal}</span><div class="ev-bar-wrap"><div class="ev-bar-fill" style="width:${(ev/252)*100}%;background:${col}"></div></div><button class="ev-plus-btn${canAdd?'':' dim'}" data-uid="${uid}" data-stat="${key}">+</button></div>`;
+    ivRows+=`<div class="iv-row"><span class="iv-stat-lbl" style="font-size:5px;color:#4a3d7a">${label}</span><span class="iv-num" style="color:${ivColor(iv)}">${iv}</span><div class="iv-bar-wrap"><div class="iv-bar-fill" style="width:${(iv/31)*100}%;background:${ivColor(iv)}"></div></div></div>`;
   }
+  const spW=64, spH=56, pw=Math.floor(spW/14);
+  const grid = document.getElementById('coll-grid');
+  grid.style.cssText = 'display:block;overflow-y:auto;grid-template-columns:unset;padding:0';
+  grid.innerHTML = `<div class="detail-panel">
+    <div class="detail-header">
+      <button class="detail-back" id="det-back">◀ BACK</button>
+      <div class="detail-title"><div class="dn-name">${def.name}</div><div class="dn-lv">Lv.${c.level}</div><div class="dn-type">${def.type.toUpperCase()} · ${def.rarity.toUpperCase()}</div></div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-left"><canvas width="${spW}" height="${spH}" id="det-spr" style="image-rendering:pixelated"></canvas><div class="det-type-badge">${def.spec}</div></div>
+      <div class="detail-right">
+        <div class="detail-section-lbl">STATS (★ ${evPoints} EV)</div>
+        ${evRows}
+        <div class="ev-total-row">EV: ${totalEV}/510</div>
+        <div class="detail-section-lbl" style="margin-top:4px">POTENTIAL (IVs)</div>
+        ${ivRows}
+      </div>
+    </div>
+    <div class="detail-footer">
+      <div class="ev-total-row">❆ ${shards} SHARDS</div>
+      <button class="lvlup-big${canLvl?'':' dim'}" id="det-lvl">LV UP (❆${cost})</button>
+    </div>
+  </div>`;
+  const detSpr = document.getElementById('det-spr');
+  if (detSpr) { const sctx=detSpr.getContext('2d'); sctx.imageSmoothingEnabled=false; def.draw(sctx,0,0,pw); }
+  document.getElementById('det-back').addEventListener('click', () => { detailUid=null; buildCollection(); });
+  document.getElementById('det-lvl').addEventListener('click', () => doLevelUp(uid));
+  grid.querySelectorAll('.ev-plus-btn:not(.dim)').forEach(btn => btn.addEventListener('click', () => addEV(+btn.dataset.uid, btn.dataset.stat)));
+}
+
+function toggleParty(c) {
+  if (c.slot !== null) { party[c.slot]=null; c.slot=null; }
+  else { const e=party.indexOf(null); if(e===-1)return; party[e]=c; c.slot=e; }
   updateGrid();
 }
 
 // ─── Summon UI ────────────────────────────────────────────────────────────────
 function doSummon() {
   if (gold < SUMMON_COST) {
-    const el = document.getElementById('summon-result');
-    el.innerHTML = `<span style="color:#ef4444">NOT ENOUGH GOLD</span>`;
+    document.getElementById('summon-result').innerHTML='<span style="color:#ef4444">NOT ENOUGH GOLD</span>';
     return;
   }
   gold -= SUMMON_COST;
-  updateGoldDisplay();
-
-  // Weighted random pick
-  const pool = [];
-  for (const d of DEFS) {
-    const w = RARITY_W[d.rarity] || 10;
-    for (let i=0;i<w;i++) pool.push(d.id);
-  }
-  const picked = pool[Math.floor(Math.random()*pool.length)];
-  const def = DEFS.find(d => d.id === picked);
-  const c = createCreature(picked);
+  updateResources();
+  const pool=[];
+  for (const d of DEFS) { const w=RARITY_W[d.rarity]||10; for(let i=0;i<w;i++) pool.push(d.id); }
+  const picked=pool[Math.floor(Math.random()*pool.length)];
+  const def=DEFS.find(d=>d.id===picked);
+  const c=createCreature(picked);
   collection.push(c);
-
-  // Auto-assign to empty party slot
-  const empty = party.indexOf(null);
-  if (empty !== -1) { party[empty] = c; c.slot = empty; }
-
-  // Show result
-  const rarityCol = {common:'#94a3b8',uncommon:'#22c55e',rare:'#3b82f6',epic:'#f59e0b'}[def.rarity];
-  const resultEl = document.getElementById('summon-result');
-  resultEl.innerHTML = '';
-  const sc = document.createElement('canvas');
-  sc.width = CELL_SPR_W; sc.height = CELL_SPR_H;
-  sc.style.imageRendering = 'pixelated';
-  const sctx = sc.getContext('2d');
-  sctx.imageSmoothingEnabled = false;
-  def.draw(sctx, 0, 0, 4);
+  const e=party.indexOf(null); if(e!==-1){party[e]=c;c.slot=e;}
+  const rarityCol={common:'#94a3b8',uncommon:'#22c55e',rare:'#3b82f6',epic:'#f59e0b'}[def.rarity];
+  const resultEl=document.getElementById('summon-result');
+  resultEl.innerHTML='';
+  const sc=document.createElement('canvas'); sc.width=CELL_SPR_W; sc.height=CELL_SPR_H; sc.style.imageRendering='pixelated';
+  const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=false; def.draw(sctx,0,0,4);
   resultEl.appendChild(sc);
-  const label = document.createElement('div');
-  label.style.color = rarityCol;
-  label.textContent = `${def.name} [${def.rarity.toUpperCase()}]`;
-  resultEl.appendChild(label);
-
-  updateGrid();
-  buildCollection();
-  saveGame();
+  const lbl=document.createElement('div'); lbl.style.color=rarityCol; lbl.textContent=def.name+' ['+def.rarity.toUpperCase()+']';
+  resultEl.appendChild(lbl);
+  updateGrid(); buildCollection(); saveGame();
 }
 
 document.getElementById('btn-summon').addEventListener('click', doSummon);
@@ -883,36 +982,40 @@ document.getElementById('btn-summon').addEventListener('click', doSummon);
 // ─── Tab navigation ───────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
-  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id===`tab-${name}`));
-  if (name==='collection') buildCollection();
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='tab-'+name));
+  if (name==='collection') { detailUid=null; buildCollection(); }
   if (name==='home') updateHomeStat();
 }
-document.getElementById('nav').addEventListener('click', e => {
-  const b = e.target.closest('.nb'); if(b) switchTab(b.dataset.tab);
-});
+document.getElementById('nav').addEventListener('click', e => { const b=e.target.closest('.nb'); if(b) switchTab(b.dataset.tab); });
 
-// ─── Gold & HUD helpers ───────────────────────────────────────────────────────
-function updateGoldDisplay() {
-  const el = document.getElementById('gold-count'); if(el) el.textContent = gold;
+// ─── Resources & HUD helpers ──────────────────────────────────────────────────
+function updateResources() {
+  const g=document.getElementById('gold-count'); if(g) g.textContent=gold;
+  const sg=document.getElementById('summon-gold'); if(sg) sg.textContent=gold;
+  const s=document.getElementById('shard-count'); if(s) s.textContent=shards;
+  const e=document.getElementById('ev-count'); if(e) e.textContent=evPoints;
 }
+function updateGoldDisplay() { updateResources(); }
+
 function updateHomeStat() {
-  const z = ZONES[zone];
-  document.getElementById('h-zone').textContent = `${zone+1} (${z.name.split(' ')[0]})`;
-  document.getElementById('h-wave').textContent = `${wave+1}/10`;
-  document.getElementById('h-gold').textContent = gold;
-  document.getElementById('h-count').textContent = collection.length;
-  const totalAtk = party.reduce((s,c) => s + (c ? calcAtk(c) : 0), 0);
-  document.getElementById('h-atk').textContent = totalAtk;
-  document.getElementById('h-best').textContent = bestWave;
+  const z=ZONES[zone];
+  const el=id=>document.getElementById(id);
+  if(el('h-zone')) el('h-zone').textContent=(zone+1)+' ('+z.name.split(' ')[0]+')';
+  if(el('h-wave')) el('h-wave').textContent=(wave+1)+'/10';
+  if(el('h-gold')) el('h-gold').textContent=gold;
+  if(el('h-count')) el('h-count').textContent=collection.length;
+  const totalAtk=party.reduce((s,c)=>s+(c?calcAtk(c):0),0);
+  if(el('h-atk')) el('h-atk').textContent=totalAtk;
+  if(el('h-best')) el('h-best').textContent=bestWave;
 }
 
 // ─── Save / Load ──────────────────────────────────────────────────────────────
 function saveGame() {
   try {
     localStorage.setItem('ck_save', JSON.stringify({
-      gold, zone, wave, bestWave, nextId,
-      collection: collection.map(c => ({uid:c.uid,defId:c.defId,level:c.level,hp:c.hp,maxHp:c.maxHp,slot:c.slot})),
-      party: party.map(c => c ? c.uid : null),
+      gold, shards, evPoints, zone, wave, bestWave, nextId,
+      collection: collection.map(c=>({uid:c.uid,defId:c.defId,level:c.level,hp:c.hp,maxHp:c.maxHp,slot:c.slot,ivAtk:c.ivAtk,ivDef:c.ivDef,ivHp:c.ivHp,ivSpd:c.ivSpd,evAtk:c.evAtk||0,evDef:c.evDef||0,evHp:c.evHp||0,evSpd:c.evSpd||0})),
+      party: party.map(c=>c?c.uid:null),
     }));
   } catch(e){}
 }
@@ -920,30 +1023,31 @@ setInterval(saveGame, 5000);
 
 function loadGame() {
   try {
-    const sv = JSON.parse(localStorage.getItem('ck_save')||'{}');
+    const sv=JSON.parse(localStorage.getItem('ck_save')||'{}');
     if (!sv.collection) return false;
-    gold = sv.gold||0; zone = sv.zone||0; wave = sv.wave||0;
-    bestWave = sv.bestWave||1; nextId = sv.nextId||1;
-    collection = sv.collection.map(cd => ({
-      uid:cd.uid, defId:cd.defId, level:cd.level||1,
-      hp:cd.hp, maxHp:cd.maxHp, slot:null,
-      charge:0, atkTimer: (DEFS.find(d=>d.id===cd.defId)||DEFS[0]).spd,
-    }));
-    sv.party.forEach((uid,s) => {
-      if (uid === null) return;
-      const c = collection.find(c=>c.uid===uid);
-      if (c) { party[s]=c; c.slot=s; }
+    gold=sv.gold||0; shards=sv.shards||0; evPoints=sv.evPoints||0;
+    zone=sv.zone||0; wave=sv.wave||0; bestWave=sv.bestWave||1; nextId=sv.nextId||1;
+    collection=sv.collection.map(cd=>{
+      const def=DEFS.find(d=>d.id===cd.defId)||DEFS[0];
+      return {uid:cd.uid,defId:cd.defId,level:cd.level||1,hp:cd.hp,maxHp:cd.maxHp,slot:null,
+        ivAtk:cd.ivAtk!=null?cd.ivAtk:rollIV(def.ivBias,'atk'),
+        ivDef:cd.ivDef!=null?cd.ivDef:rollIV(def.ivBias,'def'),
+        ivHp: cd.ivHp !=null?cd.ivHp :rollIV(def.ivBias,'hp'),
+        ivSpd:cd.ivSpd!=null?cd.ivSpd:rollIV(def.ivBias,'spd'),
+        evAtk:cd.evAtk||0,evDef:cd.evDef||0,evHp:cd.evHp||0,evSpd:cd.evSpd||0,
+        charge:0,atkTimer:def.spd};
     });
+    sv.party.forEach((uid,s)=>{ if(uid===null)return; const c=collection.find(c=>c.uid===uid); if(c){party[s]=c;c.slot=s;} });
     return true;
   } catch(e){ return false; }
 }
 
 // ─── Canvas scale ─────────────────────────────────────────────────────────────
 function fitCanvas() {
-  const area = document.getElementById('canvas-area');
-  const aw = area.clientWidth-16, ah = area.clientHeight-44;
-  const sc = Math.min(aw/W, ah/H);
-  canvas.style.width = (W*sc)+'px'; canvas.style.height = (H*sc)+'px';
+  const area=document.getElementById('canvas-area');
+  const aw=area.clientWidth-16, ah=area.clientHeight-44;
+  const sc=Math.min(aw/W,ah/H);
+  canvas.style.width=(W*sc)+'px'; canvas.style.height=(H*sc)+'px';
 }
 window.addEventListener('resize', fitCanvas);
 fitCanvas();
@@ -951,29 +1055,19 @@ fitCanvas();
 // ─── Tap canvas for bonus attack ──────────────────────────────────────────────
 canvas.addEventListener('click', () => {
   if (!enemy) return;
-  const dmg = Math.max(1, Math.floor(
-    party.filter(Boolean).reduce((s,c)=>s+calcAtk(c),0) * 0.1
-  ));
-  enemy.curHp -= dmg;
-  hitFlash = 4;
-  spawnFloat(dmg, '#c084fc');
-  if (enemy.curHp <= 0) killEnemy();
+  const dmg=Math.max(1,Math.floor(party.filter(Boolean).reduce((s,c)=>s+calcAtk(c),0)*0.1));
+  enemy.curHp -= dmg; hitFlash=4; spawnFloat(dmg,'#c084fc');
+  if (enemy.curHp<=0) killEnemy();
 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.fonts.ready.then(() => {
   if (!loadGame()) {
-    // Give starter creature
-    const starter = createCreature('slime');
-    collection.push(starter);
-    party[0] = starter; starter.slot = 0;
-    gold = 50; // enough for one summon
+    const starter=createCreature('slime');
+    collection.push(starter); party[0]=starter; starter.slot=0;
+    gold=50; shards=30;
   }
-  spawnEnemy();
-  buildGrid();
-  updateGrid();
-  updateGoldDisplay();
-  renderCanvas();
+  spawnEnemy(); buildGrid(); updateGrid(); updateResources(); renderCanvas();
 });
 </script>
 </body>
