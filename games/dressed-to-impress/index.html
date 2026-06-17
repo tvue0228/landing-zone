@@ -150,6 +150,21 @@ canvas {
 .stb.active { border-color: #a855f7; background: #f3e8ff; }
 .salon-label { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 10px 2px; flex-shrink: 0; }
 .hidden { display: none !important; }
+/* Time picker */
+.time-pick-row { display:flex; gap:5px; flex-shrink:0; }
+.tpb {
+  flex:1; border:2px solid #f3e8ff; border-radius:10px; padding:6px 2px;
+  background:#fdf4ff; cursor:pointer; touch-action:none;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  transition:border-color .12s, background .12s;
+}
+.tpb .tp-emoji { font-size:16px; line-height:1; }
+.tpb .tp-time { font-size:9px; font-weight:700; color:#7c3aed; }
+.tpb .tp-mult { font-size:8px; font-weight:700; }
+.tpb.active { border-color:#a855f7; background:#f3e8ff; }
+.tpb.mult-up .tp-mult   { color:#d97706; }
+.tpb.mult-down .tp-mult { color:#9ca3af; }
+.tpb.mult-even .tp-mult { color:#7c3aed; }
 @media (pointer: fine) { body { cursor: default; } }
 </style>
 </head>
@@ -343,6 +358,15 @@ const CHALLENGES = [
   {name:'Resort Vacay',  emoji:'🌴', bg:'#0f766e', preferred:['resort','summer','beach'],avoid:['formal','winter','edgy']},
 ];
 
+// ── Time options ───────────────────────────────────────────────────────────────
+const TIME_OPTIONS = [
+  { label:'1 min',  secs:60,  mult:3.0, emoji:'⚡', hint:'Triple points!' },
+  { label:'2 min',  secs:120, mult:2.0, emoji:'🔥', hint:'Double points!' },
+  { label:'4 min',  secs:240, mult:1.5, emoji:'⏳', hint:'1.5× points'    },
+  { label:'6 min',  secs:360, mult:1.0, emoji:'⏱',  hint:'Standard'       },
+  { label:'10 min', secs:600, mult:0.6, emoji:'🐌', hint:'0.6× points'    },
+];
+
 // ── State ──────────────────────────────────────────────────────────────────────
 const outfit = { top:null, bottom:null, dress:null, shoes:null, bag:null, hat:null, jewelry:null };
 const salonState = {
@@ -359,6 +383,8 @@ let challengeState = {
   timeLeft: 360,
   timer: null,
   score: null,
+  selectedTime: 360,
+  mult: 1.0,
 };
 let isVip = false;
 let totalScore = 0;
@@ -966,7 +992,7 @@ function drawFace(makeup) {
 
 function drawHUD() {
   if (!challengeState.active) return;
-  const pct = challengeState.timeLeft / 360;
+  const pct = challengeState.timeLeft / challengeState.selectedTime;
   const barW = W-40, barX=20, barY=16;
   ctx.fillStyle='rgba(0,0,0,0.2)';
   rr(barX, barY, barW, 10, 5); ctx.fill();
@@ -983,6 +1009,13 @@ function drawHUD() {
   ctx.font = '12px -apple-system,sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.fillText(`${theme.emoji} ${theme.name}`, W/2, barY+22);
+  if (challengeState.mult !== 1) {
+    ctx.font = 'bold 11px -apple-system,sans-serif';
+    ctx.fillStyle = challengeState.mult > 1 ? '#fbbf24' : 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'right';
+    ctx.fillText(`×${challengeState.mult}`, W-14, barY+22);
+    ctx.textAlign = 'center';
+  }
 }
 
 function drawIdleHint() {
@@ -1236,6 +1269,9 @@ function buildChallengeContent() {
   if (challengeState.score !== null) {
     // Results
     const sc=challengeState.score;
+    const base=challengeState.baseScore||sc;
+    const mult=challengeState.mult;
+    const multLabel=mult!==1?`<div style="font-size:12px;color:#9ca3af;margin-top:4px;">${base} base × ${mult} = <strong style="color:#a855f7">${sc}</strong> pts</div>`:'';
     c.innerHTML=`
       <div class="theme-card" style="background:${theme.bg}">\
         <span class="te">${theme.emoji}</span>\
@@ -1244,6 +1280,7 @@ function buildChallengeContent() {
       <div id="score-result" style="display:block;padding:16px 8px;">
         <div class="sr-pts">${sc} pts</div>
         <div class="sr-grade">${scoreGrade(sc)}</div>
+        ${multLabel}
         <div style="font-size:12px;color:#9ca3af;margin-top:6px;">Best: ${Math.max(sc,totalScore)} pts total</div>
       </div>`;
     const nb=document.createElement('button'); nb.className='big-btn';
@@ -1284,8 +1321,33 @@ function buildChallengeContent() {
     sub.textContent='✅ Submit Look'; sub.addEventListener('click',submitChallenge);
     c.appendChild(sub);
   } else {
+    // Time picker
+    const pickLabel=document.createElement('div');
+    pickLabel.style.cssText='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;';
+    pickLabel.textContent='⏱ Choose your time limit';
+    c.appendChild(pickLabel);
+    const row=document.createElement('div'); row.className='time-pick-row';
+    TIME_OPTIONS.forEach(opt=>{
+      const btn=document.createElement('button');
+      const multCls=opt.mult>1?'mult-up':opt.mult<1?'mult-down':'mult-even';
+      btn.className='tpb '+multCls+(challengeState.selectedTime===opt.secs?' active':'');
+      btn.innerHTML=`<span class="tp-emoji">${opt.emoji}</span><span class="tp-time">${opt.label}</span><span class="tp-mult">×${opt.mult}</span>`;
+      btn.title=opt.hint;
+      btn.addEventListener('click',()=>{
+        challengeState.selectedTime=opt.secs;
+        challengeState.mult=opt.mult;
+        buildChallengeContent();
+      });
+      row.appendChild(btn);
+    });
+    c.appendChild(row);
+    const hint=document.createElement('div');
+    const sel=TIME_OPTIONS.find(o=>o.secs===challengeState.selectedTime)||TIME_OPTIONS[3];
+    hint.style.cssText='font-size:11px;color:#9ca3af;text-align:center;flex-shrink:0;';
+    hint.textContent=sel.hint;
+    c.appendChild(hint);
     const st=document.createElement('button'); st.className='big-btn';
-    st.textContent='▶ Start Challenge (6 min)';
+    st.textContent=`▶ Start Challenge (${sel.label})`;
     st.addEventListener('click',startChallenge);
     c.appendChild(st);
   }
@@ -1365,7 +1427,9 @@ function resetOutfit() {
 
 // ── Challenge logic ────────────────────────────────────────────────────────────
 function startChallenge() {
-  challengeState.active=true; challengeState.timeLeft=360; challengeState.score=null;
+  challengeState.active=true;
+  challengeState.timeLeft=challengeState.selectedTime;
+  challengeState.score=null;
   clearInterval(challengeState.timer);
   challengeState.timer=setInterval(()=>{
     challengeState.timeLeft--;
@@ -1387,7 +1451,7 @@ function updateTimerUI() {
   const tb=document.getElementById('chall-bar');
   const tl=document.getElementById('timer-label');
   if (!tb||!tl) return;
-  const pct=challengeState.timeLeft/360;
+  const pct=challengeState.timeLeft/challengeState.selectedTime;
   tb.style.width=(pct*100)+'%';
   tb.style.background=pct>0.5?'#4ade80':pct>0.25?'#facc15':'#f87171';
   const m=Math.floor(challengeState.timeLeft/60), s=(challengeState.timeLeft%60).toString().padStart(2,'0');
@@ -1420,7 +1484,9 @@ function scoreOutfit() {
 function submitChallenge() {
   clearInterval(challengeState.timer);
   challengeState.active=false;
-  const sc=scoreOutfit();
+  const base=scoreOutfit();
+  const sc=Math.round(base*challengeState.mult);
+  challengeState.baseScore=base;
   challengeState.score=sc;
   totalScore+=sc;
   if(!isVip && sc>=300) {
