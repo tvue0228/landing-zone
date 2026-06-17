@@ -471,21 +471,21 @@ const SUMMON_COST = 50;
 // ─── Enemy drawing functions (larger pw on canvas) ────────────────────────────
 function drawEnemyGoblin(ctx, ox, oy, pw) {
   const f = P(ox,oy,pw);
-  // body
-  f(3,4,6,5,'#4d7c0f'); f(3,4,6,1,'#84cc16');
+  // body (shifted down 1 row so feet reach row 10 = ground)
+  f(3,5,6,5,'#4d7c0f'); f(3,5,6,1,'#84cc16');
   // head
-  f(3,1,6,4,'#65a30d'); f(3,1,4,1,'#84cc16');
+  f(3,2,6,4,'#65a30d'); f(3,2,4,1,'#84cc16');
   // ears
-  f(2,2,1,2,'#65a30d'); f(9,2,1,2,'#65a30d');
+  f(2,3,1,2,'#65a30d'); f(9,3,1,2,'#65a30d');
   // eyes
-  f(4,2,2,1,'#dc2626'); f(7,2,2,1,'#dc2626');
-  f(4,2,1,1,'#fff'); f(7,2,1,1,'#fff');
+  f(4,3,2,1,'#dc2626'); f(7,3,2,1,'#dc2626');
+  f(4,3,1,1,'#fff'); f(7,3,1,1,'#fff');
   // nose
-  f(5,4,2,1,'#000');
+  f(5,5,2,1,'#000');
   // arms
-  f(1,5,2,3,'#4d7c0f'); f(9,5,2,3,'#4d7c0f');
+  f(1,6,2,3,'#4d7c0f'); f(9,6,2,3,'#4d7c0f');
   // weapon
-  f(10,3,1,4,'#78716c'); f(10,3,2,1,'#a3a3a3');
+  f(10,4,1,4,'#78716c'); f(10,4,2,1,'#a3a3a3');
 }
 
 function drawEnemySlime(ctx, ox, oy, pw) {
@@ -761,9 +761,9 @@ function drawEnemy() {
   if (!enemy) return;
   const pw = 6;
   const ew = 14*pw, eh = 10*pw; // 84 × 60px
-  // Enemy stands on the ground line; +pw compensates for sprites that don't fill the full 10-row box
+  // Enemy stands on the ground line
   let ex = (W - ew) / 2;
-  let ey = Math.floor(H * 0.75) - eh + pw;
+  let ey = Math.floor(H * 0.75) - eh;
   if (hitFlash > 0) {
     hitFlash--;
     ex += (Math.random()-0.5)*4;
