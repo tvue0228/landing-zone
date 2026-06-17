@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Dressed to Impress</title>
+<style>
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; touch-action: none;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  display: flex; flex-direction: column;
+  background: #fdf4ff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  user-select: none; -webkit-user-select: none;
+}
+#canvas-area {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 40px 12px 6px; position: relative; min-height: 0;
+}
+canvas {
+  display: block; max-width: 100%; max-height: 100%;
+  border-radius: 20px; box-shadow: 0 4px 24px rgba(168,85,247,0.18);
+}
+#back {
+  position: absolute; top: 10px; left: 14px;
+  font-size: 13px; color: #c084fc; text-decoration: none; z-index: 10;
+}
+/* Controls */
+#controls {
+  display: none; flex-direction: column; flex-shrink: 0;
+  background: #fff; border-top: 1px solid #f3e8ff;
+}
+@media (pointer: coarse) { #controls { display: flex; height: 46vh; } }
+/* Nav tabs */
+#nav-tabs {
+  display: flex; border-bottom: 1px solid #f3e8ff; flex-shrink: 0;
+}
+.ntb {
+  flex: 1; border: none; background: none; padding: 8px 2px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 18px; color: #d8b4fe; cursor: pointer; transition: color 0.15s;
+  touch-action: none;
+}
+.ntb span { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.ntb.active { color: #a855f7; border-bottom: 2px solid #a855f7; }
+/* Tab panels */
+#tab-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.panel { display: none; flex-direction: column; height: 100%; }
+.panel.active { display: flex; }
+/* Category sub-tabs */
+.cat-tabs {
+  display: flex; gap: 4px; padding: 6px 10px 4px; flex-shrink: 0;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.cat-tabs::-webkit-scrollbar { display: none; }
+.ctb {
+  border: none; border-radius: 20px; padding: 4px 12px; font-size: 11px;
+  font-weight: 600; white-space: nowrap; cursor: pointer; touch-action: none;
+  background: #f3e8ff; color: #7c3aed; transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ctb.active { background: #a855f7; color: #fff; }
+/* Item grid */
+.item-grid {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  padding: 6px 10px 10px; align-content: start;
+}
+.item-grid::-webkit-scrollbar { display: none; }
+.ibtn {
+  border: 2px solid #f3e8ff; border-radius: 12px; padding: 8px 4px 6px;
+  background: #fdf4ff; cursor: pointer; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: border-color 0.12s, background 0.12s; position: relative;
+}
+.ibtn .ie { font-size: 26px; line-height: 1; }
+.ibtn .in { font-size: 9px; font-weight: 600; color: #7c3aed; text-align: center; line-height: 1.2; }
+.ibtn.equipped { border-color: #a855f7; background: #f3e8ff; }
+.ibtn.locked { opacity: 0.45; }
+.vip-tag {
+  position: absolute; top: 3px; right: 3px;
+  font-size: 8px; font-weight: 700; color: #d97706; background: #fef3c7;
+  border-radius: 4px; padding: 1px 3px; line-height: 1.2;
+}
+/* Salon color grid */
+.color-grid {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px;
+}
+.swatch {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer; touch-action: none;
+  flex-shrink: 0; transition: transform 0.1s, border-color 0.1s;
+}
+.swatch.active { border-color: #a855f7; transform: scale(1.15); }
+/* Challenge panel */
+.chall-panel { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.theme-card {
+  border-radius: 14px; padding: 12px 16px; color: #fff;
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.theme-card .te { font-size: 36px; }
+.theme-card .td { flex: 1; }
+.theme-card .tn { font-weight: 700; font-size: 16px; }
+.theme-card .ts { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.timer-bar-wrap {
+  height: 10px; background: rgba(0,0,0,0.08); border-radius: 5px; overflow: hidden; flex-shrink: 0;
+}
+.timer-bar { height: 100%; border-radius: 5px; transition: width 1s linear, background 1s; }
+#timer-label { font-size: 13px; font-weight: 700; color: #7c3aed; text-align: center; }
+.big-btn {
+  border: none; border-radius: 16px; padding: 14px;
+  font-size: 17px; font-weight: 700; color: #fff; cursor: pointer;
+  touch-action: none; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg,#a855f7,#ec4899);
+  box-shadow: 0 3px 0 #7c3aed; transition: transform 0.08s, box-shadow 0.08s;
+  flex-shrink: 0;
+}
+.big-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #7c3aed; }
+.big-btn:disabled { opacity: 0.5; pointer-events: none; }
+/* Score result */
+#score-result { text-align: center; padding: 8px; display: none; }
+#score-result .sr-pts { font-size: 36px; font-weight: 900; color: #a855f7; }
+#score-result .sr-grade { font-size: 16px; font-weight: 700; color: #6d28d9; }
+/* Home panel */
+.home-panel { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.hm-title { font-size: 20px; font-weight: 800; color: #6d28d9; }
+.hm-sub { font-size: 12px; color: #9ca3af; line-height: 1.5; }
+.vip-badge-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: linear-gradient(135deg,#fef3c7,#fde68a); border-radius: 12px; }
+.vip-icon { font-size: 24px; }
+.vip-text { font-size: 12px; font-weight: 600; color: #92400e; }
+/* VIP panel */
+.vip-panel { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.vip-panel::-webkit-scrollbar { display: none; }
+/* Salon style grid */
+.style-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px 10px;
+  flex-shrink: 0;
+}
+.stb {
+  border: 2px solid #f3e8ff; border-radius: 10px; padding: 6px 4px;
+  background: #fdf4ff; cursor: pointer; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  transition: border-color 0.12s;
+}
+.stb .se { font-size: 20px; }
+.stb .sn { font-size: 9px; font-weight: 600; color: #7c3aed; text-align: center; }
+.stb.active { border-color: #a855f7; background: #f3e8ff; }
+.salon-label { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 10px 2px; flex-shrink: 0; }
+.hidden { display: none !important; }
+/* Time picker */
+.time-pick-row { display:flex; gap:5px; flex-shrink:0; }
+.tpb {
+  flex:1; border:2px solid #f3e8ff; border-radius:10px; padding:6px 2px;
+  background:#fdf4ff; cursor:pointer; touch-action:none;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  transition:border-color .12s, background .12s;
+}
+.tpb .tp-emoji { font-size:16px; line-height:1; }
+.tpb .tp-time { font-size:9px; font-weight:700; color:#7c3aed; }
+.tpb .tp-mult { font-size:8px; font-weight:700; }
+.tpb.active { border-color:#a855f7; background:#f3e8ff; }
+.tpb.mult-up .tp-mult   { color:#d97706; }
+.tpb.mult-down .tp-mult { color:#9ca3af; }
+.tpb.mult-even .tp-mult { color:#7c3aed; }
+@media (pointer: fine) { body { cursor: default; } }
+</style>
+</head>
+<body>
+
+<div id="canvas-area">
+  <a href="../../" id="back">← Back</a>
+  <canvas id="c" width="400" height="480"></canvas>
+</div>
+
+<div id="controls">
+  <nav id="nav-tabs">
+    <button class="ntb active" data-tab="home">🏠<span>Home</span></button>
+    <button class="ntb" data-tab="lobby">👗<span>Lobby</span></button>
+    <button class="ntb" data-tab="salon">💅<span>Salon</span></button>
+    <button class="ntb" data-tab="challenge">🏆<span>Challenge</span></button>
+    <button class="ntb" data-tab="vip">💎<span>Shop</span></button>
+  </nav>
+  <div id="tab-content">
+    <!-- Panels built by JS -->
+  </div>
+</div>
+
+<script>
+'use strict';
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 400, H = 480;
+
+// ── Body geometry ──────────────────────────────────────────────────────────────
+const B = {
+  cx: 200,
+  // Head
+  hcx: 200, hcy: 72, hr: 30,
+  // Neck
+  neckX: 191, neckY: 102, neckW: 18, neckH: 22,
+  // Shoulders (top of torso)
+  shY: 124, shW: 120,  // total: left=140, right=260
+  // Waist
+  waistY: 234, waistW: 76,
+  // Hip bottom
+  hipY: 258, hipW: 98,
+  // Arms
+  laX: 96, raX: 264, armY: 124, armW: 44, armH: 166,
+  // Legs
+  legY: 258, legH: 148,
+  llX: 152, llW: 36, rlX: 212, rlW: 36,
+  // Feet
+  footY: 406, footH: 20,
+  lfX: 142, lfW: 56, rfX: 202, rfW: 56,
+};
+
+// ── Item definitions ────────────────────────────────────────────────────────────
+// slv: 0=none, 0.35=short, 0.7=3q, 1=long | len: fraction of torso (0.5=crop, 1=full)
+// neck: 'crew'|'v'|'high'|'off' | btype: bottom style | stype: shoe style
+const SKIN = '#F5C5A3';
+const SKIN2 = '#E8A882';
+
+const TOPS = [
+  {id:'tee-white',   name:'White Tee',       emoji:'👕', col:'#f8fafc', col2:'#e2e8f0', slv:0.35, len:0.95, neck:'crew', tags:['casual','everyday'],           vip:false},
+  {id:'crop-pink',   name:'Pink Crop',       emoji:'🩷', col:'#f9a8d4', col2:'#f472b6', slv:0,    len:0.5,  neck:'v',    tags:['casual','party','summer'],      vip:false},
+  {id:'blazer-blk',  name:'Black Blazer',    emoji:'🧥', col:'#1e1b4b', col2:'#312e81', slv:1,    len:1.0,  neck:'v',    tags:['formal','work','date'],         vip:false},
+  {id:'blouse-yel',  name:'Yellow Blouse',   emoji:'🌼', col:'#fef08a', col2:'#fde047', slv:0.7,  len:0.95, neck:'v',    tags:['casual','garden','picnic'],     vip:false},
+  {id:'hoodie-red',  name:'Red Hoodie',      emoji:'❤️', col:'#dc2626', col2:'#b91c1c', slv:1,    len:1.0,  neck:'crew', tags:['casual','sporty','cozy'],       vip:false},
+  {id:'tank-blue',   name:'Sky Tank',        emoji:'🩵', col:'#bae6fd', col2:'#7dd3fc', slv:0,    len:0.95, neck:'crew', tags:['casual','beach','summer'],      vip:false},
+  {id:'stripe-nvy',  name:'Stripe Shirt',    emoji:'👔', col:'#dbeafe', col2:'#1e40af', slv:0.35, len:0.95, neck:'crew', tags:['casual','beach','work'],        vip:false},
+  {id:'trtl-prpl',   name:'Purple Turtle',   emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:1,    len:1.0,  neck:'high', tags:['formal','winter','date'],       vip:true},
+  {id:'cami-grn',    name:'Sage Cami',       emoji:'🌿', col:'#86efac', col2:'#4ade80', slv:0,    len:0.95, neck:'v',    tags:['casual','garden','resort'],     vip:false},
+  {id:'bustier',     name:'Glam Bustier',    emoji:'✨', col:'#d97706', col2:'#b45309', slv:0,    len:0.5,  neck:'off',  tags:['party','date','night','glam'],  vip:true},
+  {id:'corset-blk',  name:'Black Corset',    emoji:'🖤', col:'#111827', col2:'#1f2937', slv:0,    len:0.5,  neck:'off',  tags:['party','date','night','edgy'],  vip:false},
+  {id:'cardigan-crm',name:'Cream Cardigan',  emoji:'🤍', col:'#faf7f0', col2:'#e8e0d0', slv:1,    len:1.0,  neck:'v',    tags:['casual','cozy','autumn'],       vip:false},
+  {id:'halter-grn',  name:'Green Halter',    emoji:'💚', col:'#16a34a', col2:'#15803d', slv:0,    len:0.5,  neck:'v',    tags:['party','summer','beach'],       vip:false},
+  {id:'plaid-shirt', name:'Plaid Shirt',     emoji:'🟥', col:'#b91c1c', col2:'#7f1d1d', slv:0.7,  len:1.0,  neck:'crew', tags:['casual','autumn','school'],     vip:false},
+  {id:'bodysuit-blk',name:'Black Bodysuit',  emoji:'🫶', col:'#1f2937', col2:'#111827', slv:1,    len:1.0,  neck:'high', tags:['date','night','edgy','glam'],   vip:true},
+  {id:'linen-top',   name:'Linen Top',       emoji:'🌾', col:'#fef9c3', col2:'#fde68a', slv:0.35, len:0.95, neck:'v',    tags:['casual','resort','garden'],     vip:false},
+  {id:'bomber-olv',  name:'Olive Bomber',    emoji:'🫒', col:'#4d7c0f', col2:'#365314', slv:1,    len:1.0,  neck:'crew', tags:['casual','edgy','autumn'],       vip:false},
+];
+
+const BOTTOMS = [
+  {id:'jeans-blu',   name:'Blue Jeans',      emoji:'👖', col:'#1d4ed8', col2:'#1e3a8a', btype:'pants',      tags:['casual','everyday','work'],      vip:false},
+  {id:'skirt-red',   name:'Red Mini Skirt',  emoji:'❤️', col:'#dc2626', col2:'#b91c1c', btype:'skirt-mini', tags:['party','date','night'],          vip:false},
+  {id:'skirt-flrl',  name:'Floral Skirt',    emoji:'🌸', col:'#c084fc', col2:'#a855f7', btype:'skirt-maxi', tags:['casual','garden','resort'],      vip:false},
+  {id:'shorts-dnm',  name:'Denim Shorts',    emoji:'🩳', col:'#3b82f6', col2:'#2563eb', btype:'shorts',     tags:['casual','beach','summer'],       vip:false},
+  {id:'trouser-wht', name:'White Trousers',  emoji:'⬜', col:'#f1f5f9', col2:'#e2e8f0', btype:'pants',      tags:['formal','work','garden'],        vip:false},
+  {id:'skirt-plaid', name:'Plaid Skirt',     emoji:'🟫', col:'#b45309', col2:'#92400e', btype:'skirt-mini', tags:['casual','autumn','school'],      vip:false},
+  {id:'lthpant-blk', name:'Leather Pants',   emoji:'🖤', col:'#111827', col2:'#000',    btype:'pants',      tags:['date','night','rock','edgy'],    vip:true},
+  {id:'skirt-gold',  name:'Gold Sequin',     emoji:'⭐', col:'#d97706', col2:'#f59e0b', btype:'skirt-mini', tags:['party','night','glam'],          vip:true},
+  {id:'bike-short',  name:'Bike Shorts',     emoji:'🏃', col:'#1e293b', col2:'#0f172a', btype:'shorts',     tags:['sporty','gym','casual'],         vip:false},
+  {id:'skirt-midi',  name:'Sage Midi Skirt', emoji:'🌿', col:'#86efac', col2:'#4ade80', btype:'skirt-midi', tags:['casual','garden','resort'],      vip:false},
+  {id:'cargo-grn',   name:'Cargo Pants',     emoji:'🪖', col:'#4d7c0f', col2:'#3f6212', btype:'pants',      tags:['casual','sporty','edgy'],        vip:false},
+  {id:'tennis-skirt',name:'Tennis Skirt',    emoji:'🎾', col:'#f8fafc', col2:'#e2e8f0', btype:'skirt-mini', tags:['sporty','casual','summer'],      vip:false},
+  {id:'velvet-skirt',name:'Velvet Midi',     emoji:'💜', col:'#6d28d9', col2:'#5b21b6', btype:'skirt-midi', tags:['date','night','glam'],           vip:true},
+  {id:'palazzo-wht', name:'Palazzo Pants',   emoji:'🤍', col:'#f1f5f9', col2:'#d6d3d1', btype:'pants',      tags:['resort','casual','summer'],      vip:false},
+  {id:'jeans-blk',   name:'Black Jeans',     emoji:'🖤', col:'#1f2937', col2:'#111827', btype:'pants',      tags:['casual','everyday','night'],     vip:false},
+  {id:'skirt-satin', name:'Satin Skirt',     emoji:'✨', col:'#94a3b8', col2:'#64748b', btype:'skirt-midi', tags:['formal','gala','elegant','night'],vip:true},
+];
+
+const DRESSES = [
+  {id:'lbd',         name:'Little Black Dress',  emoji:'🖤', col:'#111827', col2:'#1f2937', slv:0,    neck:'v',    dlen:0.75, tags:['date','night','formal','elegant'],  vip:false},
+  {id:'sundress',    name:'Floral Sundress',     emoji:'🌻', col:'#22c55e', col2:'#16a34a', slv:0,    neck:'v',    dlen:1.0,  tags:['casual','beach','garden','summer'], vip:false},
+  {id:'partydress',  name:'Pink Party Dress',    emoji:'💗', col:'#f472b6', col2:'#ec4899', slv:0,    neck:'v',    dlen:0.75, tags:['party','date','night'],             vip:false},
+  {id:'gown-red',    name:'Red Gown',            emoji:'👑', col:'#dc2626', col2:'#b91c1c', slv:0.7,  neck:'off',  dlen:1.2,  tags:['formal','gala','glam','night'],    vip:true},
+  {id:'babydoll',    name:'Yellow Babydoll',     emoji:'🌟', col:'#fde68a', col2:'#fbbf24', slv:0.35, neck:'crew', dlen:0.75, tags:['casual','summer','date'],           vip:false},
+  {id:'bodycon-prp', name:'Purple Bodycon',      emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:0,    neck:'v',    dlen:0.75, tags:['party','night','date','glam'],      vip:true},
+  {id:'wrap-grn',    name:'Wrap Dress',          emoji:'🌿', col:'#059669', col2:'#047857', slv:0.35, neck:'v',    dlen:1.0,  tags:['casual','garden','work'],           vip:false},
+  {id:'slip-slvr',   name:'Silver Slip Dress',   emoji:'💫', col:'#94a3b8', col2:'#64748b', slv:0,    neck:'v',    dlen:1.0,  tags:['night','date','glam','formal'],    vip:false},
+  {id:'sweater-dress',name:'Sweater Dress',      emoji:'🧶', col:'#c084fc', col2:'#a855f7', slv:1,    neck:'crew', dlen:0.75, tags:['casual','winter','cozy'],           vip:false},
+  {id:'satin-navy',  name:'Navy Satin Gown',     emoji:'💙', col:'#1e3a8a', col2:'#1e40af', slv:0,    neck:'v',    dlen:1.2,  tags:['formal','gala','elegant','night'], vip:true},
+  {id:'floral-midi', name:'Floral Midi Dress',   emoji:'🌺', col:'#f472b6', col2:'#ec4899', slv:0.35, neck:'v',    dlen:1.0,  tags:['casual','garden','resort'],        vip:false},
+  {id:'denim-dress', name:'Denim Dress',         emoji:'👖', col:'#3b82f6', col2:'#2563eb', slv:0.35, neck:'crew', dlen:0.75, tags:['casual','everyday','school'],      vip:false},
+  {id:'sequin-gold', name:'Gold Sequin Dress',   emoji:'🌟', col:'#d97706', col2:'#b45309', slv:0,    neck:'v',    dlen:0.75, tags:['party','gala','glam','night'],     vip:true},
+];
+
+const SHOES = [
+  {id:'snkr-wht',   name:'White Sneakers',  emoji:'👟', col:'#f8fafc', col2:'#e2e8f0', stype:'flat',      tags:['casual','sporty','everyday'],  vip:false},
+  {id:'heel-blk',   name:'Black Heels',     emoji:'👠', col:'#111827', col2:'#000',    stype:'heels',     tags:['formal','date','night'],       vip:false},
+  {id:'boot-pink',  name:'Pink Boots',      emoji:'🥿', col:'#f9a8d4', col2:'#f472b6', stype:'boot-ankle',tags:['casual','autumn','edgy'],      vip:false},
+  {id:'sandal-brn', name:'Brown Sandals',   emoji:'🩴', col:'#92400e', col2:'#78350f', stype:'sandal',    tags:['casual','beach','summer'],     vip:false},
+  {id:'stiletto-r', name:'Red Stilettos',   emoji:'💄', col:'#dc2626', col2:'#b91c1c', stype:'heels',     tags:['date','night','glam','party'], vip:true},
+  {id:'loafer-slv', name:'Silver Loafers',  emoji:'🥈', col:'#94a3b8', col2:'#64748b', stype:'flat',      tags:['casual','work','formal'],      vip:false},
+  {id:'platform',   name:'Platform Boots',  emoji:'💜', col:'#5b21b6', col2:'#4c1d95', stype:'boot-knee', tags:['edgy','party','night'],        vip:true},
+  {id:'flat-beige', name:'Ballet Flats',    emoji:'🩰', col:'#d6c5a7', col2:'#c4a882', stype:'flat',      tags:['casual','work','garden'],      vip:false},
+  {id:'mule-wht',   name:'White Mules',     emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', stype:'heels',     tags:['casual','resort','summer'],    vip:false},
+  {id:'boot-cowboy',name:'Cowboy Boots',    emoji:'🤠', col:'#92400e', col2:'#78350f', stype:'boot-knee', tags:['casual','country','edgy'],     vip:false},
+  {id:'chunky-snkr',name:'Chunky Sneakers', emoji:'🖤', col:'#1e293b', col2:'#0f172a', stype:'flat',      tags:['casual','edgy','sporty'],      vip:false},
+  {id:'wedge-nude', name:'Nude Wedges',     emoji:'🌸', col:'#d6c5a7', col2:'#c4a882', stype:'heels',     tags:['casual','resort','date'],      vip:false},
+  {id:'oxford-brn', name:'Brown Oxfords',   emoji:'🟤', col:'#92400e', col2:'#78350f', stype:'flat',      tags:['work','formal','classic'],     vip:false},
+  {id:'thigh-boot', name:'Thigh Boots',     emoji:'💋', col:'#111827', col2:'#000',    stype:'boot-knee', tags:['night','edgy','date','party'], vip:true},
+  {id:'sandal-gold',name:'Gold Sandals',    emoji:'✨', col:'#d97706', col2:'#b45309', stype:'sandal',    tags:['beach','resort','party'],      vip:false},
+  {id:'sneaker-clr',name:'Color Sneakers',  emoji:'🌈', col:'#ec4899', col2:'#db2777', stype:'flat',      tags:['casual','sporty','party'],     vip:false},
+];
+
+const BAGS = [
+  {id:'tote-wht',   name:'White Tote',      emoji:'🛍️', col:'#f8fafc', col2:'#94a3b8', bstyle:'tote',     tags:['casual','everyday','beach'],   vip:false},
+  {id:'clutch-blk', name:'Black Clutch',    emoji:'👛', col:'#111827', col2:'#374151', bstyle:'clutch',   tags:['formal','date','night'],       vip:false},
+  {id:'mini-pink',  name:'Pink Mini Bag',   emoji:'💗', col:'#f9a8d4', col2:'#f472b6', bstyle:'mini',     tags:['casual','party','date'],       vip:false},
+  {id:'shoulder-br',name:'Shoulder Bag',    emoji:'👜', col:'#92400e', col2:'#78350f', bstyle:'shoulder', tags:['casual','work','everyday'],    vip:false},
+  {id:'gold-eve',   name:'Gold Evening',    emoji:'✨', col:'#d97706', col2:'#b45309', bstyle:'clutch',   tags:['night','party','glam','gala'], vip:true},
+  {id:'backpack',   name:'Backpack',        emoji:'🎒', col:'#374151', col2:'#1f2937', bstyle:'backpack', tags:['casual','sporty','school'],    vip:false},
+  {id:'rattan',     name:'Rattan Bag',      emoji:'🌿', col:'#a16207', col2:'#854d0e', bstyle:'tote',     tags:['beach','summer','resort'],     vip:false},
+  {id:'slvr-chain', name:'Chain Bag',       emoji:'💫', col:'#94a3b8', col2:'#64748b', bstyle:'mini',     tags:['night','glam','date'],         vip:true},
+  {id:'crossbody',  name:'Tan Crossbody',   emoji:'🟤', col:'#a16207', col2:'#92400e', bstyle:'shoulder', tags:['casual','everyday','work'],    vip:false},
+  {id:'basket-bag', name:'Basket Bag',      emoji:'🧺', col:'#d97706', col2:'#b45309', bstyle:'tote',     tags:['beach','summer','garden'],     vip:false},
+  {id:'micro-prpl', name:'Micro Bag',       emoji:'💜', col:'#7c3aed', col2:'#6d28d9', bstyle:'mini',     tags:['party','night','glam'],        vip:true},
+  {id:'tote-canvas',name:'Canvas Tote',     emoji:'🎨', col:'#e8e0d0', col2:'#d6c5a7', bstyle:'tote',     tags:['casual','art','everyday'],     vip:false},
+];
+
+const HATS = [
+  {id:'cap-blk',    name:'Black Cap',       emoji:'🧢', col:'#111827', col2:'#374151', hstyle:'cap',    tags:['casual','sporty','everyday'],  vip:false},
+  {id:'bucket-bei', name:'Bucket Hat',      emoji:'⛑️', col:'#d6c5a7', col2:'#c4a882', hstyle:'bucket', tags:['casual','beach','summer'],     vip:false},
+  {id:'beret-red',  name:'Red Beret',       emoji:'🎨', col:'#dc2626', col2:'#b91c1c', hstyle:'beret',  tags:['casual','garden','art'],       vip:false},
+  {id:'sun-hat',    name:'Sun Hat',         emoji:'👒', col:'#fde68a', col2:'#fbbf24', hstyle:'sun',    tags:['beach','summer','garden'],     vip:false},
+  {id:'crown-crys', name:'Crystal Crown',   emoji:'👑', col:'#c084fc', col2:'#a855f7', hstyle:'crown',  tags:['party','glam','night'],        vip:true},
+  {id:'beanie-wht', name:'White Beanie',    emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', hstyle:'beanie', tags:['winter','casual','cozy'],      vip:false},
+  {id:'cap-pink',   name:'Pink Cap',        emoji:'🩷', col:'#f9a8d4', col2:'#f472b6', hstyle:'cap',    tags:['casual','sporty','cute'],      vip:false},
+  {id:'beret-blk',  name:'Black Beret',     emoji:'🖤', col:'#111827', col2:'#1f2937', hstyle:'beret',  tags:['casual','formal','elegant'],   vip:false},
+  {id:'bucket-wht', name:'White Bucket',    emoji:'🤍', col:'#f8fafc', col2:'#e2e8f0', hstyle:'bucket', tags:['casual','beach','resort'],     vip:false},
+  {id:'cowgirl-hat',name:'Cowgirl Hat',     emoji:'🤠', col:'#b45309', col2:'#92400e', hstyle:'sun',    tags:['casual','country','edgy'],     vip:false},
+  {id:'tiara-gold', name:'Gold Tiara',      emoji:'👸', col:'#d97706', col2:'#b45309', hstyle:'crown',  tags:['gala','glam','formal','night'], vip:true},
+];
+
+const JEWELRY = [
+  {id:'necklace-gld',name:'Gold Chain',     emoji:'📿', col:'#d97706', jtype:'necklace', tags:['casual','formal','everyday'],   vip:false},
+  {id:'pearl-earr',  name:'Pearl Earrings', emoji:'🤍', col:'#f8fafc', jtype:'earrings', tags:['formal','elegant','classic'],   vip:false},
+  {id:'slvr-bangle', name:'Silver Bangle',  emoji:'💍', col:'#94a3b8', jtype:'bracelet', tags:['casual','everyday'],            vip:false},
+  {id:'heart-pend',  name:'Heart Pendant',  emoji:'🩷', col:'#f472b6', jtype:'necklace', tags:['date','casual','cute'],         vip:false},
+  {id:'gem-tiara',   name:'Gem Tiara',      emoji:'👑', col:'#a855f7', jtype:'tiara',    tags:['party','glam','night'],         vip:true},
+  {id:'diam-studs',  name:'Diamond Studs',  emoji:'💎', col:'#bae6fd', jtype:'earrings', tags:['formal','elegant','gala'],      vip:true},
+  {id:'layered-nk',  name:'Layered Chains', emoji:'✨', col:'#f59e0b', jtype:'necklace', tags:['casual','boho','beach'],        vip:false},
+  {id:'choker-blk',  name:'Black Choker',   emoji:'🖤', col:'#111827', jtype:'necklace', tags:['edgy','night','date'],          vip:false},
+  {id:'hoop-gold',   name:'Gold Hoops',     emoji:'🔔', col:'#d97706', jtype:'earrings', tags:['casual','party','everyday'],    vip:false},
+  {id:'star-earr',   name:'Star Earrings',  emoji:'🌟', col:'#fbbf24', jtype:'earrings', tags:['party','casual','glam'],        vip:true},
+  {id:'pearl-neck',  name:'Pearl Necklace', emoji:'🫧', col:'#f1f5f9', jtype:'necklace', tags:['formal','elegant','classic'],   vip:false},
+  {id:'cuff-slvr',   name:'Silver Cuff',    emoji:'🥈', col:'#94a3b8', jtype:'bracelet', tags:['casual','edgy','everyday'],     vip:false},
+];
+
+// ── Salon data ─────────────────────────────────────────────────────────────────
+const HAIR_STYLES = [
+  {id:'long-str',  name:'Straight',  emoji:'💇'},
+  {id:'wavy',      name:'Wavy',      emoji:'🌊'},
+  {id:'curly',     name:'Curly',     emoji:'🌀'},
+  {id:'bob',       name:'Bob',       emoji:'✂️'},
+  {id:'ponytail',  name:'Ponytail',  emoji:'🎀'},
+  {id:'bun',       name:'Top Bun',   emoji:'🍩'},
+  {id:'braids',    name:'Braids',    emoji:'🎀'},
+  {id:'pixie',     name:'Pixie',     emoji:'⚡'},
+];
+
+const HAIR_COLORS = [
+  {id:'black',  name:'Black',  col:'#1a1a1a'},
+  {id:'brown',  name:'Brown',  col:'#7c3b1a'},
+  {id:'blonde', name:'Blonde', col:'#fbbf24'},
+  {id:'red',    name:'Auburn', col:'#c0392b'},
+  {id:'pink',   name:'Pink',   col:'#f472b6'},
+  {id:'blue',   name:'Blue',   col:'#3b82f6'},
+  {id:'purple', name:'Purple', col:'#a855f7'},
+  {id:'white',  name:'Silver', col:'#e2e8f0'},
+];
+
+const MAKEUP_LOOKS = [
+  {id:'none',   name:'No Makeup',  emoji:'🤍', lipCol:'#F5C5A3', eyeShadow:null,      blush:false},
+  {id:'natural',name:'Natural',    emoji:'🌸', lipCol:'#f9a8d4', eyeShadow:'#fce7f3', blush:true},
+  {id:'bold',   name:'Bold Red',   emoji:'💄', lipCol:'#dc2626', eyeShadow:'#1e1b4b', blush:true},
+  {id:'smoky',  name:'Smoky Eye',  emoji:'🖤', lipCol:'#d6c5a7', eyeShadow:'#1f2937', blush:false},
+  {id:'glam',   name:'Glam',       emoji:'✨', lipCol:'#f9a8d4', eyeShadow:'#d97706', blush:true},
+  {id:'colourful',name:'Colorful', emoji:'🎨', lipCol:'#c084fc', eyeShadow:'#3b82f6', blush:true},
+];
+
+const NAIL_COLORS = [
+  {id:'natural',name:'Natural',col:'#f5e0d3', vip:false},
+  {id:'red',    name:'Red',    col:'#dc2626', vip:false},
+  {id:'pink',   name:'Pink',   col:'#f472b6', vip:false},
+  {id:'purple', name:'Purple', col:'#7c3aed', vip:false},
+  {id:'black',  name:'Black',  col:'#111827', vip:false},
+  {id:'nude',   name:'Nude',   col:'#d6c5a7', vip:false},
+  {id:'glitter',name:'Glitter',col:'#d97706', vip:true},
+  {id:'french', name:'French', col:'#f8fafc', vip:false},
+];
+
+const SHOP_EYE_COLORS = [
+  {id:'eye-purple', name:'Violet', col1:'#6b4fa0', col2:'#9b72d8', price:0},
+  {id:'eye-blue',   name:'Ocean',  col1:'#1d4ed8', col2:'#60a5fa', price:40},
+  {id:'eye-green',  name:'Jade',   col1:'#15803d', col2:'#4ade80', price:40},
+  {id:'eye-amber',  name:'Amber',  col1:'#b45309', col2:'#fbbf24', price:50},
+  {id:'eye-teal',   name:'Teal',   col1:'#0f766e', col2:'#2dd4bf', price:50},
+  {id:'eye-red',    name:'Ruby',   col1:'#b91c1c', col2:'#f87171', price:60},
+  {id:'eye-grey',   name:'Storm',  col1:'#374151', col2:'#9ca3af', price:80},
+  {id:'eye-rose',   name:'Rose',   col1:'#9d174d', col2:'#f472b6', price:80},
+];
+
+// ── Challenge themes ───────────────────────────────────────────────────────────
+const CHALLENGES = [
+  {name:'Beach Day',     emoji:'🏖️', bg:'#0284c7', preferred:['beach','summer','casual'], avoid:['formal','winter','glam']},
+  {name:'Date Night',    emoji:'🌙', bg:'#1e1b4b', preferred:['date','night','elegant'],  avoid:['sporty','casual','beach']},
+  {name:'Job Interview', emoji:'💼', bg:'#1f2937', preferred:['work','formal','classic'], avoid:['party','beach','edgy']},
+  {name:'Birthday Party',emoji:'🎉', bg:'#7c3aed', preferred:['party','glam','night'],   avoid:['sporty','work','winter']},
+  {name:'Gym Session',   emoji:'🏋️', bg:'#064e3b', preferred:['sporty','gym','casual'],  avoid:['formal','night','glam']},
+  {name:'Garden Picnic', emoji:'🌿', bg:'#166534', preferred:['garden','casual','summer'],avoid:['night','formal','edgy']},
+  {name:'Gala Night',    emoji:'👑', bg:'#3b0764', preferred:['gala','glam','formal'],   avoid:['casual','sporty','beach']},
+  {name:'Resort Vacay',  emoji:'🌴', bg:'#0f766e', preferred:['resort','summer','beach'],avoid:['formal','winter','edgy']},
+];
+
+// ── Time options ───────────────────────────────────────────────────────────────
+const TIME_OPTIONS = [
+  { label:'1 min',  secs:60,  mult:3.0, emoji:'⚡', hint:'Triple points!' },
+  { label:'2 min',  secs:120, mult:2.0, emoji:'🔥', hint:'Double points!' },
+  { label:'4 min',  secs:240, mult:1.5, emoji:'⏳', hint:'1.5× points'    },
+  { label:'6 min',  secs:360, mult:1.0, emoji:'⏱',  hint:'Standard'       },
+  { label:'10 min', secs:600, mult:0.6, emoji:'🐌', hint:'0.6× points'    },
+];
+
+// ── State ──────────────────────────────────────────────────────────────────────
+const outfit = { top:null, bottom:null, dress:null, shoes:null, bag:null, hat:null, jewelry:null };
+const salonState = {
+  hair: { style:'long-str', color:'#1a1a1a' },
+  makeup: MAKEUP_LOOKS[1],
+  nails: NAIL_COLORS[0],
+};
+let activeTab = 'home';
+let lobbyCategory = 'tops';
+let salonTab = 'hair';
+let challengeState = {
+  active: false,
+  themeIdx: 0,
+  timeLeft: 360,
+  timer: null,
+  score: null,
+  selectedTime: 360,
+  mult: 1.0,
+};
+let isVip = false;
+let totalScore = 0;
+let gems = 0;
+let purchasedItems = new Set();
+let eyeColorId = 'eye-purple';
+
+// Load save
+try {
+  const sv = JSON.parse(localStorage.getItem('dti_save') || '{}');
+  if (sv.outfit) Object.assign(outfit, sv.outfit);
+  if (sv.salon)  Object.assign(salonState, sv.salon);
+  if (sv.isVip)  isVip = sv.isVip;
+  if (sv.totalScore) totalScore = sv.totalScore;
+  if (sv.gems)   gems = sv.gems;
+  if (sv.purchasedItems) purchasedItems = new Set(sv.purchasedItems);
+  if (sv.eyeColorId) eyeColorId = sv.eyeColorId;
+  // resolve item refs
+  if (outfit.top)     outfit.top     = TOPS.find(x=>x.id===outfit.top)||null;
+  if (outfit.bottom)  outfit.bottom  = BOTTOMS.find(x=>x.id===outfit.bottom)||null;
+  if (outfit.dress)   outfit.dress   = DRESSES.find(x=>x.id===outfit.dress)||null;
+  if (outfit.shoes)   outfit.shoes   = SHOES.find(x=>x.id===outfit.shoes)||null;
+  if (outfit.bag)     outfit.bag     = BAGS.find(x=>x.id===outfit.bag)||null;
+  if (outfit.hat)     outfit.hat     = HATS.find(x=>x.id===outfit.hat)||null;
+  if (outfit.jewelry) outfit.jewelry = JEWELRY.find(x=>x.id===outfit.jewelry)||null;
+  if (salonState.makeup) salonState.makeup = MAKEUP_LOOKS.find(x=>x.id===salonState.makeup)||MAKEUP_LOOKS[1];
+  if (salonState.nails)  salonState.nails  = NAIL_COLORS.find(x=>x.id===salonState.nails)||NAIL_COLORS[0];
+} catch(e){}
+
+function saveGame() {
+  try {
+    localStorage.setItem('dti_save', JSON.stringify({
+      outfit: {
+        top: outfit.top?.id||null, bottom: outfit.bottom?.id||null,
+        dress: outfit.dress?.id||null, shoes: outfit.shoes?.id||null,
+        bag: outfit.bag?.id||null, hat: outfit.hat?.id||null,
+        jewelry: outfit.jewelry?.id||null,
+      },
+      salon: {
+        hair: salonState.hair,
+        makeup: salonState.makeup?.id||null,
+        nails: salonState.nails?.id||null,
+      },
+      isVip, totalScore, gems,
+      purchasedItems: [...purchasedItems],
+      eyeColorId,
+    }));
+  } catch(e){}
+}
+
+// ── Canvas draw helpers ─────────────────────────────────────────────────────────
+function rr(x,y,w,h,r=6) {
+  ctx.beginPath();
+  ctx.roundRect(x,y,w,h,r);
+}
+function trap(cx, topY, topW, botY, botW) {
+  const ht = topW/2, hb = botW/2;
+  ctx.beginPath();
+  ctx.moveTo(cx-ht, topY);
+  ctx.lineTo(cx+ht, topY);
+  ctx.lineTo(cx+hb, botY);
+  ctx.lineTo(cx-hb, botY);
+  ctx.closePath();
+}
+function ellipseF(cx,cy,rx,ry,col) {
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+  ctx.fill();
+}
+function darken(hex, amt=0.15) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.max(0,((n>>16)&255)*(1-amt)|0);
+  const g=Math.max(0,((n>>8)&255)*(1-amt)|0);
+  const b=Math.max(0,(n&255)*(1-amt)|0);
+  return `rgb(${r},${g},${b})`;
+}
+function lighten(hex, amt=0.2) {
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,((n>>16)&255)+(255*amt)|0);
+  const g=Math.min(255,((n>>8)&255)+(255*amt)|0);
+  const b=Math.min(255,(n&255)+(255*amt)|0);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ── Avatar drawing ─────────────────────────────────────────────────────────────
+function drawBg() {
+  const theme = challengeState.active ? CHALLENGES[challengeState.themeIdx] : null;
+  const bgCol = theme ? theme.bg : '#f3e8ff';
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0,0,W,H);
+  // floor
+  ctx.fillStyle = theme ? darken(theme.bg, 0.3) : '#e9d5ff';
+  ctx.fillRect(0, H*0.88, W, H*0.12);
+  // shadow under avatar
+  ellipseF(B.cx, H*0.89, 65, 10, 'rgba(0,0,0,0.12)');
+}
+
+function drawSkinBase() {
+  const sk = SKIN;
+  const shad = 'rgba(160,88,50,0.09)';
+  const hi   = 'rgba(255,232,208,0.42)';
+  const cx = B.cx;
+  const aY = B.armY, aH = B.armH;
+  const elY = aY + aH * 0.48;
+  const hY  = aY + aH + 10;
+  const hcx = B.hcx, hcy = B.hcy;
+
+  // ── ARMS (slender) ───────────────────────────────────────────────────────
+  ctx.fillStyle = sk;
+  ctx.beginPath();
+  ctx.moveTo(B.laX + B.armW, aY + 2);
+  ctx.lineTo(B.laX + 2, aY + 6);
+  ctx.bezierCurveTo(B.laX - 1, aY + aH*0.22, B.laX - 1, aY + aH*0.42, B.laX + 3, elY);
+  ctx.bezierCurveTo(B.laX + 1, elY + 16, B.laX + 7, aY + aH*0.88, B.laX + 11, aY + aH);
+  ctx.lineTo(B.laX + 30, aY + aH);
+  ctx.bezierCurveTo(B.laX + 34, aY + aH*0.88, B.laX + B.armW + 2, elY + 16, B.laX + B.armW + 2, elY);
+  ctx.bezierCurveTo(B.laX + B.armW + 2, aY + aH*0.42, B.laX + B.armW + 2, aY + aH*0.22, B.laX + B.armW, aY + 2);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.arc(B.laX + 4, elY + 2, 4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.arc(B.laX + 18, elY - 3, 4, 0, Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = sk;
+  ctx.beginPath();
+  ctx.moveTo(B.raX + 2, aY + 2);
+  ctx.lineTo(B.raX + B.armW - 2, aY + 6);
+  ctx.bezierCurveTo(B.raX + B.armW + 1, aY + aH*0.22, B.raX + B.armW + 1, aY + aH*0.42, B.raX + B.armW - 3, elY);
+  ctx.bezierCurveTo(B.raX + B.armW - 1, elY + 16, B.raX + B.armW - 7, aY + aH*0.88, B.raX + B.armW - 11, aY + aH);
+  ctx.lineTo(B.raX + 14, aY + aH);
+  ctx.bezierCurveTo(B.raX + 10, aY + aH*0.88, B.raX - 2, elY + 16, B.raX - 2, elY);
+  ctx.bezierCurveTo(B.raX - 2, aY + aH*0.42, B.raX - 2, aY + aH*0.22, B.raX + 2, aY + 2);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.arc(B.raX + B.armW - 4, elY + 2, 4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.arc(B.raX + 26, elY - 3, 4, 0, Math.PI*2); ctx.fill();
+
+  // ── TORSO (anime slim hourglass) ─────────────────────────────────────────
+  const wW = B.waistW - 8;
+  ctx.fillStyle = sk;
+  ctx.beginPath();
+  ctx.moveTo(cx - B.shW/2, B.shY);
+  ctx.bezierCurveTo(cx - B.shW/2 - 6, B.shY + 30, cx - wW/2 - 10, B.waistY - 34, cx - wW/2, B.waistY);
+  ctx.bezierCurveTo(cx - wW/2 - 2, B.waistY + 12, cx - B.hipW/2 - 2, B.hipY - 6, cx - B.hipW/2, B.hipY);
+  ctx.bezierCurveTo(cx - B.hipW/2 + 2, B.hipY + 14, cx - 18, B.hipY + 22, cx - 12, B.hipY + 24);
+  ctx.lineTo(cx + 12, B.hipY + 24);
+  ctx.bezierCurveTo(cx + 18, B.hipY + 22, cx + B.hipW/2 - 2, B.hipY + 14, cx + B.hipW/2, B.hipY);
+  ctx.bezierCurveTo(cx + B.hipW/2 + 2, B.hipY - 6, cx + wW/2 + 2, B.waistY + 12, cx + wW/2, B.waistY);
+  ctx.bezierCurveTo(cx + wW/2 + 10, B.waistY - 34, cx + B.shW/2 + 6, B.shY + 30, cx + B.shW/2, B.shY);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shad;
+  ctx.beginPath();
+  ctx.moveTo(cx - B.shW/2, B.shY);
+  ctx.bezierCurveTo(cx - B.shW/2 - 6, B.shY + 30, cx - wW/2 - 10, B.waistY - 34, cx - wW/2, B.waistY);
+  ctx.lineTo(cx - wW/2 + 12, B.waistY);
+  ctx.bezierCurveTo(cx - wW/2 + 4, B.waistY - 22, cx - B.shW/2 + 4, B.shY + 22, cx - B.shW/2, B.shY);
+  ctx.fill();
+  ctx.fillStyle = hi;
+  ctx.beginPath(); ctx.ellipse(cx, B.shY + 55, 14, 24, 0, 0, Math.PI*2); ctx.fill();
+
+  // ── NECK ─────────────────────────────────────────────────────────────────
+  ctx.fillStyle = sk;
+  ctx.beginPath();
+  ctx.moveTo(B.neckX + 2, B.neckY);
+  ctx.lineTo(B.neckX + B.neckW - 2, B.neckY);
+  ctx.bezierCurveTo(B.neckX + B.neckW + 2, B.neckY + 6, B.neckX + B.neckW + 3, B.neckY + B.neckH - 4, B.neckX + B.neckW + 2, B.neckY + B.neckH);
+  ctx.lineTo(B.neckX - 2, B.neckY + B.neckH);
+  ctx.bezierCurveTo(B.neckX - 3, B.neckY + B.neckH - 4, B.neckX - 2, B.neckY + 6, B.neckX + 2, B.neckY);
+  ctx.fill();
+  ctx.fillStyle = shad; ctx.fillRect(B.neckX + B.neckW - 4, B.neckY, 5, B.neckH);
+  ctx.strokeStyle = 'rgba(160,88,50,0.14)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(cx - 44, B.shY + 14); ctx.quadraticCurveTo(cx - 12, B.shY + 5, B.neckX, B.neckY + B.neckH - 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 44, B.shY + 14); ctx.quadraticCurveTo(cx + 12, B.shY + 5, B.neckX + B.neckW, B.neckY + B.neckH - 2); ctx.stroke();
+
+  // ── ANIME HEAD (round crown + V-chin) ────────────────────────────────────
+  ctx.fillStyle = sk;
+  ctx.beginPath();
+  // Upper arc: left → top → right (anticlockwise in canvas Y-down = through top)
+  ctx.arc(hcx, hcy - 4, B.hr + 1, Math.PI, 0);
+  // Right cheek flares then tapers toward jaw
+  ctx.bezierCurveTo(hcx + B.hr + 4, hcy + 12, hcx + 22, hcy + 22, hcx + 14, hcy + B.hr + 1);
+  // Right jaw → pointed chin
+  ctx.quadraticCurveTo(hcx + 6, hcy + B.hr + 8, hcx, hcy + B.hr + 8);
+  // Chin → left jaw
+  ctx.quadraticCurveTo(hcx - 6, hcy + B.hr + 8, hcx - 14, hcy + B.hr + 1);
+  // Left cheek back to arc start
+  ctx.bezierCurveTo(hcx - 22, hcy + 22, hcx - B.hr - 4, hcy + 12, hcx - B.hr - 1, hcy - 4);
+  ctx.closePath(); ctx.fill();
+
+  // Ears
+  ellipseF(hcx - B.hr + 1, hcy + 2, 6, 8, sk);
+  ellipseF(hcx + B.hr - 1, hcy + 2, 6, 8, sk);
+  ctx.strokeStyle = 'rgba(160,88,50,0.12)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(hcx - B.hr + 1, hcy + 2, 4, 0.5, Math.PI*1.5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(hcx + B.hr - 1, hcy + 2, 4, -0.5, Math.PI*0.5); ctx.stroke();
+
+  // ── LEGS ─────────────────────────────────────────────────────────────────
+  ctx.fillStyle = sk;
+  const kY = B.legY + B.legH * 0.52;
+  const cY = B.legY + B.legH * 0.72;
+  ctx.beginPath();
+  ctx.moveTo(B.llX - 2, B.legY);
+  ctx.bezierCurveTo(B.llX - 4, B.legY + B.legH*0.24, B.llX - 4, B.legY + B.legH*0.42, B.llX - 2, kY);
+  ctx.bezierCurveTo(B.llX - 2, kY + 12, B.llX + 1, cY - 4, B.llX + 3, cY);
+  ctx.bezierCurveTo(B.llX + 1, cY + 22,  B.llX + 4, B.legY + B.legH*0.92, B.llX + 8, B.legY + B.legH);
+  ctx.lineTo(B.llX + B.llW - 4, B.legY + B.legH);
+  ctx.bezierCurveTo(B.llX + B.llW,     B.legY + B.legH*0.92, B.llX + B.llW + 1, cY + 22, B.llX + B.llW - 1, cY);
+  ctx.bezierCurveTo(B.llX + B.llW + 3, cY - 4, B.llX + B.llW + 4, kY + 12, B.llX + B.llW + 2, kY);
+  ctx.bezierCurveTo(B.llX + B.llW + 4, B.legY + B.legH*0.42, B.llX + B.llW + 4, B.legY + B.legH*0.24, B.llX + B.llW + 2, B.legY);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.ellipse(B.llX + 2, kY - 1, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.ellipse(B.llX + B.llW/2 + 2, kY + 5, 7, 5, 0, 0, Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = sk;
+  ctx.beginPath();
+  ctx.moveTo(B.rlX - 2, B.legY);
+  ctx.bezierCurveTo(B.rlX - 4, B.legY + B.legH*0.24, B.rlX - 4, B.legY + B.legH*0.42, B.rlX - 2, kY);
+  ctx.bezierCurveTo(B.rlX - 2, kY + 12, B.rlX + 1, cY - 4, B.rlX + 3, cY);
+  ctx.bezierCurveTo(B.rlX + 1, cY + 22,  B.rlX + 4, B.legY + B.legH*0.92, B.rlX + 8, B.legY + B.legH);
+  ctx.lineTo(B.rlX + B.rlW - 4, B.legY + B.legH);
+  ctx.bezierCurveTo(B.rlX + B.rlW,     B.legY + B.legH*0.92, B.rlX + B.rlW + 1, cY + 22, B.rlX + B.rlW - 1, cY);
+  ctx.bezierCurveTo(B.rlX + B.rlW + 3, cY - 4, B.rlX + B.rlW + 4, kY + 12, B.rlX + B.rlW + 2, kY);
+  ctx.bezierCurveTo(B.rlX + B.rlW + 4, B.legY + B.legH*0.42, B.rlX + B.rlW + 4, B.legY + B.legH*0.24, B.rlX + B.rlW + 2, B.legY);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.ellipse(B.rlX + 2, kY - 1, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.ellipse(B.rlX + B.rlW/2 + 2, kY + 5, 7, 5, 0, 0, Math.PI*2); ctx.fill();
+
+  // ── FEET ─────────────────────────────────────────────────────────────────
+  ctx.fillStyle = sk;
+  rr(B.lfX, B.footY, B.lfW, B.footH, [4,12,12,4]); ctx.fill();
+  rr(B.rfX, B.footY, B.rfW, B.footH, [4,12,12,4]); ctx.fill();
+  ctx.fillStyle = hi;
+  ctx.beginPath(); ctx.ellipse(B.lfX + B.lfW*0.62, B.footY + 8, 10, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(B.rfX + B.rfW*0.62, B.footY + 8, 10, 5, 0, 0, Math.PI*2); ctx.fill();
+
+  // ── HANDS ────────────────────────────────────────────────────────────────
+  ctx.fillStyle = sk;
+  const lhx = B.laX + B.armW/2, rhx = B.raX + B.armW/2;
+  const fLen = [11, 14, 13, 10];
+  const lFX  = [-11, -4, 2, 8];
+  const rFX  = [-8,  -2, 4, 11];
+  ellipseF(lhx - 2, hY + 2, 14, 12, sk);
+  lFX.forEach((fx, i) => {
+    ctx.beginPath(); ctx.ellipse(lhx + fx - 1, hY - 8, 3, fLen[i]/2, fx*0.016, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.beginPath(); ctx.ellipse(lhx - 18, hY + 2, 3.5, 6, -0.4, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(160,88,50,0.10)'; ctx.lineWidth = 0.8;
+  lFX.forEach(fx => { ctx.beginPath(); ctx.arc(lhx + fx - 1, hY - 1, 2.8, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke(); });
+  ctx.fillStyle = sk;
+  ellipseF(rhx + 2, hY + 2, 14, 12, sk);
+  rFX.forEach((fx, i) => {
+    ctx.beginPath(); ctx.ellipse(rhx + fx + 1, hY - 8, 3, fLen[i]/2, fx*0.016, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.beginPath(); ctx.ellipse(rhx + 18, hY + 2, 3.5, 6, 0.4, 0, Math.PI*2); ctx.fill();
+  rFX.forEach(fx => { ctx.beginPath(); ctx.arc(rhx + fx + 1, hY - 1, 2.8, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke(); });
+}
+
+function drawShoes(shoes) {
+  if (!shoes) return;
+  const col = shoes.col, col2 = shoes.col2||darken(shoes.col);
+  ctx.fillStyle = col;
+  if (shoes.stype==='heels') {
+    // Shoe body
+    rr(B.lfX-2, B.footY, B.lfW, B.footH-4, [4,8,8,4]); ctx.fill();
+    rr(B.rfX-2, B.footY, B.rfW, B.footH-4, [4,8,8,4]); ctx.fill();
+    // Heel
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.footY+B.footH-6, 6, 10);
+    ctx.fillRect(B.rfX-2, B.footY+B.footH-6, 6, 10);
+  } else if (shoes.stype==='sandal') {
+    // Thin sole
+    ctx.fillStyle = col;
+    rr(B.lfX, B.footY+B.footH-6, B.lfW-4, 6, 3); ctx.fill();
+    rr(B.rfX, B.footY+B.footH-6, B.rfW-4, 6, 3); ctx.fill();
+    // Straps
+    ctx.strokeStyle = col; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(B.lfX+8, B.footY+4); ctx.lineTo(B.lfX+B.lfW-8, B.footY+4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(B.rfX+8, B.footY+4); ctx.lineTo(B.rfX+B.rfW-8, B.footY+4); ctx.stroke();
+  } else if (shoes.stype==='boot-ankle') {
+    const bh = 36;
+    rr(B.lfX-2, B.footY-bh+B.footH, B.lfW+2, bh+B.footH, [8,8,4,4]); ctx.fill();
+    rr(B.rfX-2, B.footY-bh+B.footH, B.rfW+2, bh+B.footH, [8,8,4,4]); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.footY-bh+B.footH, B.lfW+2, 4);
+    ctx.fillRect(B.rfX-2, B.footY-bh+B.footH, B.rfW+2, 4);
+  } else if (shoes.stype==='boot-knee') {
+    const bh = 90;
+    ctx.fillStyle = col;
+    rr(B.lfX-2, B.legY+B.legH-bh, B.llW+8, bh+B.footH, [6,6,4,4]); ctx.fill();
+    rr(B.rlX-2, B.legY+B.legH-bh, B.rlW+8, bh+B.footH, [6,6,4,4]); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.legY+B.legH-bh, B.llW+8, 4);
+    ctx.fillRect(B.rlX-2, B.legY+B.legH-bh, B.rlW+8, 4);
+  } else {
+    // Flat/sneakers
+    rr(B.lfX-2, B.footY, B.lfW+2, B.footH+4, [4,10,10,4]); ctx.fill();
+    rr(B.rfX-2, B.footY, B.rfW+2, B.footH+4, [4,10,10,4]); ctx.fill();
+    // Sole line
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.lfX-2, B.footY+B.footH, B.lfW+2, 4);
+    ctx.fillRect(B.rfX-2, B.footY+B.footH, B.rfW+2, 4);
+  }
+}
+
+function drawBottom(item) {
+  if (!item) return;
+  const col=item.col, col2=item.col2||darken(item.col);
+  ctx.fillStyle = col;
+  if (item.btype==='pants') {
+    // Waistband
+    trap(B.cx, B.hipY-14, B.hipW, B.hipY, B.hipW+4); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-B.hipW/2, B.hipY-14, B.hipW, 4);
+    ctx.fillStyle = col;
+    rr(B.llX-2, B.legY, B.llW+4, B.legH, 4); ctx.fill();
+    rr(B.rlX-2, B.legY, B.rlW+4, B.legH, 4); ctx.fill();
+  } else if (item.btype==='shorts') {
+    trap(B.cx, B.hipY-14, B.hipW, B.hipY, B.hipW+4); ctx.fill();
+    rr(B.llX-2, B.legY, B.llW+4, 58, 4); ctx.fill();
+    rr(B.rlX-2, B.legY, B.rlW+4, 58, 4); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-B.hipW/2, B.hipY-14, B.hipW, 4);
+  } else if (item.btype==='skirt-mini') {
+    trap(B.cx, B.waistY-8, B.waistW+8, B.waistY+70, B.hipW+30); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-(B.waistW+8)/2, B.waistY-8, B.waistW+8, 5);
+  } else if (item.btype==='skirt-midi') {
+    trap(B.cx, B.waistY-8, B.waistW+8, B.waistY+130, B.hipW+50); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-(B.waistW+8)/2, B.waistY-8, B.waistW+8, 5);
+  } else if (item.btype==='skirt-maxi') {
+    trap(B.cx, B.waistY-8, B.waistW+8, B.footY+8, B.hipW+70); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(B.cx-(B.waistW+8)/2, B.waistY-8, B.waistW+8, 5);
+    // Hem detail
+    ctx.fillStyle = lighten(col, 0.1);
+    ctx.fillRect(B.cx-(B.hipW+70)/2, B.footY, B.hipW+70, 6);
+  }
+}
+
+function drawTop(item, overDress=false) {
+  if (!item) return;
+  const col=item.col, col2=item.col2||darken(item.col);
+  const botY = item.len<=0.5 ? B.shY+54 : item.len<=0.75 ? B.waistY-10 : item.len>=1 ? B.hipY+2 : B.waistY+14;
+  const botW = item.len<=0.5 ? B.waistW+20 : item.len>=1 ? B.hipW+4 : B.waistW+8;
+
+  if (item.neck==='off') {
+    // off-shoulder: draw wider top starting from mid-arm
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY+16, B.shW+24, botY, botW); ctx.fill();
+    // shoulder straps
+    ctx.fillRect(B.laX+4, B.shY+10, B.armW-4, 20);
+    ctx.fillRect(B.raX+4, B.shY+10, B.armW-4, 20);
+  } else {
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY, B.shW+4, botY, botW); ctx.fill();
+  }
+
+  // Sleeves
+  const slvH = B.armH * item.slv;
+  if (slvH > 0) {
+    ctx.fillStyle = col;
+    rr(B.laX, B.armY, B.armW, slvH, 6); ctx.fill();
+    rr(B.raX, B.armY, B.armW, slvH, 6); ctx.fill();
+    if (item.slv >= 0.9) {
+      ctx.fillStyle = col2;
+      ctx.fillRect(B.laX, B.armY+slvH-4, B.armW, 4);
+      ctx.fillRect(B.raX, B.armY+slvH-4, B.armW, 4);
+    }
+  }
+
+  // Neckline
+  const nkCol = SKIN;
+  if (item.neck==='high') {
+    ctx.fillStyle = col;
+    ctx.fillRect(B.neckX-2, B.neckY-4, B.neckW+4, B.neckH+10);
+  } else if (item.neck==='v') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath();
+    ctx.moveTo(B.cx-10, B.shY); ctx.lineTo(B.cx, B.shY+32); ctx.lineTo(B.cx+10, B.shY); ctx.fill();
+  } else if (item.neck==='crew') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath();
+    ctx.arc(B.cx, B.shY+10, 16, 0, Math.PI); ctx.fill();
+  }
+
+  // Blazer lapels
+  if (item.id==='blazer-blk') {
+    ctx.strokeStyle = lighten(col, 0.2); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(B.cx, B.shY+20); ctx.lineTo(B.cx-18, B.shY+54); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(B.cx, B.shY+20); ctx.lineTo(B.cx+18, B.shY+54); ctx.stroke();
+  }
+}
+
+function drawDress(item) {
+  if (!item) return;
+  const col=item.col, col2=item.col2||darken(item.col);
+  const maxLen = item.dlen||1;
+  const skirtBot = Math.min(B.footY+4, B.shY + (B.footY - B.shY) * maxLen);
+  const skirtW = maxLen >= 1.1 ? B.hipW + 80 : maxLen >= 1 ? B.hipW + 50 : B.hipW + 20;
+
+  if (item.neck==='off') {
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY+16, B.shW+24, skirtBot, skirtW); ctx.fill();
+  } else {
+    ctx.fillStyle = col;
+    trap(B.cx, B.shY, B.shW+4, skirtBot, skirtW); ctx.fill();
+  }
+
+  // Sleeves
+  const slvH = B.armH * (item.slv||0);
+  if (slvH > 0) {
+    ctx.fillStyle = col;
+    rr(B.laX, B.armY, B.armW, slvH, 6); ctx.fill();
+    rr(B.raX, B.armY, B.armW, slvH, 6); ctx.fill();
+  }
+
+  // Waist seam
+  ctx.fillStyle = col2;
+  ctx.fillRect(B.cx-B.waistW/2-2, B.waistY-2, B.waistW+4, 3);
+
+  // Hem
+  if (maxLen >= 1) {
+    ctx.fillStyle = lighten(col, 0.12);
+    ctx.fillRect(B.cx-skirtW/2, skirtBot-4, skirtW, 5);
+  }
+
+  // Neckline
+  const nkCol = SKIN;
+  if (item.neck==='v') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath();
+    ctx.moveTo(B.cx-10, B.shY); ctx.lineTo(B.cx, B.shY+32); ctx.lineTo(B.cx+10, B.shY); ctx.fill();
+  } else if (item.neck==='crew') {
+    ctx.fillStyle = nkCol;
+    ctx.beginPath(); ctx.arc(B.cx, B.shY+10, 16, 0, Math.PI); ctx.fill();
+  }
+}
+
+function drawHat(hat) {
+  if (!hat) return;
+  const col=hat.col, col2=hat.col2||darken(hat.col);
+  const hx=B.hcx, hy=B.hcy, hr=B.hr;
+  ctx.fillStyle = col;
+  if (hat.hstyle==='cap') {
+    ctx.beginPath(); ctx.arc(hx, hy, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    // Brim
+    rr(hx-hr-10, hy+2, (hr+10)*2, 10, 3); ctx.fill();
+    ctx.fillStyle = col2;
+    ctx.fillRect(hx-6, hy-hr, 12, 6);
+  } else if (hat.hstyle==='bucket') {
+    ctx.beginPath(); ctx.arc(hx, hy-2, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    rr(hx-hr-16, hy, (hr+16)*2, 10, 5); ctx.fill();
+  } else if (hat.hstyle==='beret') {
+    ctx.save(); ctx.translate(hx+8, hy-hr+4);
+    ctx.scale(1.3, 0.8);
+    ctx.beginPath(); ctx.arc(0, 0, hr, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    ellipseF(hx, hy-hr+6, 5, 4, col2);
+  } else if (hat.hstyle==='sun') {
+    // Wide brim
+    ellipseF(hx, hy-hr+10, hr+24, 10, col);
+    // Crown
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+4, Math.PI, 2*Math.PI); ctx.fill();
+    // Ribbon
+    ctx.fillStyle = col2;
+    ctx.fillRect(hx-hr-2, hy-hr+6, (hr+2)*2, 6);
+  } else if (hat.hstyle==='crown') {
+    const pts = [hx-20, hy-hr-2, hx-20, hy-hr-18, hx-6, hy-hr-10, hx, hy-hr-24, hx+6, hy-hr-10, hx+20, hy-hr-18, hx+20, hy-hr-2];
+    ctx.beginPath(); ctx.moveTo(pts[0],pts[1]);
+    for(let i=2;i<pts.length;i+=2) ctx.lineTo(pts[i],pts[i+1]);
+    ctx.closePath(); ctx.fill();
+    // gems
+    ellipseF(hx, hy-hr-18, 4, 4, '#fff');
+    ellipseF(hx-13, hy-hr-12, 3, 3, '#fff');
+    ellipseF(hx+13, hy-hr-12, 3, 3, '#fff');
+  } else if (hat.hstyle==='beanie') {
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+4, Math.PI*1.1, 2*Math.PI*0.9); ctx.fill();
+    // Brim fold
+    ctx.fillStyle = col2;
+    rr(hx-hr-3, hy+4, (hr+3)*2, 12, 4); ctx.fill();
+    // Pom
+    ellipseF(hx, hy-hr-8, 8, 8, col);
+  }
+}
+
+function drawBag(bag) {
+  if (!bag) return;
+  const col=bag.col, col2=bag.col2||darken(bag.col);
+  const bx = B.laX-36, by = B.armY+B.armH-20;
+  ctx.fillStyle = col;
+  if (bag.bstyle==='tote') {
+    rr(bx-4, by, 42, 52, 4); ctx.fill();
+    ctx.strokeStyle=col2; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(bx+8,by); ctx.lineTo(bx+8,by-16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx+28,by); ctx.lineTo(bx+28,by-16); ctx.stroke();
+  } else if (bag.bstyle==='clutch') {
+    rr(bx+2, by+10, 34, 22, 6); ctx.fill();
+    ctx.fillStyle=col2; ellipseF(bx+19, by+21, 4, 4, col2);
+  } else if (bag.bstyle==='mini') {
+    rr(bx+4, by+8, 26, 28, 6); ctx.fill();
+    ctx.strokeStyle=col2; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(bx+10,by+8); ctx.quadraticCurveTo(bx+17,by-2,bx+24,by+8); ctx.stroke();
+  } else if (bag.bstyle==='shoulder') {
+    rr(bx-2, by+4, 38, 44, 8); ctx.fill();
+    ctx.strokeStyle=col2; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(bx+16,by+4); ctx.quadraticCurveTo(bx-14,by-24,B.raX+B.armW/2,by-40); ctx.stroke();
+  } else if (bag.bstyle==='backpack') {
+    // Backpack on right side
+    const bpx = B.raX+2, bpy = B.armY+10;
+    rr(bpx, bpy, 34, 52, 8); ctx.fill();
+    ctx.fillStyle=col2;
+    rr(bpx+5, bpy+20, 24, 16, 4); ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(bpx+8,bpy); ctx.lineTo(bpx+8,bpy-14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bpx+26,bpy); ctx.lineTo(bpx+26,bpy-14); ctx.stroke();
+  }
+}
+
+function drawJewelry(j) {
+  if (!j) return;
+  const col = j.col;
+  if (j.jtype==='necklace') {
+    ctx.strokeStyle=col; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(B.cx, B.shY+2, 18, 0.1*Math.PI, 0.9*Math.PI); ctx.stroke();
+    ellipseF(B.cx, B.shY+20, 4, 4, col);
+  } else if (j.jtype==='earrings') {
+    ellipseF(B.hcx-B.hr+2, B.hcy+6, 4, 5, col);
+    ellipseF(B.hcx+B.hr-2, B.hcy+6, 4, 5, col);
+  } else if (j.jtype==='bracelet') {
+    ctx.strokeStyle=col; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(B.laX+B.armW/2, B.armY+B.armH-10, B.armW/2, Math.PI*0.3, Math.PI*1.7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(B.raX+B.armW/2, B.armY+B.armH-10, B.armW/2, Math.PI*0.3, Math.PI*1.7); ctx.stroke();
+  } else if (j.jtype==='tiara') {
+    ctx.fillStyle = col;
+    const ty = B.hcy - B.hr + 4;
+    const pts = [B.cx-22,ty, B.cx-16,ty-10, B.cx-8,ty-4, B.cx,ty-16, B.cx+8,ty-4, B.cx+16,ty-10, B.cx+22,ty];
+    ctx.beginPath(); ctx.moveTo(pts[0],pts[1]);
+    for(let i=2;i<pts.length;i+=2) ctx.lineTo(pts[i],pts[i+1]);
+    ctx.lineTo(B.cx+22, ty+5); ctx.lineTo(B.cx-22, ty+5);
+    ctx.closePath(); ctx.fill();
+    ellipseF(B.cx, ty-14, 4, 4, '#fff');
+  }
+}
+
+function drawNails(nails) {
+  if (!nails) return;
+  const col = nails.col;
+  const hY = B.armY + B.armH + 10;
+  const lhx = B.laX + B.armW/2;
+  const lFX = [-11, -4, 2, 8];
+  lFX.forEach(fx => ellipseF(lhx + fx, hY - 14, 3, 4, col));
+  const rhx = B.raX + B.armW/2;
+  const rFX = [-8, -2, 4, 11];
+  rFX.forEach(fx => ellipseF(rhx + fx, hY - 14, 3, 4, col));
+}
+
+function drawHair(hairS) {
+  const col = hairS.color || '#1a1a1a';
+  const dark = darken(col, 0.18);
+  const hx=B.hcx, hy=B.hcy, hr=B.hr;
+  ctx.fillStyle = col;
+
+  if (hairS.style==='long-str') {
+    // Long straight: side panels + back
+    ctx.fillStyle = dark;
+    ctx.fillRect(hx-hr-8, hy-6, 14, B.shY-hy+60);
+    ctx.fillRect(hx+hr-6, hy-6, 14, B.shY-hy+60);
+    ctx.fillStyle = col;
+    ctx.fillRect(hx-hr-4, hy-4, 12, B.shY-hy+56);
+    ctx.fillRect(hx+hr-8, hy-4, 12, B.shY-hy+56);
+    // Top
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    // Center part line
+    ctx.strokeStyle=dark; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(hx,hy-hr-2); ctx.lineTo(hx,hy-4); ctx.stroke();
+  } else if (hairS.style==='wavy') {
+    ctx.fillStyle = dark;
+    // Wavy panels using bezier
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-4, hy-8);
+    ctx.bezierCurveTo(hx-hr-12,hy+30, hx-hr,hy+60, hx-hr-8, B.shY+40);
+    ctx.lineTo(hx-hr+8, B.shY+40);
+    ctx.bezierCurveTo(hx-hr+4,hy+56, hx-hr+12,hy+26, hx-hr+4,hy-8);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(hx+hr-4, hy-8);
+    ctx.bezierCurveTo(hx+hr+12,hy+30, hx+hr,hy+60, hx+hr+8, B.shY+40);
+    ctx.lineTo(hx+hr-8, B.shY+40);
+    ctx.bezierCurveTo(hx+hr-4,hy+56, hx+hr-12,hy+26, hx+hr-4,hy-8);
+    ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillRect(hx-hr-2, hy-8, 10, B.shY-hy+42);
+    ctx.fillRect(hx+hr-8, hy-8, 10, B.shY-hy+42);
+  } else if (hairS.style==='curly') {
+    // Big curly mass
+    ctx.fillStyle = col;
+    ellipseF(hx, hy-8, hr+18, hr+14, col);
+    ellipseF(hx-hr-8, hy+10, 14, 18, col);
+    ellipseF(hx+hr+8, hy+10, 14, 18, col);
+    ellipseF(hx-hr, hy+28, 16, 18, col);
+    ellipseF(hx+hr, hy+28, 16, 18, col);
+    ellipseF(hx, hy+34, 18, 16, col);
+  } else if (hairS.style==='bob') {
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-6, hy-8);
+    ctx.lineTo(hx-hr-6, hy+22);
+    ctx.lineTo(hx-hr+4, hy+30);
+    ctx.lineTo(hx+hr-4, hy+30);
+    ctx.lineTo(hx+hr+6, hy+22);
+    ctx.lineTo(hx+hr+6, hy-8);
+    ctx.arc(hx, hy-4, hr+6, 0, Math.PI, true);
+    ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-2, hy-6);
+    ctx.lineTo(hx-hr-2, hy+20);
+    ctx.lineTo(hx-hr+6, hy+28);
+    ctx.lineTo(hx+hr-6, hy+28);
+    ctx.lineTo(hx+hr+2, hy+20);
+    ctx.lineTo(hx+hr+2, hy-6);
+    ctx.arc(hx, hy-4, hr+2, 0, Math.PI, true);
+    ctx.fill();
+  } else if (hairS.style==='ponytail') {
+    // Cap + ponytail
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillRect(hx-hr-2, hy-4, 8, 22);
+    ctx.fillRect(hx+hr-6, hy-4, 8, 22);
+    // Ponytail behind
+    ctx.fillStyle = dark;
+    rr(hx-8, hy-hr+4, 16, 80, 8); ctx.fill();
+    // Band
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(hx-8, hy-hr+26, 16, 5);
+  } else if (hairS.style==='bun') {
+    // Hair cap
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillRect(hx-hr-2, hy-4, B.armW, 18);
+    // Bun on top
+    ellipseF(hx, hy-hr-10, 18, 14, col);
+    ctx.strokeStyle=dark; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(hx, hy-hr-10, 12, 0, Math.PI*2); ctx.stroke();
+  } else if (hairS.style==='braids') {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+2, Math.PI, 2*Math.PI); ctx.fill();
+    // Left braid
+    for(let y=hy+16; y<B.shY+80; y+=14) {
+      ellipseF(hx-hr-2, y, 7, 6, col);
+    }
+    // Right braid
+    for(let y=hy+16; y<B.shY+80; y+=14) {
+      ellipseF(hx+hr+2, y, 7, 6, col);
+    }
+    // Part
+    ctx.strokeStyle=dark; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(hx,hy-hr-2); ctx.lineTo(hx,hy-4); ctx.stroke();
+  } else if (hairS.style==='pixie') {
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx, hy-4, hr+3, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillStyle = dark;
+    rr(hx-hr-2, hy-4, 12, 24, 4); ctx.fill();
+    rr(hx+hr-10, hy-4, 12, 24, 4); ctx.fill();
+    // Side swept
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(hx-6, hy-hr-2);
+    ctx.quadraticCurveTo(hx-hr-12, hy-hr+10, hx-hr-2, hy+8);
+    ctx.lineTo(hx-hr+8, hy+8);
+    ctx.lineTo(hx+4, hy-hr);
+    ctx.fill();
+  }
+}
+
+function drawFace(makeup) {
+  const mk = makeup || MAKEUP_LOOKS[1];
+  const hx = B.hcx, hy = B.hcy;
+  const eyeY = hy + 4;
+  const leX = hx - 16, reX = hx + 16;
+  const eyeW = 11, eyeH = 10;
+  const _eye = SHOP_EYE_COLORS.find(e => e.id === eyeColorId) || SHOP_EYE_COLORS[0];
+  const _iriC = _eye.col1, _iriH = _eye.col2;
+
+  // Eyeshadow
+  if (mk.eyeShadow) {
+    ellipseF(leX, eyeY - 2, eyeW + 2, eyeH + 2, mk.eyeShadow + '66');
+    ellipseF(reX, eyeY - 2, eyeW + 2, eyeH + 2, mk.eyeShadow + '66');
+  }
+
+  // Eye whites
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
+
+  // Left iris + pupil (clipped to eye white)
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = _iriC;
+  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = _iriH;
+  ctx.beginPath(); ctx.arc(leX - 1, eyeY - 0.5, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#0d0616';
+  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Right iris + pupil
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = _iriC;
+  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = _iriH;
+  ctx.beginPath(); ctx.arc(reX - 1, eyeY - 0.5, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#0d0616';
+  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Shine
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(leX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(leX + 4, eyeY + 3, 1.3, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(reX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(reX + 4, eyeY + 3, 1.3, 0, Math.PI*2); ctx.fill();
+
+  // Upper eyelash arc (top half)
+  ctx.strokeStyle = '#0d0612'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
+  // Corner flicks
+  ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(leX - eyeW, eyeY); ctx.lineTo(leX - eyeW - 4, eyeY - 5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(reX + eyeW, eyeY); ctx.lineTo(reX + eyeW + 4, eyeY - 5); ctx.stroke();
+  // Lower lash
+  ctx.strokeStyle = '#3a1a2a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW - 1, eyeH - 3, 0, 0, Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW - 1, eyeH - 3, 0, 0, Math.PI); ctx.stroke();
+
+  // Eyebrows
+  ctx.strokeStyle = '#3a1a06'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(leX - 12, eyeY - 13); ctx.quadraticCurveTo(leX, eyeY - 18, leX + 10, eyeY - 13); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(reX - 10, eyeY - 13); ctx.quadraticCurveTo(reX, eyeY - 18, reX + 12, eyeY - 13); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Nose (two tiny shadow dots)
+  ctx.fillStyle = 'rgba(170,90,60,0.25)';
+  ctx.beginPath(); ctx.arc(hx - 3, hy + 20, 2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx + 3, hy + 20, 2, 0, Math.PI*2); ctx.fill();
+
+  // Blush (cheek flush, inset to stay within jaw shape)
+  ctx.fillStyle = 'rgba(255,148,120,0.16)';
+  ctx.beginPath(); ctx.ellipse(hx - 18, hy + 22, 11, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx + 18, hy + 22, 11, 6, 0, 0, Math.PI*2); ctx.fill();
+  if (mk.blush) {
+    ctx.fillStyle = '#f9a8d455';
+    ctx.beginPath(); ctx.ellipse(hx - 18, hy + 22, 14, 7, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hx + 18, hy + 22, 14, 7, 0, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Lips
+  ctx.fillStyle = mk.lipCol || 'rgba(195,85,90,0.8)';
+  ctx.beginPath();
+  ctx.moveTo(hx - 8, hy + 29);
+  ctx.quadraticCurveTo(hx - 3, hy + 26, hx, hy + 28);
+  ctx.quadraticCurveTo(hx + 3, hy + 26, hx + 8, hy + 29);
+  ctx.quadraticCurveTo(hx + 3, hy + 34, hx, hy + 34);
+  ctx.quadraticCurveTo(hx - 3, hy + 34, hx - 8, hy + 29);
+  ctx.fill();
+  ctx.strokeStyle = '#fff4'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(hx - 4, hy + 28); ctx.quadraticCurveTo(hx, hy + 26, hx + 4, hy + 28); ctx.stroke();
+}
+
+function drawHUD() {
+  if (!challengeState.active) return;
+  const pct = challengeState.timeLeft / challengeState.selectedTime;
+  const barW = W-40, barX=20, barY=16;
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  rr(barX, barY, barW, 10, 5); ctx.fill();
+  const barCol = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#facc15' : '#f87171';
+  ctx.fillStyle = barCol;
+  rr(barX, barY, barW*pct, 10, 5); ctx.fill();
+  const m = Math.floor(challengeState.timeLeft/60);
+  const s = (challengeState.timeLeft%60).toString().padStart(2,'0');
+  ctx.font = 'bold 13px -apple-system,sans-serif';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(`${m}:${s}`, W/2, barY+5);
+  const theme = CHALLENGES[challengeState.themeIdx];
+  ctx.font = '12px -apple-system,sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(`${theme.emoji} ${theme.name}`, W/2, barY+22);
+  if (challengeState.mult !== 1) {
+    ctx.font = 'bold 11px -apple-system,sans-serif';
+    ctx.fillStyle = challengeState.mult > 1 ? '#fbbf24' : 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'right';
+    ctx.fillText(`×${challengeState.mult}`, W-14, barY+22);
+    ctx.textAlign = 'center';
+  }
+}
+
+function drawIdleHint() {
+  if (challengeState.active || isTouch) return;
+  ctx.font = '13px -apple-system,sans-serif';
+  ctx.fillStyle = 'rgba(100,50,150,0.4)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('Use the tabs below to dress up ✨', W/2, H-10);
+}
+
+function drawVipBadge() {
+  if (!isVip) return;
+  ctx.font = 'bold 12px -apple-system,sans-serif';
+  ctx.fillStyle = '#d97706';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('✨ VIP', W-14, 12);
+}
+
+function redraw() {
+  ctx.clearRect(0,0,W,H);
+  drawBg();
+  // Draw hair behind body first
+  const hs = salonState.hair;
+  if (['long-str','wavy','braids'].includes(hs.style)) {
+    ctx.save(); drawHairFarLayer(hs); ctx.restore();
+  }
+  // Draw bag behind on left
+  if (outfit.bag && outfit.bag.bstyle !== 'backpack') drawBag(outfit.bag);
+  drawSkinBase();
+  drawShoes(outfit.shoes);
+  if (outfit.dress) {
+    drawDress(outfit.dress);
+  } else {
+    drawBottom(outfit.bottom);
+    drawTop(outfit.top);
+  }
+  if (outfit.hat) drawHat(outfit.hat);
+  drawHair(salonState.hair);
+  drawFace(salonState.makeup);
+  if (outfit.jewelry) drawJewelry(outfit.jewelry);
+  if (salonState.nails) drawNails(salonState.nails);
+  if (outfit.bag && outfit.bag.bstyle === 'backpack') drawBag(outfit.bag);
+  drawHUD();
+  drawVipBadge();
+  drawIdleHint();
+}
+
+function drawHairFarLayer(hs) {
+  const col = hs.color || '#1a1a1a';
+  const dark = darken(col, 0.18);
+  const hx=B.hcx, hy=B.hcy, hr=B.hr;
+  if (hs.style==='long-str') {
+    ctx.fillStyle = dark;
+    ctx.fillRect(hx-hr-8, hy, 14, B.shY-hy+58);
+    ctx.fillRect(hx+hr-6, hy, 14, B.shY-hy+58);
+  } else if (hs.style==='wavy') {
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(hx-hr-8,hy); ctx.lineTo(hx-hr-8,B.shY+38); ctx.lineTo(hx-hr+2,B.shY+38); ctx.lineTo(hx-hr+2,hy);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(hx+hr-2,hy); ctx.lineTo(hx+hr-2,B.shY+38); ctx.lineTo(hx+hr+8,B.shY+38); ctx.lineTo(hx+hr+8,hy);
+    ctx.fill();
+  } else if (hs.style==='braids') {
+    ctx.fillStyle = darken(col,0.25);
+    ctx.fillRect(hx-hr-8, hy+16, 14, B.shY-hy+64);
+    ctx.fillRect(hx+hr-6, hy+16, 14, B.shY-hy+64);
+  }
+}
+
+// ── UI Builder ─────────────────────────────────────────────────────────────────
+const TC = document.getElementById('tab-content');
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
+
+function buildUI() {
+  TC.innerHTML = '';
+  TC.appendChild(buildHomePanel());
+  TC.appendChild(buildLobbyPanel());
+  TC.appendChild(buildSalonPanel());
+  TC.appendChild(buildChallengePanel());
+  TC.appendChild(buildVipPanel());
+  setTab(activeTab);
+}
+
+function buildHomePanel() {
+  const p = panel('home');
+  p.innerHTML = `
+    <div class="home-panel">
+      <div class="hm-title">👗 Dressed to Impress</div>
+      <div class="hm-sub">Dress up your avatar, then take on the style challenge to earn 💎 Gems!</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border-radius:14px;padding:14px;">
+        <span style="font-size:36px">💎</span>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#7c3aed;">${gems} <span style="font-size:13px;color:#9ca3af;">/ 500</span></div>
+          <div style="font-size:11px;color:#9ca3af;">Gems — spend 500 for VIP</div>
+        </div>
+      </div>
+      <div style="background:#f3e8ff;border-radius:8px;height:8px;overflow:hidden;">
+        <div style="width:${Math.min(100,(gems/500)*100)}%;height:100%;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:8px;transition:width .4s;"></div>
+      </div>
+      ${isVip?`<div class="vip-badge-row"><span class="vip-icon">✨</span><span class="vip-text">VIP Member — all exclusive items unlocked!</span></div>`:''}
+      <button class="big-btn" id="btn-reset-outfit">🔄 Reset Outfit</button>
+    </div>`;
+  p.querySelector('#btn-reset-outfit').addEventListener('click', () => { resetOutfit(); buildHomePanel(); setTab('home'); });
+  return p;
+}
+
+function buildLobbyPanel() {
+  const p = panel('lobby');
+  const categories = [
+    {id:'tops',   label:'👕 Tops'},
+    {id:'bottoms',label:'👖 Bottoms'},
+    {id:'dresses',label:'👗 Dresses'},
+    {id:'shoes',  label:'👟 Shoes'},
+    {id:'bags',   label:'👜 Bags'},
+    {id:'hats',   label:'🎩 Hats'},
+    {id:'jewelry',label:'💍 Jewelry'},
+  ];
+  const catTabs = document.createElement('div');
+  catTabs.className = 'cat-tabs';
+  categories.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'ctb' + (c.id===lobbyCategory?' active':'');
+    btn.textContent = c.label;
+    btn.addEventListener('click', () => { lobbyCategory=c.id; buildLobbyGrid(); });
+    catTabs.appendChild(btn);
+  });
+  p.appendChild(catTabs);
+  const grid = document.createElement('div');
+  grid.className = 'item-grid';
+  grid.id = 'lobby-grid';
+  p.appendChild(grid);
+  return p;
+}
+
+function buildLobbyGrid() {
+  const grid = document.getElementById('lobby-grid');
+  if (!grid) return;
+  // Update category tabs
+  document.querySelectorAll('#tab-lobby .ctb').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase().includes(lobbyCategory.replace('tops','top').replace('bottoms','bottom')));
+  });
+  const items = {tops:TOPS,bottoms:BOTTOMS,dresses:DRESSES,shoes:SHOES,bags:BAGS,hats:HATS,jewelry:JEWELRY}[lobbyCategory]||[];
+  grid.innerHTML='';
+  items.forEach(item => {
+    const locked = item.vip && !isVip;
+    const equipped = isEquipped(lobbyCategory, item);
+    const btn = document.createElement('button');
+    btn.className = 'ibtn'+(equipped?' equipped':'')+(locked?' locked':'');
+    btn.innerHTML = `<span class="ie">${item.emoji}</span><span class="in">${item.name}</span>${item.vip?'<span class="vip-tag">VIP</span>':''}`;
+    if (!locked) btn.addEventListener('click', () => toggleItem(lobbyCategory, item));
+    grid.appendChild(btn);
+  });
+}
+
+function buildSalonPanel() {
+  const p = panel('salon');
+  p.id = 'tab-salon';
+  // Sub-tabs
+  const sTabs = ['hair','makeup','nails'];
+  const tabRow = document.createElement('div');
+  tabRow.className = 'cat-tabs';
+  sTabs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'ctb'+(t===salonTab?' active':'');
+    btn.textContent = t==='hair'?'💇 Hair':t==='makeup'?'💄 Makeup':'💅 Nails';
+    btn.addEventListener('click', () => { salonTab=t; buildSalonContent(); });
+    tabRow.appendChild(btn);
+  });
+  p.appendChild(tabRow);
+  const content = document.createElement('div');
+  content.id = 'salon-content';
+  content.style.flex='1'; content.style.overflowY='auto';
+  p.appendChild(content);
+  return p;
+}
+
+function buildSalonContent() {
+  const c = document.getElementById('salon-content');
+  if (!c) return;
+  c.innerHTML='';
+  document.querySelectorAll('#tab-salon .ctb').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase().includes(salonTab));
+  });
+  if (salonTab==='hair') {
+    const lbl1 = document.createElement('div'); lbl1.className='salon-label'; lbl1.textContent='Style';
+    c.appendChild(lbl1);
+    const sg = document.createElement('div'); sg.className='style-grid';
+    HAIR_STYLES.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className='stb'+(salonState.hair.style===s.id?' active':'');
+      btn.innerHTML=`<span class="se">${s.emoji}</span><span class="sn">${s.name}</span>`;
+      btn.addEventListener('click', () => { salonState.hair.style=s.id; buildSalonContent(); redraw(); saveGame(); });
+      sg.appendChild(btn);
+    });
+    c.appendChild(sg);
+    const lbl2 = document.createElement('div'); lbl2.className='salon-label'; lbl2.textContent='Color';
+    c.appendChild(lbl2);
+    const cg = document.createElement('div'); cg.className='color-grid'; cg.style.padding='4px 10px 10px';
+    HAIR_COLORS.forEach(hc => {
+      const sw = document.createElement('button');
+      sw.className='swatch'+(salonState.hair.color===hc.col?' active':'');
+      sw.style.background=hc.col;
+      sw.title=hc.name;
+      sw.addEventListener('click', () => { salonState.hair.color=hc.col; buildSalonContent(); redraw(); saveGame(); });
+      cg.appendChild(sw);
+    });
+    c.appendChild(cg);
+  } else if (salonTab==='makeup') {
+    const lbl=document.createElement('div'); lbl.className='salon-label'; lbl.textContent='Look';
+    c.appendChild(lbl);
+    const sg=document.createElement('div'); sg.className='style-grid';
+    MAKEUP_LOOKS.forEach(mk => {
+      const btn=document.createElement('button');
+      btn.className='stb'+(salonState.makeup?.id===mk.id?' active':'');
+      btn.innerHTML=`<span class="se">${mk.emoji}</span><span class="sn">${mk.name}</span>`;
+      btn.addEventListener('click', () => { salonState.makeup=mk; buildSalonContent(); redraw(); saveGame(); });
+      sg.appendChild(btn);
+    });
+    c.appendChild(sg);
+  } else {
+    const lbl=document.createElement('div'); lbl.className='salon-label'; lbl.textContent='Nail Color';
+    c.appendChild(lbl);
+    const cg=document.createElement('div'); cg.className='color-grid'; cg.style.flexWrap='wrap'; cg.style.padding='6px 10px 10px';
+    NAIL_COLORS.forEach(nc => {
+      const locked=nc.vip&&!isVip;
+      const wrap=document.createElement('div'); wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.alignItems='center'; wrap.style.gap='2px';
+      const sw=document.createElement('button');
+      sw.className='swatch'+(salonState.nails?.id===nc.id?' active':'')+(locked?' locked':'');
+      sw.style.background=nc.col; sw.style.position='relative';
+      if (nc.vip) { const tag=document.createElement('span'); tag.style.cssText='position:absolute;bottom:-4px;right:-4px;font-size:8px;';tag.textContent='✨'; sw.appendChild(tag); }
+      if (!locked) sw.addEventListener('click', () => { salonState.nails=nc; buildSalonContent(); redraw(); saveGame(); });
+      const nm=document.createElement('span'); nm.style.cssText='font-size:8px;color:#7c3aed;font-weight:600;'; nm.textContent=nc.name;
+      wrap.appendChild(sw); wrap.appendChild(nm);
+      cg.appendChild(wrap);
+    });
+    c.appendChild(cg);
+  }
+}
+
+function buildChallengePanel() {
+  const p = panel('challenge');
+  p.id='tab-challenge';
+  const content=document.createElement('div'); content.className='chall-panel'; content.id='chall-inner';
+  p.appendChild(content);
+  return p;
+}
+
+function buildChallengeContent() {
+  const c=document.getElementById('chall-inner'); if(!c) return;
+  c.innerHTML='';
+  const theme=CHALLENGES[challengeState.themeIdx];
+  if (challengeState.score !== null) {
+    // Results
+    const sc=challengeState.score;
+    const base=challengeState.baseScore||sc;
+    const mult=challengeState.mult;
+    const multLabel=mult!==1?`<div style="font-size:12px;color:#9ca3af;margin-top:4px;">${base} base × ${mult} = <strong style="color:#a855f7">${sc}</strong> pts</div>`:'';
+    const gemsEarned=challengeState.gemsEarned||Math.ceil(sc/10);
+    c.innerHTML=`
+      <div class="theme-card" style="background:${theme.bg}">\
+        <span class="te">${theme.emoji}</span>\
+        <div class="td"><div class="tn">${theme.name}</div><div class="ts">Challenge complete!</div></div>\
+      </div>
+      <div id="score-result" style="display:block;padding:12px 8px;">
+        <div class="sr-pts">${sc} pts</div>
+        <div class="sr-grade">${scoreGrade(sc)}</div>
+        ${multLabel}
+        <div style="font-size:18px;margin-top:10px;">+${gemsEarned} 💎</div>
+        <div style="font-size:11px;color:#9ca3af;">Total gems: ${gems} / 500</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">All time: ${totalScore} pts</div>
+      </div>`;
+    const nb=document.createElement('button'); nb.className='big-btn';
+    nb.textContent='▶ Next Challenge'; nb.addEventListener('click',nextChallenge); c.appendChild(nb);
+    const ag=document.createElement('button'); ag.className='big-btn';
+    ag.style.background='linear-gradient(135deg,#6b7280,#4b5563)'; ag.style.boxShadow='0 3px 0 #374151';
+    ag.textContent='↺ Retry'; ag.addEventListener('click',() => {challengeState.score=null;startChallenge();});
+    c.appendChild(ag);
+    return;
+  }
+  // Theme card
+  const tc=document.createElement('div'); tc.className='theme-card'; tc.style.background=theme.bg;
+  tc.innerHTML=`<span class="te">${theme.emoji}</span><div class="td"><div class="tn">${theme.name}</div><div class="ts">Dress your avatar for this occasion!</div></div>`;
+  c.appendChild(tc);
+  // Theme nav
+  const nav=document.createElement('div'); nav.style.cssText='display:flex;gap:8px;flex-shrink:0;';
+  const prev=document.createElement('button'); prev.className='big-btn'; prev.style.cssText='flex:1;font-size:14px;background:linear-gradient(135deg,#6b7280,#4b5563);box-shadow:0 3px 0 #374151;';
+  prev.textContent='◀ Prev'; prev.addEventListener('click',()=>{challengeState.themeIdx=(challengeState.themeIdx-1+CHALLENGES.length)%CHALLENGES.length;buildChallengeContent();});
+  const next=document.createElement('button'); next.className='big-btn'; next.style.cssText='flex:1;font-size:14px;background:linear-gradient(135deg,#6b7280,#4b5563);box-shadow:0 3px 0 #374151;';
+  next.textContent='Next ▶'; next.addEventListener('click',()=>{challengeState.themeIdx=(challengeState.themeIdx+1)%CHALLENGES.length;buildChallengeContent();});
+  nav.appendChild(prev); nav.appendChild(next); c.appendChild(nav);
+  // Timer
+  if (challengeState.active) {
+    const tw=document.createElement('div'); tw.className='timer-bar-wrap';
+    const tb=document.createElement('div'); tb.className='timer-bar'; tb.id='chall-bar';
+    const pct=challengeState.timeLeft/360;
+    tb.style.width=(pct*100)+'%';
+    tb.style.background=pct>0.5?'#4ade80':pct>0.25?'#facc15':'#f87171';
+    tw.appendChild(tb); c.appendChild(tw);
+    const tl=document.createElement('div'); tl.id='timer-label';
+    const m=Math.floor(challengeState.timeLeft/60), s=(challengeState.timeLeft%60).toString().padStart(2,'0');
+    tl.textContent=`⏱ ${m}:${s} remaining`;
+    c.appendChild(tl);
+    const tip=document.createElement('div'); tip.style.cssText='font-size:11px;color:#9ca3af;text-align:center;flex-shrink:0;';
+    tip.textContent='Go to Lobby & Salon to dress up, then submit!';
+    c.appendChild(tip);
+    const sub=document.createElement('button'); sub.className='big-btn'; sub.style.marginTop='auto';
+    sub.textContent='✅ Submit Look'; sub.addEventListener('click',submitChallenge);
+    c.appendChild(sub);
+  } else {
+    // Time picker
+    const pickLabel=document.createElement('div');
+    pickLabel.style.cssText='font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;';
+    pickLabel.textContent='⏱ Choose your time limit';
+    c.appendChild(pickLabel);
+    const row=document.createElement('div'); row.className='time-pick-row';
+    TIME_OPTIONS.forEach(opt=>{
+      const btn=document.createElement('button');
+      const multCls=opt.mult>1?'mult-up':opt.mult<1?'mult-down':'mult-even';
+      btn.className='tpb '+multCls+(challengeState.selectedTime===opt.secs?' active':'');
+      btn.innerHTML=`<span class="tp-emoji">${opt.emoji}</span><span class="tp-time">${opt.label}</span><span class="tp-mult">×${opt.mult}</span>`;
+      btn.title=opt.hint;
+      btn.addEventListener('click',()=>{
+        challengeState.selectedTime=opt.secs;
+        challengeState.mult=opt.mult;
+        buildChallengeContent();
+      });
+      row.appendChild(btn);
+    });
+    c.appendChild(row);
+    const hint=document.createElement('div');
+    const sel=TIME_OPTIONS.find(o=>o.secs===challengeState.selectedTime)||TIME_OPTIONS[3];
+    hint.style.cssText='font-size:11px;color:#9ca3af;text-align:center;flex-shrink:0;';
+    hint.textContent=sel.hint;
+    c.appendChild(hint);
+    const st=document.createElement('button'); st.className='big-btn';
+    st.textContent=`▶ Start Challenge (${sel.label})`;
+    st.addEventListener('click',startChallenge);
+    c.appendChild(st);
+  }
+}
+
+function buildVipPanel() {
+  const p = panel('vip');
+  p.id = 'tab-vip';
+  const inner = document.createElement('div');
+  inner.className = 'vip-panel';
+
+  // ── Gem balance bar ───────────────────────────────────────────────────────
+  const balRow = document.createElement('div');
+  balRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#fdf4ff,#f0e6ff);border-radius:12px;padding:10px 14px;margin-bottom:12px;';
+  balRow.innerHTML = `<span style="font-size:16px;font-weight:900;color:#7c3aed;">💎 ${gems}</span><span style="font-size:11px;color:#9ca3af;">Gems balance</span>${isVip?'<span style="font-size:11px;color:#d97706;font-weight:700;">✨ VIP</span>':''}`;
+  inner.appendChild(balRow);
+
+  // ── Eye Colors section ────────────────────────────────────────────────────
+  const eyeTitle = document.createElement('div');
+  eyeTitle.style.cssText = 'font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;';
+  eyeTitle.textContent = '👁️ Eye Colors';
+  inner.appendChild(eyeTitle);
+
+  const eyeGrid = document.createElement('div');
+  eyeGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;';
+  SHOP_EYE_COLORS.forEach(ec => {
+    const owned = ec.price === 0 || purchasedItems.has(ec.id);
+    const active = eyeColorId === ec.id;
+    const canBuyEye = !owned && gems >= ec.price;
+    const locked = !owned && !canBuyEye;
+    const btn = document.createElement('button');
+    btn.style.cssText = `background:${active?'linear-gradient(135deg,#f3e8ff,#e9d5ff)':'#f9fafb'};border:2px solid ${active?'#a855f7':'#e5e7eb'};border-radius:10px;padding:8px 4px 6px;cursor:${locked?'default':'pointer'};opacity:${locked?'0.45':'1'};text-align:center;`;
+    btn.innerHTML = `<div style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 35%,${ec.col2},${ec.col1});margin:0 auto 4px;border:2px solid rgba(0,0,0,0.1);"></div><div style="font-size:10px;font-weight:600;color:#374151;line-height:1.2;">${ec.name}</div><div style="font-size:9px;color:${active?'#a855f7':owned?'#10b981':'#6b7280'};">${active?'● On':owned?'Owned':ec.price+'💎'}</div>`;
+    if (active || owned) {
+      btn.addEventListener('click', () => { eyeColorId = ec.id; saveGame(); redraw(); buildVipPanel(); setTab('vip'); });
+    } else if (canBuyEye) {
+      btn.addEventListener('click', () => { gems -= ec.price; purchasedItems.add(ec.id); eyeColorId = ec.id; saveGame(); redraw(); buildVipPanel(); setTab('vip'); });
+    }
+    eyeGrid.appendChild(btn);
+  });
+  inner.appendChild(eyeGrid);
+
+  // ── VIP section ───────────────────────────────────────────────────────────
+  const vipTitle = document.createElement('div');
+  vipTitle.style.cssText = 'font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;';
+  vipTitle.textContent = isVip ? '✨ VIP — All Items Unlocked' : '✨ VIP Membership';
+  inner.appendChild(vipTitle);
+
+  if (!isVip) {
+    const canBuy = gems >= 500;
+    const vipBox = document.createElement('div');
+    vipBox.style.cssText = 'background:#fdf4ff;border-radius:12px;padding:12px;';
+    vipBox.innerHTML = `<div style="font-size:11px;color:#9ca3af;margin-bottom:8px;">Unlock all exclusive clothing by spending 500 💎</div><div style="background:#f3e8ff;border-radius:6px;height:6px;overflow:hidden;margin-bottom:10px;"><div style="width:${Math.min(100,(gems/500)*100)}%;height:100%;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:6px;"></div></div><button id="buy-vip-btn" class="big-btn" style="${canBuy?'':'opacity:.45;pointer-events:none;'}">${canBuy?'✨ Unlock VIP — 500 💎':'Need '+(Math.max(0,500-gems))+' more 💎'}</button>`;
+    if (canBuy) {
+      vipBox.querySelector('#buy-vip-btn').addEventListener('click', () => { gems -= 500; isVip = true; saveGame(); buildUI(); setTab('vip'); });
+    }
+    inner.appendChild(vipBox);
+  } else {
+    const allVip = [...TOPS,...BOTTOMS,...DRESSES,...SHOES,...BAGS,...HATS,...JEWELRY].filter(x=>x.vip);
+    const grid = document.createElement('div'); grid.className = 'item-grid';
+    allVip.forEach(item => {
+      const cat = getCat(item), equipped = isEquipped(cat, item);
+      const btn = document.createElement('button');
+      btn.className = 'ibtn' + (equipped?' equipped':'');
+      btn.innerHTML = `<span class="ie">${item.emoji}</span><span class="in">${item.name}</span><span class="vip-tag">VIP</span>`;
+      btn.addEventListener('click', () => toggleItem(cat, item));
+      grid.appendChild(btn);
+    });
+    inner.appendChild(grid);
+  }
+
+  p.appendChild(inner);
+  return p;
+}
+
+function panel(id) {
+  const div=document.createElement('div');
+  div.className='panel';
+  div.id='tab-'+id;
+  return div;
+}
+
+function getCat(item) {
+  if (TOPS.includes(item)) return 'tops';
+  if (BOTTOMS.includes(item)) return 'bottoms';
+  if (DRESSES.includes(item)) return 'dresses';
+  if (SHOES.includes(item)) return 'shoes';
+  if (BAGS.includes(item)) return 'bags';
+  if (HATS.includes(item)) return 'hats';
+  if (JEWELRY.includes(item)) return 'jewelry';
+  return null;
+}
+
+function isEquipped(cat, item) {
+  return outfit[catToSlot(cat)]?.id === item.id;
+}
+
+function catToSlot(cat) {
+  return {tops:'top',bottoms:'bottom',dresses:'dress',shoes:'shoes',bags:'bag',hats:'hat',jewelry:'jewelry'}[cat];
+}
+
+function toggleItem(cat, item) {
+  const slot=catToSlot(cat);
+  if (outfit[slot]?.id === item.id) {
+    outfit[slot]=null;
+  } else {
+    outfit[slot]=item;
+    // dress clears top/bottom; top/bottom clears dress
+    if (slot==='dress') { outfit.top=null; outfit.bottom=null; }
+    if (slot==='top'||slot==='bottom') outfit.dress=null;
+  }
+  redraw(); saveGame();
+  if (activeTab==='lobby') buildLobbyGrid();
+  if (activeTab==='vip') { buildVipPanel(); setTab('vip'); }
+}
+
+function resetOutfit() {
+  Object.keys(outfit).forEach(k=>outfit[k]=null);
+  redraw(); saveGame();
+  if (activeTab==='lobby') buildLobbyGrid();
+}
+
+// ── Challenge logic ────────────────────────────────────────────────────────────
+function startChallenge() {
+  challengeState.active=true;
+  challengeState.timeLeft=challengeState.selectedTime;
+  challengeState.score=null;
+  clearInterval(challengeState.timer);
+  challengeState.timer=setInterval(()=>{
+    challengeState.timeLeft--;
+    updateTimerUI();
+    redraw();
+    if(challengeState.timeLeft<=0) submitChallenge();
+  },1000);
+  buildChallengeContent(); redraw();
+}
+
+function nextChallenge() {
+  challengeState.themeIdx=(challengeState.themeIdx+1)%CHALLENGES.length;
+  challengeState.score=null; challengeState.active=false;
+  clearInterval(challengeState.timer);
+  buildChallengeContent(); redraw();
+}
+
+function updateTimerUI() {
+  const tb=document.getElementById('chall-bar');
+  const tl=document.getElementById('timer-label');
+  if (!tb||!tl) return;
+  const pct=challengeState.timeLeft/challengeState.selectedTime;
+  tb.style.width=(pct*100)+'%';
+  tb.style.background=pct>0.5?'#4ade80':pct>0.25?'#facc15':'#f87171';
+  const m=Math.floor(challengeState.timeLeft/60), s=(challengeState.timeLeft%60).toString().padStart(2,'0');
+  tl.textContent=`⏱ ${m}:${s} remaining`;
+}
+
+function scoreOutfit() {
+  const theme=CHALLENGES[challengeState.themeIdx];
+  const pref=theme.preferred, avoid=theme.avoid;
+  let total=0, max=0;
+  const slots=[outfit.top,outfit.bottom,outfit.dress,outfit.shoes,outfit.bag,outfit.hat,outfit.jewelry];
+  slots.filter(Boolean).forEach(item=>{
+    max+=60;
+    const tags=item.tags||[];
+    const hasPref=tags.some(t=>pref.includes(t));
+    const hasAvoid=tags.some(t=>avoid.includes(t));
+    if(hasAvoid) total+=5;
+    else if(hasPref) total+=60;
+    else total+=25;
+  });
+  // Salon bonus: makeup & nails matching
+  if(salonState.makeup?.id!=='none') { total+=20; max+=20; }
+  if(salonState.nails) { total+=15; max+=15; }
+  // Completeness bonus (at least 4 items)
+  const count=slots.filter(Boolean).length;
+  if(count>=4) total+=30;
+  return Math.min(total, 600);
+}
+
+function submitChallenge() {
+  clearInterval(challengeState.timer);
+  challengeState.active=false;
+  const base=scoreOutfit();
+  const sc=Math.round(base*challengeState.mult);
+  const earned=Math.ceil(sc/10);
+  challengeState.baseScore=base;
+  challengeState.score=sc;
+  challengeState.gemsEarned=earned;
+  totalScore+=sc;
+  gems+=earned;
+  saveGame();
+  buildChallengeContent(); redraw();
+}
+
+function scoreGrade(sc) {
+  if(sc>=450) return '👑 Fashion Icon — Flawless!';
+  if(sc>=350) return '💅 Style Star — Stunning!';
+  if(sc>=250) return '✨ Trend Setter — Chic!';
+  if(sc>=150) return '👗 Getting There — Keep styling!';
+  return '🧺 Try Again — More items help!';
+}
+
+// ── Tab navigation ─────────────────────────────────────────────────────────────
+function setTab(name) {
+  activeTab=name;
+  document.querySelectorAll('.ntb').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if(name==='lobby') { document.querySelectorAll('#tab-lobby .ctb').forEach(b=>{b.classList.toggle('active',b.textContent.toLowerCase().includes(lobbyCategory.slice(0,-1)));});buildLobbyGrid();}
+  if(name==='salon') buildSalonContent();
+  if(name==='challenge') buildChallengeContent();
+  if(name==='home') { const old=document.getElementById('tab-home'); if(old){const n=buildHomePanel();n.classList.add('active');old.replaceWith(n);} }
+  if(name==='vip') { const old=document.getElementById('tab-vip'); if(old){const n=buildVipPanel();n.classList.add('active');old.replaceWith(n);} }
+}
+
+document.getElementById('nav-tabs').addEventListener('click',e=>{
+  const btn=e.target.closest('.ntb'); if(!btn) return;
+  setTab(btn.dataset.tab);
+});
+
+// ── Canvas fit ─────────────────────────────────────────────────────────────────
+function fitCanvas() {
+  const area=document.getElementById('canvas-area');
+  const aw=area.clientWidth-24, ah=area.clientHeight-50;
+  const sc=Math.min(aw/W,ah/H);
+  canvas.style.width=(W*sc)+'px'; canvas.style.height=(H*sc)+'px';
+}
+window.addEventListener('resize',fitCanvas);
+fitCanvas();
+
+// ── Desktop click handler (when controls not shown) ───────────────────────────
+if (!isTouch) {
+  // Show a simple sidebar for desktop (not implemented — tablet/desktop can use touch sim)
+  document.getElementById('controls').style.display='flex';
+  document.getElementById('controls').style.height='42vh';
+}
+
+// ── Loop ───────────────────────────────────────────────────────────────────────
+function loop() { redraw(); requestAnimationFrame(loop); }
+
+buildUI();
+loop();
+</script>
+</body>
+</html>
