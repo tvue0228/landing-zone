@@ -242,6 +242,74 @@ body{
 }
 .lvlup-big:active{transform:translateY(1px);box-shadow:0 1px 0 #2d1a6e;}
 .lvlup-big.dim{background:#1a1840;color:#2a2560;box-shadow:none;}
+/* ── Items panel ── */
+.items-wrap{
+  flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  touch-action:pan-y;padding:5px 6px;display:flex;flex-direction:column;gap:4px;
+}
+.items-wrap::-webkit-scrollbar{display:none;}
+.items-wrap *{touch-action:pan-y !important;}
+.items-section-lbl{
+  font-size:5px;color:#c084fc;letter-spacing:.1em;
+  padding:3px 0 2px;border-bottom:1px solid #2a2560;flex-shrink:0;margin-top:2px;
+}
+.shop-item{
+  display:flex;align-items:center;gap:5px;
+  padding:5px;border:1px solid #1a1840;border-radius:5px;background:#0d0b1e;flex-shrink:0;
+}
+.shop-item-icon{font-size:13px;flex-shrink:0;}
+.shop-item-info{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0;}
+.shop-item-name{font-size:5px;color:#e2d9f3;}
+.shop-item-desc{font-size:4px;color:#4a3d7a;}
+.shop-item-own{font-size:6px;color:#a78bfa;flex-shrink:0;min-width:22px;text-align:right;}
+.buy-btn{
+  border:1px solid #fbbf24;border-radius:4px;background:#1a1840;color:#fbbf24;
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  padding:4px 5px;cursor:pointer;touch-action:none;flex-shrink:0;
+}
+.buy-btn:active{transform:scale(.95);}
+.buy-btn.cant-afford{border-color:#2a2560;color:#2a2560;}
+.party-heal-row{
+  display:flex;align-items:center;gap:4px;
+  padding:4px 5px;border:1px solid #1a1840;border-radius:5px;
+  background:#0d0b1e;flex-shrink:0;
+}
+.party-heal-row.dead{opacity:.45;}
+.party-heal-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.party-heal-name{font-size:6px;color:#c084fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.party-heal-hp{font-size:5px;color:#7c6faa;}
+.party-heal-bar{width:100%;height:4px;background:#1a1840;border-radius:2px;overflow:hidden;}
+.party-heal-bar-fill{height:100%;border-radius:2px;transition:width .15s;}
+.use-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+.use-btn{
+  border:1px solid #3a2d7a;border-radius:3px;background:#1a1840;color:#a78bfa;
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  padding:3px 5px;cursor:pointer;touch-action:none;white-space:nowrap;min-width:46px;text-align:center;
+}
+.use-btn:active:not(.no-item){background:#2a1a50;}
+.use-btn.no-item{color:#2a2560;border-color:#1a1840;cursor:default;}
+/* ── Battle status bar ── */
+#battle-status{
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 8px;border-top:2px solid #2a2560;background:#0a0818;min-height:46px;
+}
+.bs-info{display:flex;flex-direction:column;gap:2px;}
+.bs-wave-lbl{font-size:5px;color:#4a3d7a;letter-spacing:.06em;}
+.bs-enemy-name{font-size:7px;color:#e2d9f3;}
+.bs-reward{font-size:5px;color:#fbbf24;letter-spacing:.03em;}
+.bs-defeat-msg{font-size:6px;color:#ef4444;}
+.fight-btn{
+  border:2px solid #7c3aed;border-radius:6px;
+  background:linear-gradient(135deg,#4c1d95,#7c3aed);
+  color:#e2d9f3;font-family:'Press Start 2P',monospace;
+  font-size:7px;padding:7px 10px;cursor:pointer;touch-action:none;
+  letter-spacing:.03em;box-shadow:0 2px 0 #2d1a6e;flex-shrink:0;
+  transition:transform .08s;
+}
+.fight-btn:active:not(:disabled){transform:translateY(1px);box-shadow:0 1px 0 #2d1a6e;}
+.fight-btn:disabled{background:#1a1840;border-color:#2a2560;color:#2a2560;box-shadow:none;cursor:default;}
+.fight-btn.go{border-color:#22c55e;background:linear-gradient(135deg,#14532d,#16a34a);box-shadow:0 2px 0 #0d3320;}
+.fight-btn.retry{border-color:#ef4444;background:linear-gradient(135deg,#7f1d1d,#dc2626);box-shadow:0 2px 0 #5a0a0a;}
 </style>
 </head>
 <body>
@@ -262,6 +330,7 @@ body{
     <!-- Battle panel -->
     <div class="panel active" id="tab-battle">
       <div id="battle-grid"></div>
+      <div id="battle-status"></div>
     </div>
     <!-- Summon panel -->
     <div class="panel" id="tab-summon">
@@ -275,6 +344,32 @@ body{
     <!-- Collection panel -->
     <div class="panel" id="tab-collection">
       <div class="coll-wrap" id="coll-grid"></div>
+    </div>
+    <!-- Items panel -->
+    <div class="panel" id="tab-items">
+      <div class="items-wrap">
+        <div class="items-section-lbl">ITEM SHOP</div>
+        <div class="shop-item">
+          <span class="shop-item-icon">🧪</span>
+          <div class="shop-item-info"><div class="shop-item-name">POTION</div><div class="shop-item-desc">RESTORE 30% HP</div></div>
+          <span class="shop-item-own">x<span id="own-potion">0</span></span>
+          <button class="buy-btn" id="buy-potion">💰30</button>
+        </div>
+        <div class="shop-item">
+          <span class="shop-item-icon">💊</span>
+          <div class="shop-item-info"><div class="shop-item-name">SUPER POTION</div><div class="shop-item-desc">RESTORE 60% HP</div></div>
+          <span class="shop-item-own">x<span id="own-superPotion">0</span></span>
+          <button class="buy-btn" id="buy-superPotion">💰80</button>
+        </div>
+        <div class="shop-item">
+          <span class="shop-item-icon">✨</span>
+          <div class="shop-item-info"><div class="shop-item-name">MAX POTION</div><div class="shop-item-desc">FULL HP · REVIVES</div></div>
+          <span class="shop-item-own">x<span id="own-maxPotion">0</span></span>
+          <button class="buy-btn" id="buy-maxPotion">💰200</button>
+        </div>
+        <div class="items-section-lbl">USE ON PARTY</div>
+        <div id="items-party-list"></div>
+      </div>
     </div>
     <!-- Home panel -->
     <div class="panel" id="tab-home">
@@ -298,6 +393,7 @@ body{
     <button class="nb active" data-tab="battle">⚔️<span>BATTLE</span></button>
     <button class="nb" data-tab="summon">🥚<span>SUMMON</span></button>
     <button class="nb" data-tab="collection">📦<span>ROSTER</span></button>
+    <button class="nb" data-tab="items">🧪<span>ITEMS</span></button>
     <button class="nb" data-tab="home">🏠<span>HOME</span></button>
   </nav>
 </div>
@@ -488,6 +584,11 @@ const DEFS = [
 
 const RARITY_W = {common:50, uncommon:35, rare:13, epic:2};
 const SUMMON_COST = 50;
+const ITEMS_DEF = [
+  { type:'potion',      icon:'🧪', name:'POTION',       heal:0.30, cost:30  },
+  { type:'superPotion', icon:'💊', name:'SUPER POTION',  heal:0.60, cost:80  },
+  { type:'maxPotion',   icon:'✨', name:'MAX POTION',    heal:1.00, cost:200 },
+];
 
 // ─── Enemy drawing functions (larger pw on canvas) ────────────────────────────
 function drawEnemyGoblin(ctx, ox, oy, pw) {
@@ -689,6 +790,9 @@ let floats = [];
 let hitFlash = 0;
 let nextId = 1;
 let detailUid = null;
+let items = { potion: 0, superPotion: 0, maxPotion: 0 };
+let battleState = 'idle'; // 'idle' | 'battling' | 'victory' | 'defeated'
+let lastWaveRewards = null;
 
 // ─── IV / EV / Stat formulas ──────────────────────────────────────────────────
 function rollIV(bias, stat) {
@@ -794,28 +898,33 @@ function doSpecial(c) {
 }
 
 function killEnemy() {
-  gold += enemy.gold;
+  const earnedGold = enemy.gold;
   const earnedShards = enemy.boss ? 20 : Math.max(2, Math.floor(enemy.hp / 20));
   const earnedEV = enemy.boss ? 10 : Math.max(1, Math.floor(enemy.hp / 35));
+  gold += earnedGold;
   shards += earnedShards;
   evPoints += earnedEV;
   spawnFloat('+' + earnedShards + '❆', '#22d3ee');
+  let potionDrop = null;
+  if (enemy.boss) { items.superPotion++; potionDrop = '💊'; spawnFloat('+💊', '#22c55e'); }
+  else if (Math.random() < 0.2) { items.potion++; potionDrop = '🧪'; spawnFloat('+🧪', '#22c55e'); }
   wave++;
   const zone_waves = ZONES[zone].waves.length;
   if (wave >= zone_waves) {
     wave = 0; zone++;
     if (zone >= ZONES.length) {
       zone = 0; loops++;
-      spawnFloat('LOOP '+loops+' ×'+loops.toFixed(0), '#22d3ee', true);
+      spawnFloat('LOOP ' + loops + '!', '#22d3ee', true);
     }
   }
   const abs = zone * 10 + wave + 1;
   if (abs > bestWave) bestWave = abs;
-  // Partial heal on wave clear (20% of max HP)
-  party.forEach(c => { if (c) c.hp = Math.min(c.maxHp, c.hp + Math.floor(c.maxHp * 0.2)); });
-  spawnEnemy();
+  lastWaveRewards = { gold: earnedGold, shards: earnedShards, potionDrop };
+  enemy = null;
+  battleState = 'victory';
   updateResources();
   updateHomeStat();
+  updateBattleStatus();
 }
 
 function doPrestige() {
@@ -825,10 +934,13 @@ function doPrestige() {
   evPoints += 50;
   zone = 0; wave = 0; loops = 0;
   prestige++;
-  spawnEnemy();
+  enemy = null;
+  battleState = 'idle';
+  lastWaveRewards = null;
   spawnFloat('PRESTIGE ★'+prestige+'!', '#fbbf24', true);
   updateResources();
   updateHomeStat();
+  updateBattleStatus();
   saveGame();
 }
 
@@ -843,29 +955,31 @@ function gameTick() {
   const now = performance.now();
   const dt = Math.min((now - lastTick) / 1000, 0.2);
   lastTick = now;
-  for (let s = 0; s < 9; s++) {
-    const c = party[s];
-    if (!c || c.hp <= 0) continue;
-    const def = DEFS.find(d => d.id === c.defId);
-    if (c.hp <= 0) continue;
-    c.atkTimer -= dt;
-    if (c.atkTimer <= 0) { c.atkTimer += def.spd; doAutoAttack(c); }
-    if (c.charge < 1) c.charge = Math.min(1, c.charge + dt / def.charge);
-  }
-  // Enemy attacks a random alive party member
-  if (enemy) {
-    enemy.atkTimer -= dt;
-    if (enemy.atkTimer <= 0) {
-      enemy.atkTimer = 2.5;
-      const alive = party.filter(c => c && c.hp > 0);
-      if (alive.length > 0) {
-        const target = alive[Math.floor(Math.random() * alive.length)];
-        target.hp = Math.max(0, target.hp - enemy.atk);
+  if (battleState === 'battling') {
+    for (let s = 0; s < 9; s++) {
+      const c = party[s];
+      if (!c || c.hp <= 0) continue;
+      const def = DEFS.find(d => d.id === c.defId);
+      c.atkTimer -= dt;
+      if (c.atkTimer <= 0) { c.atkTimer += def.spd; doAutoAttack(c); }
+      if (c.charge < 1) c.charge = Math.min(1, c.charge + dt / def.charge);
+    }
+    if (enemy) {
+      enemy.atkTimer -= dt;
+      if (enemy.atkTimer <= 0) {
+        enemy.atkTimer = 2.5;
+        const alive = party.filter(c => c && c.hp > 0);
+        if (alive.length > 0) {
+          const target = alive[Math.floor(Math.random() * alive.length)];
+          target.hp = Math.max(0, target.hp - enemy.atk);
+        }
       }
     }
+    if (party.filter(c => c && c.hp > 0).length === 0) checkDefeat();
   }
   updateGrid();
   updateResources();
+  if (document.getElementById('tab-items')?.classList.contains('active')) updateItemsHp();
 }
 
 setInterval(gameTick, 80);
@@ -976,9 +1090,23 @@ function drawFloats() {
   ctx.globalAlpha = 1;
 }
 
+function drawStateOverlay() {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (battleState === 'victory') {
+    ctx.fillStyle = '#22c55ecc'; ctx.font = '13px "Press Start 2P"';
+    ctx.fillText('CLEARED!', W/2, H/2 - 8);
+  } else if (battleState === 'defeated') {
+    ctx.fillStyle = '#ef4444cc'; ctx.font = '12px "Press Start 2P"';
+    ctx.fillText('DEFEATED', W/2, H/2 - 8);
+  } else if (battleState === 'idle') {
+    ctx.fillStyle = '#a78bfa66'; ctx.font = '8px "Press Start 2P"';
+    ctx.fillText('── PRESS FIGHT ──', W/2, H/2);
+  }
+}
+
 function renderCanvas() {
   ctx.clearRect(0,0,W,H);
-  drawBg(); drawEnemy(); drawHUD(); drawFloats();
+  drawBg(); drawEnemy(); drawHUD(); drawFloats(); drawStateOverlay();
   requestAnimationFrame(renderCanvas);
 }
 
@@ -1030,7 +1158,7 @@ function updateGrid() {
 function onCellClick(slot) {
   const c = party[slot];
   if (!c) { switchTab('collection'); return; }
-  if (c.hp > 0 && c.charge >= 1) { doSpecial(c); updateGrid(); }
+  if (battleState === 'battling' && c.hp > 0 && c.charge >= 1) { doSpecial(c); updateGrid(); }
 }
 
 // ─── Collection UI ────────────────────────────────────────────────────────────
@@ -1115,6 +1243,171 @@ function toggleParty(c) {
   updateGrid();
 }
 
+// ─── Items UI ─────────────────────────────────────────────────────────────────
+function buildItems() {
+  updateItemShop();
+  const wrap = document.getElementById('items-party-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const partyCreatures = party.filter(Boolean);
+  if (partyCreatures.length === 0) {
+    wrap.innerHTML = '<div style="font-size:6px;color:#4a3d7a;text-align:center;padding:12px 0">NO CREATURES IN PARTY</div>';
+    return;
+  }
+  for (const c of partyCreatures) {
+    const def = DEFS.find(d => d.id === c.defId);
+    const hpPct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
+    const hpCol = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#f59e0b' : '#ef4444';
+    const dead = c.hp <= 0;
+    const row = document.createElement('div');
+    row.className = 'party-heal-row' + (dead ? ' dead' : '');
+    const spr = document.createElement('canvas');
+    spr.width = 24; spr.height = 20; spr.style.cssText = 'image-rendering:pixelated;flex-shrink:0';
+    const sctx = spr.getContext('2d'); sctx.imageSmoothingEnabled = false; def.draw(sctx, 0, 0, 2);
+    const info = document.createElement('div');
+    info.className = 'party-heal-info';
+    info.innerHTML = `<div class="party-heal-name">${def.name} <span style="color:#4a3d7a">Lv${c.level}</span></div>
+      <div class="party-heal-hp" id="item-hp-text-${c.uid}">${dead ? 'FAINTED' : c.hp+'/'+c.maxHp}</div>
+      <div class="party-heal-bar"><div class="party-heal-bar-fill" id="item-hp-bar-${c.uid}" style="width:${Math.max(0,hpPct*100)}%;background:${dead?'#ef4444':hpCol}"></div></div>`;
+    const btns = document.createElement('div');
+    btns.className = 'use-btns';
+    for (const itm of ITEMS_DEF) {
+      const hasItem = items[itm.type] > 0;
+      let canUse;
+      if (dead) {
+        canUse = itm.type === 'maxPotion' && hasItem;
+      } else {
+        canUse = hasItem && c.hp < c.maxHp;
+      }
+      const btn = document.createElement('button');
+      btn.className = 'use-btn' + (canUse ? '' : ' no-item');
+      btn.id = 'use-' + itm.type + '-' + c.uid;
+      btn.textContent = itm.icon + ' x' + items[itm.type];
+      if (canUse) btn.addEventListener('click', () => useItem(itm.type, c.uid));
+      btns.appendChild(btn);
+    }
+    row.append(spr, info, btns);
+    wrap.appendChild(row);
+  }
+}
+
+function updateItemShop() {
+  for (const itm of ITEMS_DEF) {
+    const ownEl = document.getElementById('own-' + itm.type);
+    if (ownEl) ownEl.textContent = items[itm.type];
+    const btn = document.getElementById('buy-' + itm.type);
+    if (btn) btn.className = 'buy-btn' + (gold >= itm.cost ? '' : ' cant-afford');
+  }
+}
+
+function updateItemsHp() {
+  for (const c of party) {
+    if (!c) continue;
+    const dead = c.hp <= 0;
+    const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
+    const col = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
+    const bar = document.getElementById('item-hp-bar-' + c.uid);
+    const txt = document.getElementById('item-hp-text-' + c.uid);
+    if (bar) { bar.style.width = Math.max(0, pct * 100) + '%'; bar.style.background = dead ? '#ef4444' : col; }
+    if (txt) txt.textContent = dead ? 'FAINTED' : c.hp + '/' + c.maxHp;
+  }
+}
+
+function buyItem(type) {
+  const itm = ITEMS_DEF.find(i => i.type === type);
+  if (!itm || gold < itm.cost) return;
+  gold -= itm.cost;
+  items[type]++;
+  updateResources();
+  buildItems();
+  saveGame();
+}
+
+function useItem(type, uid) {
+  const c = party.find(c => c && c.uid === uid);
+  const itm = ITEMS_DEF.find(i => i.type === type);
+  if (!c || !itm || items[type] <= 0) return;
+  let floatMsg;
+  if (c.hp <= 0 && type === 'maxPotion') {
+    c.hp = Math.floor(c.maxHp * 0.5);
+    c.charge = 0;
+    c.atkTimer = DEFS.find(d => d.id === c.defId).spd;
+    floatMsg = 'REVIVED!';
+  } else if (c.hp > 0 && c.hp < c.maxHp) {
+    const healAmt = itm.heal >= 1 ? c.maxHp - c.hp : Math.floor(c.maxHp * itm.heal);
+    c.hp = Math.min(c.maxHp, c.hp + healAmt);
+    floatMsg = '+' + healAmt + ' HP';
+  } else {
+    return;
+  }
+  items[type]--;
+  spawnFloat(floatMsg, '#22c55e');
+  buildItems();
+  updateGrid();
+  updateBattleStatus();
+  saveGame();
+}
+
+// ─── Battle state control ─────────────────────────────────────────────────────
+function startBattle() {
+  const alive = party.filter(c => c && c.hp > 0);
+  if (alive.length === 0) return;
+  for (const c of alive) {
+    const def = DEFS.find(d => d.id === c.defId);
+    c.atkTimer = def.spd * (0.5 + Math.random() * 0.5);
+    c.charge = 0;
+  }
+  spawnEnemy();
+  battleState = 'battling';
+  updateBattleStatus();
+}
+
+function checkDefeat() {
+  enemy = null;
+  battleState = 'defeated';
+  updateBattleStatus();
+}
+
+function updateBattleStatus() {
+  const el = document.getElementById('battle-status');
+  if (!el) return;
+  const z = ZONES[zone];
+  const w = z.waves[wave];
+  const alive = party.filter(c => c && c.hp > 0).length;
+  if (battleState === 'battling') {
+    el.innerHTML = `<div class="bs-info">
+      <div class="bs-wave-lbl">${z.name} · WAVE ${wave+1}/10</div>
+      <div class="bs-enemy-name" style="color:#fbbf24">⚔ IN BATTLE</div>
+    </div>`;
+  } else if (battleState === 'victory') {
+    const r = lastWaveRewards || {};
+    const drop = r.potionDrop ? ' · +' + r.potionDrop : '';
+    el.innerHTML = `<div class="bs-info">
+      <div class="bs-reward">+${r.gold||0}💰 +${r.shards||0}❆${drop}</div>
+      <div class="bs-wave-lbl">${z.name} · WAVE ${wave+1}/10</div>
+      <div class="bs-enemy-name">${w.name}${w.boss?' ⚠':''}</div>
+    </div>
+    <button class="fight-btn go" id="bs-btn" ${alive>0?'':'disabled'}>▶ NEXT</button>`;
+    document.getElementById('bs-btn')?.addEventListener('click', startBattle);
+  } else if (battleState === 'defeated') {
+    const canRetry = alive > 0;
+    el.innerHTML = `<div class="bs-info">
+      <div class="bs-defeat-msg">PARTY FAINTED</div>
+      <div class="bs-wave-lbl">${canRetry ? 'READY TO RETRY' : 'HEAL IN ITEMS TAB'}</div>
+    </div>
+    <button class="fight-btn retry" id="bs-btn" ${canRetry?'':'disabled'}>⚔ RETRY</button>`;
+    document.getElementById('bs-btn')?.addEventListener('click', startBattle);
+  } else {
+    const canFight = alive > 0;
+    el.innerHTML = `<div class="bs-info">
+      <div class="bs-wave-lbl">${z.name} · WAVE ${wave+1}/10</div>
+      <div class="bs-enemy-name">${w.name}${w.boss?' ⚠':''}</div>
+    </div>
+    <button class="fight-btn" id="bs-btn" ${canFight?'':'disabled'}>⚔ FIGHT</button>`;
+    document.getElementById('bs-btn')?.addEventListener('click', startBattle);
+  }
+}
+
 // ─── Summon UI ────────────────────────────────────────────────────────────────
 function doSummon() {
   if (gold < SUMMON_COST) {
@@ -1142,13 +1435,18 @@ function doSummon() {
 }
 
 document.getElementById('btn-summon').addEventListener('click', doSummon);
+for (const _itm of ITEMS_DEF) {
+  const _btn = document.getElementById('buy-' + _itm.type);
+  if (_btn) _btn.addEventListener('click', () => buyItem(_itm.type));
+}
 
 // ─── Tab navigation ───────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='tab-'+name));
-  if (name==='battle') updateGrid();
+  if (name==='battle') { updateGrid(); updateBattleStatus(); }
   if (name==='collection') { detailUid=null; buildCollection(); }
+  if (name==='items') buildItems();
   if (name==='home') updateHomeStat();
 }
 document.getElementById('nav').addEventListener('click', e => { const b=e.target.closest('.nb'); if(b) switchTab(b.dataset.tab); });
@@ -1189,7 +1487,7 @@ function updateHomeStat() {
 function saveGame() {
   try {
     localStorage.setItem('ck_save', JSON.stringify({
-      gold, shards, evPoints, zone, wave, bestWave, nextId, loops, prestige,
+      gold, shards, evPoints, zone, wave, bestWave, nextId, loops, prestige, items,
       collection: collection.map(c=>({uid:c.uid,defId:c.defId,level:c.level,hp:c.hp,maxHp:c.maxHp,slot:c.slot,ivAtk:c.ivAtk,ivDef:c.ivDef,ivHp:c.ivHp,ivSpd:c.ivSpd,evAtk:c.evAtk||0,evDef:c.evDef||0,evHp:c.evHp||0,evSpd:c.evSpd||0})),
       party: party.map(c=>c?c.uid:null),
     }));
@@ -1203,6 +1501,7 @@ function loadGame() {
     if (!sv.collection) return false;
     gold=sv.gold||0; shards=sv.shards||0; evPoints=sv.evPoints||0;
     zone=sv.zone||0; wave=sv.wave||0; bestWave=sv.bestWave||1; nextId=sv.nextId||1; loops=sv.loops||0; prestige=sv.prestige||0;
+    items=sv.items||{potion:0,superPotion:0,maxPotion:0};
     collection=sv.collection.map(cd=>{
       const def=DEFS.find(d=>d.id===cd.defId)||DEFS[0];
       return {uid:cd.uid,defId:cd.defId,level:cd.level||1,hp:cd.hp,maxHp:cd.maxHp,slot:null,
@@ -1230,7 +1529,7 @@ fitCanvas();
 
 // ─── Tap canvas for bonus attack ──────────────────────────────────────────────
 canvas.addEventListener('click', () => {
-  if (!enemy) return;
+  if (!enemy || battleState !== 'battling') return;
   const dmg=Math.max(1,Math.floor(party.filter(Boolean).reduce((s,c)=>s+calcAtk(c),0)*0.1));
   enemy.curHp -= dmg; hitFlash=4; spawnFloat(dmg,'#c084fc');
   if (enemy.curHp<=0) killEnemy();
@@ -1243,7 +1542,7 @@ document.fonts.ready.then(() => {
     collection.push(starter); party[0]=starter; starter.slot=0;
     gold=50; shards=30;
   }
-  spawnEnemy(); buildGrid(); updateGrid(); updateResources(); renderCanvas();
+  buildGrid(); updateGrid(); updateResources(); updateBattleStatus(); renderCanvas();
 });
 </script>
 </body>
