@@ -517,70 +517,63 @@ function drawBg() {
 
 function drawSkinBase() {
   const sk = SKIN;
-  const shad = 'rgba(160,88,50,0.10)';
-  const hi   = 'rgba(255,232,208,0.40)';
+  const shad = 'rgba(160,88,50,0.09)';
+  const hi   = 'rgba(255,232,208,0.42)';
   const cx = B.cx;
   const aY = B.armY, aH = B.armH;
-  const elY = aY + aH * 0.48;  // elbow Y ≈ 204
-  const hY  = aY + aH + 10;    // hand centre Y
+  const elY = aY + aH * 0.48;
+  const hY  = aY + aH + 10;
+  const hcx = B.hcx, hcy = B.hcy;
 
-  // ── LEFT ARM (tapered bezier, behind torso) ──────────────────────────────
+  // ── ARMS (slender) ───────────────────────────────────────────────────────
   ctx.fillStyle = sk;
   ctx.beginPath();
   ctx.moveTo(B.laX + B.armW, aY + 2);
-  ctx.lineTo(B.laX,          aY + 6);
-  ctx.bezierCurveTo(B.laX - 3, aY + aH*0.20, B.laX - 3, aY + aH*0.40, B.laX + 1, elY);
-  ctx.bezierCurveTo(B.laX,     elY + 18,      B.laX + 6, aY + aH*0.90, B.laX + 10, aY + aH);
-  ctx.lineTo(B.laX + 32, aY + aH);
-  ctx.bezierCurveTo(B.laX + 36, aY + aH*0.90, B.laX + B.armW + 2, elY + 18, B.laX + B.armW + 2, elY);
-  ctx.bezierCurveTo(B.laX + B.armW + 3, aY + aH*0.40, B.laX + B.armW + 3, aY + aH*0.20, B.laX + B.armW, aY + 2);
+  ctx.lineTo(B.laX + 2, aY + 6);
+  ctx.bezierCurveTo(B.laX - 1, aY + aH*0.22, B.laX - 1, aY + aH*0.42, B.laX + 3, elY);
+  ctx.bezierCurveTo(B.laX + 1, elY + 16, B.laX + 7, aY + aH*0.88, B.laX + 11, aY + aH);
+  ctx.lineTo(B.laX + 30, aY + aH);
+  ctx.bezierCurveTo(B.laX + 34, aY + aH*0.88, B.laX + B.armW + 2, elY + 16, B.laX + B.armW + 2, elY);
+  ctx.bezierCurveTo(B.laX + B.armW + 2, aY + aH*0.42, B.laX + B.armW + 2, aY + aH*0.22, B.laX + B.armW, aY + 2);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle = shad; ctx.beginPath(); ctx.arc(B.laX + 3, elY + 3, 5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = hi;   ctx.beginPath(); ctx.arc(B.laX + 18, elY - 2, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.arc(B.laX + 4, elY + 2, 4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.arc(B.laX + 18, elY - 3, 4, 0, Math.PI*2); ctx.fill();
 
-  // ── RIGHT ARM ────────────────────────────────────────────────────────────
   ctx.fillStyle = sk;
   ctx.beginPath();
-  ctx.moveTo(B.raX, aY + 2);
-  ctx.lineTo(B.raX + B.armW, aY + 6);
-  ctx.bezierCurveTo(B.raX + B.armW + 3, aY + aH*0.20, B.raX + B.armW + 3, aY + aH*0.40, B.raX + B.armW - 1, elY);
-  ctx.bezierCurveTo(B.raX + B.armW,     elY + 18,      B.raX + B.armW - 6, aY + aH*0.90, B.raX + B.armW - 10, aY + aH);
-  ctx.lineTo(B.raX + 12, aY + aH);
-  ctx.bezierCurveTo(B.raX + 8,  aY + aH*0.90, B.raX - 2, elY + 18, B.raX - 2, elY);
-  ctx.bezierCurveTo(B.raX - 3,  aY + aH*0.40, B.raX - 3, aY + aH*0.20, B.raX, aY + 2);
+  ctx.moveTo(B.raX + 2, aY + 2);
+  ctx.lineTo(B.raX + B.armW - 2, aY + 6);
+  ctx.bezierCurveTo(B.raX + B.armW + 1, aY + aH*0.22, B.raX + B.armW + 1, aY + aH*0.42, B.raX + B.armW - 3, elY);
+  ctx.bezierCurveTo(B.raX + B.armW - 1, elY + 16, B.raX + B.armW - 7, aY + aH*0.88, B.raX + B.armW - 11, aY + aH);
+  ctx.lineTo(B.raX + 14, aY + aH);
+  ctx.bezierCurveTo(B.raX + 10, aY + aH*0.88, B.raX - 2, elY + 16, B.raX - 2, elY);
+  ctx.bezierCurveTo(B.raX - 2, aY + aH*0.42, B.raX - 2, aY + aH*0.22, B.raX + 2, aY + 2);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle = shad; ctx.beginPath(); ctx.arc(B.raX + B.armW - 3, elY + 3, 5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = hi;   ctx.beginPath(); ctx.arc(B.raX + 26, elY - 2, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.arc(B.raX + B.armW - 4, elY + 2, 4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.arc(B.raX + 26, elY - 3, 4, 0, Math.PI*2); ctx.fill();
 
-  // ── TORSO (smooth hourglass bezier) ──────────────────────────────────────
+  // ── TORSO (anime slim hourglass) ─────────────────────────────────────────
+  const wW = B.waistW - 8;
   ctx.fillStyle = sk;
   ctx.beginPath();
   ctx.moveTo(cx - B.shW/2, B.shY);
-  ctx.bezierCurveTo(cx - B.shW/2 - 8, B.shY + 32, cx - B.waistW/2 - 10, B.waistY - 36, cx - B.waistW/2, B.waistY);
-  ctx.bezierCurveTo(cx - B.waistW/2 - 2, B.waistY + 12, cx - B.hipW/2 - 2, B.hipY - 6, cx - B.hipW/2, B.hipY);
+  ctx.bezierCurveTo(cx - B.shW/2 - 6, B.shY + 30, cx - wW/2 - 10, B.waistY - 34, cx - wW/2, B.waistY);
+  ctx.bezierCurveTo(cx - wW/2 - 2, B.waistY + 12, cx - B.hipW/2 - 2, B.hipY - 6, cx - B.hipW/2, B.hipY);
   ctx.bezierCurveTo(cx - B.hipW/2 + 2, B.hipY + 14, cx - 18, B.hipY + 22, cx - 12, B.hipY + 24);
   ctx.lineTo(cx + 12, B.hipY + 24);
   ctx.bezierCurveTo(cx + 18, B.hipY + 22, cx + B.hipW/2 - 2, B.hipY + 14, cx + B.hipW/2, B.hipY);
-  ctx.bezierCurveTo(cx + B.hipW/2 + 2, B.hipY - 6, cx + B.waistW/2 + 2, B.waistY + 12, cx + B.waistW/2, B.waistY);
-  ctx.bezierCurveTo(cx + B.waistW/2 + 10, B.waistY - 36, cx + B.shW/2 + 8, B.shY + 32, cx + B.shW/2, B.shY);
+  ctx.bezierCurveTo(cx + B.hipW/2 + 2, B.hipY - 6, cx + wW/2 + 2, B.waistY + 12, cx + wW/2, B.waistY);
+  ctx.bezierCurveTo(cx + wW/2 + 10, B.waistY - 34, cx + B.shW/2 + 6, B.shY + 30, cx + B.shW/2, B.shY);
   ctx.closePath(); ctx.fill();
-  // side shadows
   ctx.fillStyle = shad;
   ctx.beginPath();
   ctx.moveTo(cx - B.shW/2, B.shY);
-  ctx.bezierCurveTo(cx - B.shW/2 - 8, B.shY + 32, cx - B.waistW/2 - 10, B.waistY - 36, cx - B.waistW/2, B.waistY);
-  ctx.lineTo(cx - B.waistW/2 + 12, B.waistY);
-  ctx.bezierCurveTo(cx - B.waistW/2 + 4, B.waistY - 24, cx - B.shW/2 + 4, B.shY + 22, cx - B.shW/2, B.shY);
+  ctx.bezierCurveTo(cx - B.shW/2 - 6, B.shY + 30, cx - wW/2 - 10, B.waistY - 34, cx - wW/2, B.waistY);
+  ctx.lineTo(cx - wW/2 + 12, B.waistY);
+  ctx.bezierCurveTo(cx - wW/2 + 4, B.waistY - 22, cx - B.shW/2 + 4, B.shY + 22, cx - B.shW/2, B.shY);
   ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(cx + B.shW/2, B.shY);
-  ctx.bezierCurveTo(cx + B.shW/2 + 8, B.shY + 32, cx + B.waistW/2 + 10, B.waistY - 36, cx + B.waistW/2, B.waistY);
-  ctx.lineTo(cx + B.waistW/2 - 12, B.waistY);
-  ctx.bezierCurveTo(cx + B.waistW/2 - 4, B.waistY - 24, cx + B.shW/2 - 4, B.shY + 22, cx + B.shW/2, B.shY);
-  ctx.fill();
-  // centre highlight
   ctx.fillStyle = hi;
-  ctx.beginPath(); ctx.ellipse(cx, B.shY + 58, 16, 26, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, B.shY + 55, 14, 24, 0, 0, Math.PI*2); ctx.fill();
 
   // ── NECK ─────────────────────────────────────────────────────────────────
   ctx.fillStyle = sk;
@@ -591,33 +584,110 @@ function drawSkinBase() {
   ctx.lineTo(B.neckX - 2, B.neckY + B.neckH);
   ctx.bezierCurveTo(B.neckX - 3, B.neckY + B.neckH - 4, B.neckX - 2, B.neckY + 6, B.neckX + 2, B.neckY);
   ctx.fill();
-  ctx.fillStyle = shad; ctx.fillRect(B.neckX + B.neckW - 5, B.neckY, 6, B.neckH);
-  // collarbone lines
-  ctx.strokeStyle = 'rgba(160,88,50,0.16)'; ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.moveTo(cx - 46, B.shY + 14); ctx.quadraticCurveTo(cx - 14, B.shY + 5, B.neckX, B.neckY + B.neckH - 2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx + 46, B.shY + 14); ctx.quadraticCurveTo(cx + 14, B.shY + 5, B.neckX + B.neckW, B.neckY + B.neckH - 2); ctx.stroke();
+  ctx.fillStyle = shad; ctx.fillRect(B.neckX + B.neckW - 4, B.neckY, 5, B.neckH);
+  ctx.strokeStyle = 'rgba(160,88,50,0.14)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(cx - 44, B.shY + 14); ctx.quadraticCurveTo(cx - 12, B.shY + 5, B.neckX, B.neckY + B.neckH - 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 44, B.shY + 14); ctx.quadraticCurveTo(cx + 12, B.shY + 5, B.neckX + B.neckW, B.neckY + B.neckH - 2); ctx.stroke();
 
-  // ── HEAD (slightly oval) ─────────────────────────────────────────────────
+  // ── ANIME HEAD (round crown + V-chin) ────────────────────────────────────
   ctx.fillStyle = sk;
-  ctx.beginPath(); ctx.ellipse(B.hcx, B.hcy + 2, B.hr, B.hr + 3, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = shad; ctx.beginPath(); ctx.arc(B.hcx + 18, B.hcy - 2, 11, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = hi;   ctx.beginPath(); ctx.ellipse(B.hcx - 6, B.hcy + 16, 9, 7, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = 'rgba(230,130,100,0.08)';
-  ctx.beginPath(); ctx.ellipse(B.hcx - 16, B.hcy + 10, 12, 8, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(B.hcx + 16, B.hcy + 10, 12, 8, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = sk;
-  ellipseF(B.hcx - B.hr + 1, B.hcy + 4, 7, 9, sk);
-  ellipseF(B.hcx + B.hr - 1, B.hcy + 4, 7, 9, sk);
-  ctx.strokeStyle = 'rgba(160,88,50,0.14)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(B.hcx - B.hr + 1, B.hcy + 4, 4, 0.5, Math.PI*1.5); ctx.stroke();
-  ctx.beginPath(); ctx.arc(B.hcx + B.hr - 1, B.hcy + 4, 4, -0.5, Math.PI*0.5); ctx.stroke();
+  ctx.beginPath();
+  // Upper arc: left → top → right (anticlockwise in canvas Y-down = through top)
+  ctx.arc(hcx, hcy - 4, B.hr + 1, Math.PI, 0, true);
+  // Right cheek flares then tapers toward jaw
+  ctx.bezierCurveTo(hcx + B.hr + 4, hcy + 12, hcx + 22, hcy + 22, hcx + 14, hcy + B.hr + 1);
+  // Right jaw → pointed chin
+  ctx.quadraticCurveTo(hcx + 6, hcy + B.hr + 8, hcx, hcy + B.hr + 8);
+  // Chin → left jaw
+  ctx.quadraticCurveTo(hcx - 6, hcy + B.hr + 8, hcx - 14, hcy + B.hr + 1);
+  // Left cheek back to arc start
+  ctx.bezierCurveTo(hcx - 22, hcy + 22, hcx - B.hr - 4, hcy + 12, hcx - B.hr - 1, hcy - 4);
+  ctx.closePath(); ctx.fill();
 
-  // ── LEGS (tapered bezier with knee) ──────────────────────────────────────
+  // Ears
+  ellipseF(hcx - B.hr + 1, hcy + 2, 6, 8, sk);
+  ellipseF(hcx + B.hr - 1, hcy + 2, 6, 8, sk);
+  ctx.strokeStyle = 'rgba(160,88,50,0.12)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(hcx - B.hr + 1, hcy + 2, 4, 0.5, Math.PI*1.5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(hcx + B.hr - 1, hcy + 2, 4, -0.5, Math.PI*0.5); ctx.stroke();
+
+  // ── ANIME FACE FEATURES ──────────────────────────────────────────────────
+  const eyeY = hcy - 2;
+  const leX = hcx - 17, reX = hcx + 17;
+  const eyeW = 11, eyeH = 9;
+
+  // Eyebrows (thin arched)
+  ctx.strokeStyle = '#3d1f08'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(leX - 12, eyeY - 16); ctx.quadraticCurveTo(leX - 1, eyeY - 21, leX + 10, eyeY - 17); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(reX - 10, eyeY - 17); ctx.quadraticCurveTo(reX + 1, eyeY - 21, reX + 12, eyeY - 16); ctx.stroke();
+
+  // Eye whites
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.fill();
+
+  // Left iris + pupil clipped to eye white
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#6b4fa0';
+  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#9b72d8';
+  ctx.beginPath(); ctx.arc(leX - 1, eyeY - 0.5, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#150922';
+  ctx.beginPath(); ctx.arc(leX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Right iris + pupil
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#6b4fa0';
+  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#9b72d8';
+  ctx.beginPath(); ctx.arc(reX - 1, eyeY - 0.5, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#150922';
+  ctx.beginPath(); ctx.arc(reX, eyeY + 1, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // Eye shine highlights
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(leX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(leX + 4, eyeY + 3, 1.2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(reX - 3, eyeY - 2, 2.5, 3.5, -0.25, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(reX + 4, eyeY + 3, 1.2, 0, Math.PI*2); ctx.fill();
+
+  // Upper eyelash (thick, top half of ellipse)
+  ctx.strokeStyle = '#12070f'; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW, eyeH, 0, Math.PI, Math.PI*2); ctx.stroke();
+  // Corner lash flicks
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(leX - eyeW, eyeY); ctx.lineTo(leX - eyeW - 3, eyeY - 4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(reX + eyeW, eyeY); ctx.lineTo(reX + eyeW + 3, eyeY - 4); ctx.stroke();
+  // Lower lash (thin, bottom half)
+  ctx.strokeStyle = '#4a2a3a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(leX, eyeY, eyeW - 1, eyeH - 2, 0, 0, Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(reX, eyeY, eyeW - 1, eyeH - 2, 0, 0, Math.PI); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Tiny anime nose (two subtle shadow dots)
+  ctx.fillStyle = 'rgba(175,95,65,0.28)';
+  ctx.beginPath(); ctx.arc(hcx - 3, hcy + 18, 2.2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hcx + 3, hcy + 18, 2.2, 0, Math.PI*2); ctx.fill();
+
+  // Small lips
+  ctx.strokeStyle = 'rgba(195,85,90,0.65)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(hcx - 7, hcy + 27); ctx.quadraticCurveTo(hcx, hcy + 31, hcx + 7, hcy + 27); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Blush (soft anime cheek flush)
+  ctx.fillStyle = 'rgba(255,148,120,0.18)';
+  ctx.beginPath(); ctx.ellipse(hcx - 23, eyeY + 14, 12, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hcx + 23, eyeY + 14, 12, 6, 0, 0, Math.PI*2); ctx.fill();
+
+  // ── LEGS ─────────────────────────────────────────────────────────────────
   ctx.fillStyle = sk;
   const kY = B.legY + B.legH * 0.52;
   const cY = B.legY + B.legH * 0.72;
-
-  // Left leg
   ctx.beginPath();
   ctx.moveTo(B.llX - 2, B.legY);
   ctx.bezierCurveTo(B.llX - 4, B.legY + B.legH*0.24, B.llX - 4, B.legY + B.legH*0.42, B.llX - 2, kY);
@@ -628,10 +698,9 @@ function drawSkinBase() {
   ctx.bezierCurveTo(B.llX + B.llW + 3, cY - 4, B.llX + B.llW + 4, kY + 12, B.llX + B.llW + 2, kY);
   ctx.bezierCurveTo(B.llX + B.llW + 4, B.legY + B.legH*0.42, B.llX + B.llW + 4, B.legY + B.legH*0.24, B.llX + B.llW + 2, B.legY);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle = shad; ctx.beginPath(); ctx.ellipse(B.llX + 2, kY - 1, 6, 4, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = hi;   ctx.beginPath(); ctx.ellipse(B.llX + B.llW/2 + 2, kY + 5, 8, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.ellipse(B.llX + 2, kY - 1, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.ellipse(B.llX + B.llW/2 + 2, kY + 5, 7, 5, 0, 0, Math.PI*2); ctx.fill();
 
-  // Right leg
   ctx.fillStyle = sk;
   ctx.beginPath();
   ctx.moveTo(B.rlX - 2, B.legY);
@@ -643,39 +712,37 @@ function drawSkinBase() {
   ctx.bezierCurveTo(B.rlX + B.rlW + 3, cY - 4, B.rlX + B.rlW + 4, kY + 12, B.rlX + B.rlW + 2, kY);
   ctx.bezierCurveTo(B.rlX + B.rlW + 4, B.legY + B.legH*0.42, B.rlX + B.rlW + 4, B.legY + B.legH*0.24, B.rlX + B.rlW + 2, B.legY);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle = shad; ctx.beginPath(); ctx.ellipse(B.rlX + 2, kY - 1, 6, 4, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = hi;   ctx.beginPath(); ctx.ellipse(B.rlX + B.rlW/2 + 2, kY + 5, 8, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = shad; ctx.beginPath(); ctx.ellipse(B.rlX + 2, kY - 1, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = hi;   ctx.beginPath(); ctx.ellipse(B.rlX + B.rlW/2 + 2, kY + 5, 7, 5, 0, 0, Math.PI*2); ctx.fill();
 
   // ── FEET ─────────────────────────────────────────────────────────────────
   ctx.fillStyle = sk;
   rr(B.lfX, B.footY, B.lfW, B.footH, [4,12,12,4]); ctx.fill();
   rr(B.rfX, B.footY, B.rfW, B.footH, [4,12,12,4]); ctx.fill();
   ctx.fillStyle = hi;
-  ctx.beginPath(); ctx.ellipse(B.lfX + B.lfW*0.62, B.footY + 8, 11, 5, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(B.rfX + B.rfW*0.62, B.footY + 8, 11, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(B.lfX + B.lfW*0.62, B.footY + 8, 10, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(B.rfX + B.rfW*0.62, B.footY + 8, 10, 5, 0, 0, Math.PI*2); ctx.fill();
 
-  // ── HANDS (palm + 4 fingers + thumb) ─────────────────────────────────────
+  // ── HANDS ────────────────────────────────────────────────────────────────
   ctx.fillStyle = sk;
   const lhx = B.laX + B.armW/2, rhx = B.raX + B.armW/2;
   const fLen = [11, 14, 13, 10];
   const lFX  = [-11, -4, 2, 8];
   const rFX  = [-8,  -2, 4, 11];
-  // Left hand
-  ellipseF(lhx - 2, hY + 2, 15, 13, sk);
+  ellipseF(lhx - 2, hY + 2, 14, 12, sk);
   lFX.forEach((fx, i) => {
-    ctx.beginPath(); ctx.ellipse(lhx + fx - 1, hY - 8, 3.5, fLen[i]/2, fx*0.016, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(lhx + fx - 1, hY - 8, 3, fLen[i]/2, fx*0.016, 0, Math.PI*2); ctx.fill();
   });
-  ctx.beginPath(); ctx.ellipse(lhx - 19, hY + 2, 4, 7, -0.4, 0, Math.PI*2); ctx.fill(); // thumb
-  ctx.strokeStyle = 'rgba(160,88,50,0.11)'; ctx.lineWidth = 0.9;
-  lFX.forEach(fx => { ctx.beginPath(); ctx.arc(lhx + fx - 1, hY - 1, 3, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke(); });
-  // Right hand
+  ctx.beginPath(); ctx.ellipse(lhx - 18, hY + 2, 3.5, 6, -0.4, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(160,88,50,0.10)'; ctx.lineWidth = 0.8;
+  lFX.forEach(fx => { ctx.beginPath(); ctx.arc(lhx + fx - 1, hY - 1, 2.8, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke(); });
   ctx.fillStyle = sk;
-  ellipseF(rhx + 2, hY + 2, 15, 13, sk);
+  ellipseF(rhx + 2, hY + 2, 14, 12, sk);
   rFX.forEach((fx, i) => {
-    ctx.beginPath(); ctx.ellipse(rhx + fx + 1, hY - 8, 3.5, fLen[i]/2, fx*0.016, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(rhx + fx + 1, hY - 8, 3, fLen[i]/2, fx*0.016, 0, Math.PI*2); ctx.fill();
   });
-  ctx.beginPath(); ctx.ellipse(rhx + 19, hY + 2, 4, 7, 0.4, 0, Math.PI*2); ctx.fill();
-  rFX.forEach(fx => { ctx.beginPath(); ctx.arc(rhx + fx + 1, hY - 1, 3, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke(); });
+  ctx.beginPath(); ctx.ellipse(rhx + 18, hY + 2, 3.5, 6, 0.4, 0, Math.PI*2); ctx.fill();
+  rFX.forEach(fx => { ctx.beginPath(); ctx.arc(rhx + fx + 1, hY - 1, 2.8, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke(); });
 }
 
 function drawShoes(shoes) {
