@@ -793,6 +793,7 @@ let detailUid = null;
 let items = { potion: 0, superPotion: 0, maxPotion: 0 };
 let battleState = 'idle'; // 'idle' | 'battling' | 'victory' | 'defeated'
 let lastWaveRewards = null;
+let autoAdvanceTimer = null;
 
 // ─── IV / EV / Stat formulas ──────────────────────────────────────────────────
 function rollIV(bias, stat) {
@@ -924,6 +925,11 @@ function killEnemy() {
   battleState = 'victory';
   updateResources();
   updateHomeStat();
+  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+  autoAdvanceTimer = setTimeout(() => {
+    autoAdvanceTimer = null;
+    if (battleState === 'victory') startBattle();
+  }, 2000);
   updateBattleStatus();
 }
 
@@ -934,6 +940,7 @@ function doPrestige() {
   evPoints += 50;
   zone = 0; wave = 0; loops = 0;
   prestige++;
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   enemy = null;
   battleState = 'idle';
   lastWaveRewards = null;
@@ -1350,6 +1357,7 @@ function useItem(type, uid) {
 
 // ─── Battle state control ─────────────────────────────────────────────────────
 function startBattle() {
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   const alive = party.filter(c => c && c.hp > 0);
   if (alive.length === 0) return;
   for (const c of alive) {
@@ -1363,6 +1371,7 @@ function startBattle() {
 }
 
 function checkDefeat() {
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   enemy = null;
   battleState = 'defeated';
   updateBattleStatus();
@@ -1382,13 +1391,19 @@ function updateBattleStatus() {
   } else if (battleState === 'victory') {
     const r = lastWaveRewards || {};
     const drop = r.potionDrop ? ' · +' + r.potionDrop : '';
+    const isAuto = autoAdvanceTimer !== null;
     el.innerHTML = `<div class="bs-info">
       <div class="bs-reward">+${r.gold||0}💰 +${r.shards||0}❆${drop}</div>
       <div class="bs-wave-lbl">${z.name} · WAVE ${wave+1}/10</div>
       <div class="bs-enemy-name">${w.name}${w.boss?' ⚠':''}</div>
     </div>
-    <button class="fight-btn go" id="bs-btn" ${alive>0?'':'disabled'}>▶ NEXT</button>`;
-    document.getElementById('bs-btn')?.addEventListener('click', startBattle);
+    ${isAuto
+      ? `<button class="fight-btn" id="bs-btn" style="border-color:#6b7280;background:linear-gradient(135deg,#374151,#4b5563);font-size:6px">✋ STOP</button>`
+      : `<button class="fight-btn go" id="bs-btn" ${alive>0?'':'disabled'}>▶ NEXT</button>`
+    }`;
+    document.getElementById('bs-btn')?.addEventListener('click', isAuto ? () => {
+      clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; updateBattleStatus();
+    } : startBattle);
   } else if (battleState === 'defeated') {
     const canRetry = alive > 0;
     el.innerHTML = `<div class="bs-info">
