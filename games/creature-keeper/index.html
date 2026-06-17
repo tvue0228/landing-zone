@@ -351,13 +351,13 @@ body{
         <div class="items-section-lbl">ITEM SHOP</div>
         <div class="shop-item">
           <span class="shop-item-icon">🧪</span>
-          <div class="shop-item-info"><div class="shop-item-name">POTION</div><div class="shop-item-desc">RESTORE 30% HP</div></div>
+          <div class="shop-item-info"><div class="shop-item-name">POTION</div><div class="shop-item-desc">RESTORE 50 HP</div></div>
           <span class="shop-item-own">x<span id="own-potion">0</span></span>
           <button class="buy-btn" id="buy-potion">💰30</button>
         </div>
         <div class="shop-item">
           <span class="shop-item-icon">💊</span>
-          <div class="shop-item-info"><div class="shop-item-name">SUPER POTION</div><div class="shop-item-desc">RESTORE 60% HP</div></div>
+          <div class="shop-item-info"><div class="shop-item-name">SUPER POTION</div><div class="shop-item-desc">RESTORE 120 HP</div></div>
           <span class="shop-item-own">x<span id="own-superPotion">0</span></span>
           <button class="buy-btn" id="buy-superPotion">💰80</button>
         </div>
@@ -585,9 +585,9 @@ const DEFS = [
 const RARITY_W = {common:50, uncommon:35, rare:13, epic:2};
 const SUMMON_COST = 50;
 const ITEMS_DEF = [
-  { type:'potion',      icon:'🧪', name:'POTION',       heal:0.30, cost:30  },
-  { type:'superPotion', icon:'💊', name:'SUPER POTION',  heal:0.60, cost:80  },
-  { type:'maxPotion',   icon:'✨', name:'MAX POTION',    heal:1.00, cost:200 },
+  { type:'potion',      icon:'🧪', name:'POTION',       heal:50,   cost:30  },
+  { type:'superPotion', icon:'💊', name:'SUPER POTION',  heal:120,  cost:80  },
+  { type:'maxPotion',   icon:'✨', name:'MAX POTION',    heal:null, cost:200 },
 ];
 
 // ─── Enemy drawing functions (larger pw on canvas) ────────────────────────────
@@ -1334,7 +1334,7 @@ function useItem(type, uid) {
     c.atkTimer = DEFS.find(d => d.id === c.defId).spd;
     floatMsg = 'REVIVED!';
   } else if (c.hp > 0 && c.hp < c.maxHp) {
-    const healAmt = itm.heal >= 1 ? c.maxHp - c.hp : Math.floor(c.maxHp * itm.heal);
+    const healAmt = itm.heal === null ? c.maxHp - c.hp : Math.min(itm.heal, c.maxHp - c.hp);
     c.hp = Math.min(c.maxHp, c.hp + healAmt);
     floatMsg = '+' + healAmt + ' HP';
   } else {
