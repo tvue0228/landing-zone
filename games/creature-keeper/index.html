@@ -133,6 +133,27 @@ body{
 .ccard .cc-name{font-size:6px;color:#c084fc;text-align:center;}
 .ccard .cc-lv{font-size:5px;color:#7c6faa;}
 .ccard .cc-party{font-size:5px;color:#22c55e;}
+/* ── Roster controls ── */
+#roster-controls{
+  flex-shrink:0;padding:4px 5px;border-bottom:1px solid #1a1840;
+  display:flex;flex-direction:column;gap:3px;background:#0a0818;
+}
+.rc-row{display:flex;gap:3px;align-items:center;}
+.rc-sort{
+  flex:1;border:1px solid #2a2560;border-radius:4px;
+  background:#0d0b1e;color:#a78bfa;
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  padding:4px 6px;cursor:pointer;touch-action:none;text-align:left;
+}
+.rc-sort:active{background:#1a1840;}
+.rc-chip,.rc-toggle{
+  border:1px solid #2a2560;border-radius:3px;
+  background:#0d0b1e;color:#4a3d7a;
+  font-family:'Press Start 2P',monospace;font-size:4px;
+  padding:3px 5px;cursor:pointer;touch-action:none;white-space:nowrap;
+}
+.rc-chip.active{background:#1a1840;color:#c084fc;border-color:#7c3aed;}
+.rc-toggle.active{background:#1a1840;color:#22c55e;border-color:#22c55e;}
 /* ── Home panel ── */
 .home-wrap{
   flex:1;min-height:0;overflow-y:auto;touch-action:pan-y;padding:12px 14px;display:flex;flex-direction:column;gap:10px;
@@ -343,6 +364,19 @@ body{
     </div>
     <!-- Collection panel -->
     <div class="panel" id="tab-collection">
+      <div id="roster-controls">
+        <div class="rc-row">
+          <button class="rc-sort" id="rc-sort-btn">SORT: DEFAULT</button>
+          <button class="rc-toggle" id="rc-party-btn">★ PARTY</button>
+        </div>
+        <div class="rc-row">
+          <button class="rc-chip active" data-rtype="">ALL</button>
+          <button class="rc-chip" data-rtype="forest">FOREST</button>
+          <button class="rc-chip" data-rtype="ruins">RUINS</button>
+          <button class="rc-chip" data-rtype="void">VOID</button>
+          <button class="rc-chip" data-rtype="waste">WASTE</button>
+        </div>
+      </div>
       <div class="coll-wrap" id="coll-grid"></div>
     </div>
     <!-- Items panel -->
@@ -794,6 +828,11 @@ let items = { potion: 0, superPotion: 0, maxPotion: 0 };
 let battleState = 'idle'; // 'idle' | 'battling' | 'victory' | 'defeated'
 let lastWaveRewards = null;
 let autoAdvanceTimer = null;
+let rosterSort = 'default';
+let rosterFilterType = '';
+let rosterPartyOnly = false;
+const SORT_CYCLE = ['default','level-desc','level-asc','rarity','atk'];
+const SORT_LABEL = {'default':'SORT: DEFAULT','level-desc':'SORT: LVL ▼','level-asc':'SORT: LVL ▲','rarity':'SORT: RARITY','atk':'SORT: ATK ▼'};
 
 // ─── IV / EV / Stat formulas ──────────────────────────────────────────────────
 function rollIV(bias, stat) {
@@ -1171,10 +1210,25 @@ function onCellClick(slot) {
 // ─── Collection UI ────────────────────────────────────────────────────────────
 function buildCollection() {
   if (detailUid !== null) { openDetail(detailUid); return; }
+  document.getElementById('roster-controls')?.classList.remove('hidden');
   const grid = document.getElementById('coll-grid');
   grid.style.cssText = '';
   grid.innerHTML = '';
-  for (const c of collection) {
+  const RARITY_ORD = {common:0,uncommon:1,rare:2,epic:3};
+  let visible = collection.filter(c => {
+    if (rosterPartyOnly && c.slot === null) return false;
+    if (rosterFilterType && DEFS.find(d=>d.id===c.defId).type !== rosterFilterType) return false;
+    return true;
+  });
+  if (rosterSort === 'level-desc') visible = visible.slice().sort((a,b)=>b.level-a.level);
+  else if (rosterSort === 'level-asc') visible = visible.slice().sort((a,b)=>a.level-b.level);
+  else if (rosterSort === 'rarity') visible = visible.slice().sort((a,b)=>RARITY_ORD[DEFS.find(d=>d.id===b.defId).rarity]-RARITY_ORD[DEFS.find(d=>d.id===a.defId).rarity]);
+  else if (rosterSort === 'atk') visible = visible.slice().sort((a,b)=>getStat(b,'atk')-getStat(a,'atk'));
+  if (visible.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;font-size:6px;color:#4a3d7a;text-align:center;padding:20px 0">NO CREATURES MATCH</div>';
+    return;
+  }
+  for (const c of visible) {
     const def = DEFS.find(d => d.id === c.defId);
     const inParty = c.slot !== null;
     const cost = levelUpCost(c);
@@ -1199,6 +1253,7 @@ function buildCollection() {
 
 function openDetail(uid) {
   detailUid = uid;
+  document.getElementById('roster-controls')?.classList.add('hidden');
   const c = collection.find(c => c.uid === uid);
   if (!c) { detailUid = null; buildCollection(); return; }
   const def = DEFS.find(d => d.id === c.defId);
@@ -1449,6 +1504,26 @@ function doSummon() {
   updateGrid(); buildCollection(); saveGame();
 }
 
+function initRosterControls() {
+  document.getElementById('rc-sort-btn').addEventListener('click', () => {
+    rosterSort = SORT_CYCLE[(SORT_CYCLE.indexOf(rosterSort) + 1) % SORT_CYCLE.length];
+    document.getElementById('rc-sort-btn').textContent = SORT_LABEL[rosterSort];
+    buildCollection();
+  });
+  document.getElementById('rc-party-btn').addEventListener('click', () => {
+    rosterPartyOnly = !rosterPartyOnly;
+    document.getElementById('rc-party-btn').classList.toggle('active', rosterPartyOnly);
+    buildCollection();
+  });
+  document.querySelectorAll('.rc-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      rosterFilterType = btn.dataset.rtype;
+      document.querySelectorAll('.rc-chip').forEach(b => b.classList.toggle('active', b.dataset.rtype === rosterFilterType));
+      buildCollection();
+    });
+  });
+}
+
 document.getElementById('btn-summon').addEventListener('click', doSummon);
 for (const _itm of ITEMS_DEF) {
   const _btn = document.getElementById('buy-' + _itm.type);
@@ -1557,6 +1632,7 @@ document.fonts.ready.then(() => {
     collection.push(starter); party[0]=starter; starter.slot=0;
     gold=50; shards=30;
   }
+  initRosterControls();
   buildGrid(); updateGrid(); updateResources(); updateBattleStatus(); renderCanvas();
 });
 </script>
