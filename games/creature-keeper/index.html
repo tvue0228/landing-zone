@@ -780,7 +780,7 @@ function doAutoAttack(c) {
 }
 
 function doSpecial(c) {
-  if (!enemy || c.charge < 1) return;
+  if (!enemy || c.charge < 1 || c.hp <= 0) return;
   const def = DEFS.find(d => d.id === c.defId);
   let dmg = calcAtk(c);
   if (def.sfx === 'dmg4x') dmg *= 4;
@@ -847,6 +847,7 @@ function gameTick() {
     const c = party[s];
     if (!c || c.hp <= 0) continue;
     const def = DEFS.find(d => d.id === c.defId);
+    if (c.hp <= 0) continue;
     c.atkTimer -= dt;
     if (c.atkTimer <= 0) { c.atkTimer += def.spd; doAutoAttack(c); }
     if (c.charge < 1) c.charge = Math.min(1, c.charge + dt / def.charge);
@@ -1029,7 +1030,7 @@ function updateGrid() {
 function onCellClick(slot) {
   const c = party[slot];
   if (!c) { switchTab('collection'); return; }
-  if (c.charge >= 1) { doSpecial(c); updateGrid(); }
+  if (c.hp > 0 && c.charge >= 1) { doSpecial(c); updateGrid(); }
 }
 
 // ─── Collection UI ────────────────────────────────────────────────────────────
