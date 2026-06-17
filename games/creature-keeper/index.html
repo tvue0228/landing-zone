@@ -113,8 +113,9 @@ body{
 .rarity-epic{color:#f59e0b;}
 /* ── Collection panel ── */
 .coll-wrap{
-  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:grid;grid-template-columns:repeat(3,1fr);
+  grid-auto-rows:max-content;
   gap:4px;padding:4px;align-content:start;
 }
 .coll-wrap::-webkit-scrollbar{display:none;}
