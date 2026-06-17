@@ -35,7 +35,7 @@ body{
 }
 @media(pointer:coarse){#controls{display:flex;height:46vh;}}
 /* ── Nav ── */
-#nav{display:flex;border-bottom:2px solid #2a2560;flex-shrink:0;}
+#nav{display:flex;border-top:2px solid #2a2560;flex-shrink:0;}
 .nb{
   flex:1;border:none;background:none;
   padding:8px 0 6px;display:flex;flex-direction:column;align-items:center;gap:2px;
@@ -245,12 +245,6 @@ body{
     <span class="res-item res-shard">✦ <span id="shard-count">0</span></span>
     <span class="res-item res-ev">★ <span id="ev-count">0</span></span>
   </div>
-  <nav id="nav">
-    <button class="nb active" data-tab="battle">⚔️<span>BATTLE</span></button>
-    <button class="nb" data-tab="summon">🥚<span>SUMMON</span></button>
-    <button class="nb" data-tab="collection">📦<span>ROSTER</span></button>
-    <button class="nb" data-tab="home">🏠<span>HOME</span></button>
-  </nav>
   <div id="tc">
     <!-- Battle panel -->
     <div class="panel active" id="tab-battle">
@@ -282,6 +276,12 @@ body{
       </div>
     </div>
   </div>
+  <nav id="nav">
+    <button class="nb active" data-tab="battle">⚔️<span>BATTLE</span></button>
+    <button class="nb" data-tab="summon">🥚<span>SUMMON</span></button>
+    <button class="nb" data-tab="collection">📦<span>ROSTER</span></button>
+    <button class="nb" data-tab="home">🏠<span>HOME</span></button>
+  </nav>
 </div>
 
 <script>
