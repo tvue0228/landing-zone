@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Creature Name Generator — MP's R&D Lab</title>
+<meta property="og:title" content="Creature Name Generator"/>
+<meta property="og:description" content="Pokémon/Digimon-style portmanteau creature names — blend an element with a creature type."/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #0d0d14;
+  color: #e2e2ee;
+  min-height: 100vh;
+  padding: 1.25rem 1rem 4rem;
+}
+
+.wrap { max-width: 660px; margin: 0 auto; }
+
+.back {
+  font-size: 12px; color: #555568; display: inline-block;
+  margin-bottom: 1.25rem; text-decoration: none;
+}
+.back:hover { color: #9ca3af; }
+
+h1 { font-size: 22px; font-weight: 700; margin-bottom: 3px; color: #f0f0ff; }
+.subtitle { font-size: 13px; color: #6b7280; margin-bottom: 2rem; line-height: 1.5; }
+
+/* ─── Section ─── */
+.section { margin-bottom: 1.75rem; }
+.section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #555568;
+  margin-bottom: 10px;
+}
+
+/* ─── Pill grid ─── */
+.pill-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 11px; border-radius: 18px;
+  border: 1.5px solid #232330; background: #18182a;
+  color: #9ca3af; font-size: 12.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.13s; user-select: none;
+  white-space: nowrap;
+}
+.pill:hover { background: #20202f; border-color: #3a3a50; color: #c4c4d8; }
+.pill.selected {
+  color: #fff; border-color: var(--c, #6366f1);
+  background: color-mix(in srgb, var(--c, #6366f1) 18%, #18182a);
+}
+.pill-icon { font-size: 13px; }
+
+/* ─── Style buttons ─── */
+.style-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.style-btn {
+  padding: 6px 15px; border-radius: 8px; font-size: 13px;
+  border: 1.5px solid #232330; background: #18182a; color: #6b7280;
+  cursor: pointer; transition: all 0.13s;
+}
+.style-btn:hover { border-color: #3a3a50; color: #9ca3af; }
+.style-btn.active { background: #232340; border-color: #5b5bf6; color: #a5b4fc; }
+
+/* ─── Generate button ─── */
+.gen-btn {
+  display: block; width: 100%; max-width: 360px;
+  margin: 1.5rem 0 1.75rem;
+  padding: 11px 24px; border-radius: 10px; border: none;
+  background: linear-gradient(135deg, #5b5bf6, #8b5cf6);
+  color: #fff; font-size: 14.5px; font-weight: 600;
+  cursor: pointer; transition: opacity 0.13s, transform 0.1s;
+}
+.gen-btn:hover:not(:disabled) { opacity: 0.88; }
+.gen-btn:active:not(:disabled) { transform: scale(0.98); }
+.gen-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ─── Results ─── */
+.results-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #555568; margin-bottom: 10px;
+}
+
+.results-grid {
+  display: grid; grid-template-columns: 1fr;
+  gap: 8px;
+}
+@media (min-width: 460px) { .results-grid { grid-template-columns: 1fr 1fr; } }
+
+.name-card {
+  background: #16162100;  /* transparent default */
+  background: #191924;
+  border: 1px solid #252535;
+  border-radius: 10px; padding: 14px 14px 14px 16px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.15s;
+}
+.name-card:hover { border-color: #383852; }
+.name-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent, #6366f1);
+}
+
+.name-main {
+  font-size: 21px; font-weight: 800;
+  color: #f0f0ff; letter-spacing: 0.03em;
+  margin-bottom: 5px; padding-right: 44px;
+  line-height: 1.2;
+}
+
+.name-breakdown {
+  font-size: 11px; color: #555568; line-height: 1.7;
+}
+.name-breakdown .chunk-a { color: var(--accent, #6366f1); font-weight: 600; }
+.name-breakdown .chunk-b { color: #7c7c9a; font-weight: 600; }
+
+.copy-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: none; border: 1px solid #2e2e42;
+  border-radius: 6px; color: #555568;
+  font-size: 10.5px; padding: 3px 8px;
+  cursor: pointer; transition: all 0.13s;
+}
+.copy-btn:hover { border-color: #5b5bf6; color: #a5b4fc; }
+.copy-btn.copied { border-color: #22c55e; color: #4ade80; }
+
+/* ─── Empty state ─── */
+.empty-hint {
+  font-size: 13px; color: #3a3a50; margin-top: 0.5rem;
+  line-height: 1.6;
+}
+
+/* ─── Divider ─── */
+.divider { border: none; border-top: 1px solid #1e1e2e; margin: 1.5rem 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back" href="../../">← R&D Lab</a>
+
+  <h1>Creature Name Generator</h1>
+  <p class="subtitle">
+    Pick an element + creature type to generate Pokémon/Digimon-style portmanteau names.<br>
+    Like how <em>Charmander</em> = <strong>Char</strong>coal + sala<strong>mander</strong>.
+  </p>
+
+  <div class="section">
+    <div class="section-label">1 — Element</div>
+    <div class="pill-grid" id="elem-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">2 — Creature Type</div>
+    <div class="pill-grid" id="creature-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">3 — Style</div>
+    <div class="style-row" id="style-row">
+      <button class="style-btn active" data-style="pokemon">Pokémon-style</button>
+      <button class="style-btn" data-style="digimon">Digimon-style</button>
+      <button class="style-btn" data-style="original">Original blend</button>
+    </div>
+  </div>
+
+  <button class="gen-btn" id="gen-btn" disabled>Generate Names</button>
+
+  <div id="results-section" style="display:none">
+    <div class="results-label">Generated Names — click to copy</div>
+    <div class="results-grid" id="results-grid"></div>
+  </div>
+
+  <p class="empty-hint" id="empty-hint">Select an element and a creature type to get started.</p>
+
+</div>
+<script>
+// ─── Data ────────────────────────────────────────────────────────────────────
+
+const ELEMENTS = [
+  { id:'fire',     label:'Fire',     icon:'🔥', color:'#f97316',
+    pre:['Char','Flam','Pyro','Ign','Scor','Cind','Emb','Braz','Ash'],
+    suf:['flare','blaze','ember','cinder','scorch','ash','flame','ignis'] },
+
+  { id:'water',    label:'Water',    icon:'💧', color:'#3b82f6',
+    pre:['Aqua','Tidal','Torr','Hydro','Naut','Mer','Surj','Wav','Dep'],
+    suf:['tide','surge','stream','splash','abyss','aqua','fin','current'] },
+
+  { id:'electric', label:'Electric', icon:'⚡', color:'#eab308',
+    pre:['Volt','Zap','Elec','Thund','Bolt','Spark','Jolt','Amp','Luz'],
+    suf:['volt','spark','jolt','amp','shock','bolt','zap','charge'] },
+
+  { id:'grass',    label:'Grass',    icon:'🌿', color:'#22c55e',
+    pre:['Verd','Leaf','Herb','Flora','Sprout','Bota','Chlor','Foli','Blos'],
+    suf:['leaf','vine','sprout','bloom','thorn','fern','herb','petal'] },
+
+  { id:'ice',      label:'Ice',      icon:'❄️', color:'#67e8f9',
+    pre:['Cryo','Frost','Glac','Arct','Chil','Bliz','Sleet','Hail','Frigid'],
+    suf:['frost','freeze','sleet','glaze','chill','hail','glacier','shard'] },
+
+  { id:'ground',   label:'Ground',   icon:'🌍', color:'#a16207',
+    pre:['Geo','Terra','Grav','Tremor','Seis','Bould','Sand','Loam','Dune'],
+    suf:['stone','quake','gravel','terra','boulder','dust','sand','mound'] },
+
+  { id:'psychic',  label:'Psychic',  icon:'🔮', color:'#ec4899',
+    pre:['Psych','Myst','Tel','Esper','Aura','Menta','Cereb','Esp','Noo'],
+    suf:['mind','psyche','aura','tele','esper','thought','sense','mental'] },
+
+  { id:'dark',     label:'Dark',     icon:'🌑', color:'#64748b',
+    pre:['Shad','Umbr','Noir','Dusk','Teneb','Grim','Obsid','Void','Nox'],
+    suf:['shade','shadow','dusk','gloom','murk','void','abyss','nox'] },
+
+  { id:'dragon',   label:'Dragon',   icon:'🐲', color:'#7c3aed',
+    pre:['Drago','Ryuu','Serp','Wyrm','Basi','Wyv','Draco','Drake','Tiamat'],
+    suf:['draco','ryuu','fang','scale','claw','wyrm','drake','talon'] },
+
+  { id:'steel',    label:'Steel',    icon:'⚙️', color:'#94a3b8',
+    pre:['Steel','Ferro','Metal','Titan','Iron','Cobalt','Alloy','Chrome','Plat'],
+    suf:['steel','iron','alloy','forge','chrome','metal','plate','shield'] },
+
+  { id:'fairy',    label:'Fairy',    icon:'✨', color:'#f472b6',
+    pre:['Pixie','Fae','Glim','Lumi','Twink','Elfin','Wisp','Sylph','Celest'],
+    suf:['glimmer','fae','sparkle','wisp','glow','lume','shine','star'] },
+
+  { id:'poison',   label:'Poison',   icon:'☠️', color:'#a855f7',
+    pre:['Toxi','Veno','Corros','Acid','Putri','Blight','Miasm','Venm','Sludge'],
+    suf:['toxin','venom','acid','blight','vile','sting','sludge','miasma'] },
+
+  { id:'bug',      label:'Bug',      icon:'🐛', color:'#84cc16',
+    pre:['Chitin','Larv','Pupa','Scar','Arthro','Carap','Exo','Cara','Silkworm'],
+    suf:['chitin','larva','sting','shell','web','carapace','silk','pupa'] },
+
+  { id:'flying',   label:'Flying',   icon:'🦅', color:'#7dd3fc',
+    pre:['Avi','Pter','Aero','Gale','Zeph','Raptor','Talon','Soar','Skyward'],
+    suf:['wing','gale','talon','plume','zephyr','aero','feather','soar'] },
+
+  { id:'ghost',    label:'Ghost',    icon:'👻', color:'#818cf8',
+    pre:['Spect','Phan','Wraith','Haunt','Eerie','Shade','Mort','Revn','Specter'],
+    suf:['specter','wraith','haunt','phantasm','wisp','shade','revenant','mort'] },
+
+  { id:'fighting', label:'Fighting', icon:'👊', color:'#ef4444',
+    pre:['Brawn','Strik','Smash','Valor','Fist','Pugi','Thrash','Brawl','Smite'],
+    suf:['smash','strike','brawl','punch','valor','force','iron','smite'] },
+
+  { id:'rock',     label:'Rock',     icon:'🪨', color:'#78716c',
+    pre:['Miner','Petro','Litho','Silica','Quartz','Basalt','Obsid','Flint','Geo'],
+    suf:['rock','crystal','quartz','mineral','basalt','flint','ore','shard'] },
+
+  { id:'normal',   label:'Normal',   icon:'⭐', color:'#d1d5db',
+    pre:['Plai','Commo','Ordin','Pure','Vani','True','Natu','Simpl'],
+    suf:['plain','common','natural','pure','simple','norm','true','basic'] },
+];
+
+const CREATURES = [
+  { id:'salamander', label:'Salamander', icon:'🦎',
+    pre:['Sala','Salam','Mander'],        suf:['mander','sala','ander','amphi','ander'] },
+  { id:'wolf',       label:'Wolf',       icon:'🐺',
+    pre:['Wolf','Lupus','Loup'],          suf:['wolf','lupus','fang','wulf','howl','canis'] },
+  { id:'fox',        label:'Fox',        icon:'🦊',
+    pre:['Fox','Vulp','Kitsun','Fennek'], suf:['fox','vulpis','kit','vix','fenn','kitsune'] },
+  { id:'bear',       label:'Bear',       icon:'🐻',
+    pre:['Bear','Ursa','Grizzl','Kodiak'],suf:['bear','ursine','bruin','grizzle','kodiak'] },
+  { id:'cat',        label:'Cat',        icon:'🐱',
+    pre:['Cat','Felin','Neko','Lynx'],    suf:['cat','neko','puma','leo','lynx','feline'] },
+  { id:'dragon',     label:'Dragon',     icon:'🐉',
+    pre:['Drag','Draco','Ryuu','Wyvern'], suf:['dragon','draco','wyrm','wyvern','drake','ryuu'] },
+  { id:'serpent',    label:'Serpent',    icon:'🐍',
+    pre:['Serp','Viper','Cobra','Naga'],  suf:['serpent','viper','cobra','naga','boa','asp'] },
+  { id:'turtle',     label:'Turtle',     icon:'🐢',
+    pre:['Turt','Chelys','Torto'],        suf:['turtle','tortoise','chelys','shell','tortle'] },
+  { id:'bird',       label:'Bird',       icon:'🦅',
+    pre:['Avi','Corv','Raptor','Falcon'], suf:['raptor','talon','falcon','hawk','raven','avian'] },
+  { id:'shark',      label:'Shark',      icon:'🦈',
+    pre:['Shark','Selach','Carchar'],     suf:['shark','jaw','fin','carchar','selach'] },
+  { id:'spider',     label:'Spider',     icon:'🕷️',
+    pre:['Arachn','Spider','Tarant'],     suf:['arachnid','spider','web','fang','taranta'] },
+  { id:'rabbit',     label:'Rabbit',     icon:'🐰',
+    pre:['Rabbit','Lepor','Hare'],        suf:['rabbit','hare','bunny','lepor','hop'] },
+  { id:'horse',      label:'Horse',      icon:'🐴',
+    pre:['Equin','Stalli','Colt'],        suf:['equus','steed','gallop','colt','mare','mane'] },
+  { id:'deer',       label:'Deer',       icon:'🦌',
+    pre:['Cerv','Stag','Buck'],           suf:['cervine','stag','antler','buck','fawn'] },
+  { id:'dinosaur',   label:'Dinosaur',   icon:'🦕',
+    pre:['Dino','Saur','Rex'],            suf:['saur','dino','rex','raptor','saurus','don'] },
+  { id:'crab',       label:'Crab',       icon:'🦀',
+    pre:['Crab','Crusta','Lobst'],        suf:['crab','lobster','krill','pincer','claw'] },
+  { id:'jellyfish',  label:'Jellyfish',  icon:'🪼',
+    pre:['Jelly','Medus','Medu'],         suf:['jelly','jellyfish','medusa','tentacle','sting'] },
+  { id:'butterfly',  label:'Butterfly',  icon:'🦋',
+    pre:['Butter','Lepido','Chrysal'],    suf:['butterfly','chrysalis','wing','flutter','silk'] },
+  { id:'octopus',    label:'Octopus',    icon:'🐙',
+    pre:['Octo','Cephalo','Squid'],       suf:['octo','tentacle','squid','ink','cephalo'] },
+  { id:'phoenix',    label:'Phoenix',    icon:'🔥',
+    pre:['Phen','Phoeni','Phoen'],        suf:['phoenix','phenix','ashes','rebirth','immortal'] },
+  { id:'unicorn',    label:'Unicorn',    icon:'🦄',
+    pre:['Uni','Monocer','Alicorn'],      suf:['unicorn','alicorn','monoceros','horn','corn'] },
+  { id:'golem',      label:'Golem',      icon:'🗿',
+    pre:['Gol','Coloss','Automa'],        suf:['golem','colossus','construct','titan','automaton'] },
+  { id:'slime',      label:'Slime',      icon:'🫧',
+    pre:['Slime','Ooze','Blob'],          suf:['slime','ooze','blob','gelatin','goo'] },
+];
+
+// ─── Name blending engine ─────────────────────────────────────────────────────
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function titleCase(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+// Remove double vowels when joining (charr → char, etc.)
+function smoothJoin(a, b) {
+  const vowels = 'aeiou';
+  a = a.toLowerCase(); b = b.toLowerCase();
+  // Drop trailing vowel of a if b starts with same vowel
+  if (a.slice(-1) === b[0] && vowels.includes(a.slice(-1))) {
+    return a.slice(0, -1) + b;
+  }
+  return a + b;
+}
+
+const POKEMON_SUFFIXES  = ['eon','ite','ix','on','ax','ux','is','ar','us','oth','ine','ling'];
+const DIGIMON_SUFFIXES  = ['mon','dramon','angemon','agumon','omon','remon','domon'];
+const ORIGINAL_JOINER   = ['us','is','ar','ix','os','ra','ex','ax','on','um','an','ia'];
+
+function generateNames(elem, creature, style, count = 8) {
+  const results = [];
+  const seen = new Set();
+
+  const strategies = [
+    // Classic Pokémon: elem prefix + creature suffix
+    () => {
+      const a = pick(elem.pre), b = pick(creature.suf);
+      const name = titleCase(a + b);
+      return { name, a, aLabel: elem.label, b, bLabel: creature.label,
+               note: 'element start + creature end' };
+    },
+    // Reverse: creature prefix + elem suffix
+    () => {
+      const a = pick(creature.pre), b = pick(elem.suf);
+      const name = titleCase(a + b);
+      return { name, a, aLabel: creature.label, b, bLabel: elem.label,
+               note: 'creature start + element end' };
+    },
+    // Short elem prefix + creature suffix
+    () => {
+      const ep = pick(elem.pre);
+      const a = ep.length > 4 ? ep.slice(0, Math.ceil(ep.length / 2)) : ep;
+      const b = pick(creature.suf);
+      const name = titleCase(a + b);
+      return { name, a, aLabel: elem.label, b, bLabel: creature.label,
+               note: 'short element + creature end' };
+    },
+    // Style-specific suffix
+    () => {
+      const a = pick(elem.pre);
+      let b, bLabel;
+      if (style === 'digimon')       { b = pick(DIGIMON_SUFFIXES);  bLabel = 'Digimon suffix'; }
+      else if (style === 'pokemon')  { b = pick(POKEMON_SUFFIXES);  bLabel = 'Pokémon suffix'; }
+      else                           { b = pick(ORIGINAL_JOINER);   bLabel = 'fusion suffix'; }
+      const name = titleCase(a + b);
+      return { name, a, aLabel: elem.label, b, bLabel,
+               note: `element + ${style} suffix` };
+    },
+    // Creature prefix + style suffix
+    () => {
+      const a = pick(creature.pre);
+      let b, bLabel;
+      if (style === 'digimon')       { b = pick(DIGIMON_SUFFIXES);  bLabel = 'Digimon suffix'; }
+      else if (style === 'pokemon')  { b = pick(POKEMON_SUFFIXES);  bLabel = 'Pokémon suffix'; }
+      else                           { b = pick(elem.suf);          bLabel = elem.label + ' end'; }
+      const name = titleCase(a + b);
+      return { name, a, aLabel: creature.label, b, bLabel,
+               note: `creature + ${style === 'original' ? 'element' : style} suffix` };
+    },
+    // Vowel-smoothed portmanteau
+    () => {
+      const a = pick(elem.pre), b = pick(creature.suf);
+      const name = titleCase(smoothJoin(a, b));
+      return { name, a, aLabel: elem.label, b, bLabel: creature.label,
+               note: 'vowel-smoothed blend' };
+    },
+    // Creature prefix + elem prefix short combo
+    () => {
+      const cp = pick(creature.pre);
+      const ep = pick(elem.pre);
+      const epShort = ep.length > 3 ? ep.slice(0, 3) : ep;
+      let tail;
+      if (style === 'digimon')      tail = pick(DIGIMON_SUFFIXES);
+      else if (style === 'pokemon') tail = pick(POKEMON_SUFFIXES);
+      else                          tail = pick(ORIGINAL_JOINER);
+      const name = titleCase(cp + epShort.toLowerCase() + tail);
+      return { name, a: cp + epShort, aLabel: creature.label + ' × ' + elem.label, b: tail, bLabel: 'suffix',
+               note: 'three-part fusion' };
+    },
+    // Full elem word clipped + creature clipped
+    () => {
+      const ep = pick(elem.pre);
+      const cs = pick(creature.suf);
+      // Take first half of ep + second half of cs
+      const half1 = ep.slice(0, Math.max(2, Math.ceil(ep.length * 0.6)));
+      const half2 = cs.slice(Math.max(0, Math.floor(cs.length * 0.4)));
+      const name = titleCase(half1 + half2);
+      return { name, a: half1, aLabel: elem.label, b: half2, bLabel: creature.label,
+               note: 'clipped overlap blend' };
+    },
+  ];
+
+  let attempts = 0;
+  const maxAttempts = count * 12;
+
+  while (results.length < count && attempts < maxAttempts) {
+    attempts++;
+    const strat = strategies[attempts % strategies.length];
+    try {
+      const r = strat();
+      if (!seen.has(r.name) && r.name.length >= 4 && r.name.length <= 14) {
+        seen.add(r.name);
+        results.push(r);
+      }
+    } catch (_) {}
+  }
+
+  return results;
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
+let selElem     = null;
+let selCreature = null;
+let selStyle    = 'pokemon';
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+
+function renderPills(containerId, items, selectedId, onClick) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (item.id === selectedId ? ' selected' : '');
+    if (item.color) btn.style.setProperty('--c', item.color);
+    btn.innerHTML = `<span class="pill-icon">${item.icon}</span>${item.label}`;
+    btn.addEventListener('click', () => onClick(item));
+    container.appendChild(btn);
+  });
+}
+
+function updateGenBtn() {
+  document.getElementById('gen-btn').disabled = !(selElem && selCreature);
+}
+
+function renderResults(names, elem) {
+  const section = document.getElementById('results-section');
+  const grid    = document.getElementById('results-grid');
+  grid.innerHTML = '';
+
+  if (!names.length) { section.style.display = 'none'; return; }
+
+  names.forEach(({ name, a, aLabel, b, bLabel, note }) => {
+    const card = document.createElement('div');
+    card.className = 'name-card';
+    card.style.setProperty('--accent', elem.color);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.textContent = 'copy';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(name).then(() => {
+        copyBtn.textContent = 'copied!';
+        copyBtn.classList.add('copied');
+        setTimeout(() => { copyBtn.textContent = 'copy'; copyBtn.classList.remove('copied'); }, 1600);
+      });
+    });
+
+    card.innerHTML = `
+      <div class="name-main">${name}</div>
+      <div class="name-breakdown">
+        <span class="chunk-a">${a}</span> (${aLabel}) +
+        <span class="chunk-b">${b}</span> (${bLabel})<br>
+        <em>${note}</em>
+      </div>
+    `;
+    card.appendChild(copyBtn);
+    grid.appendChild(card);
+  });
+
+  section.style.display = 'block';
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+function onElemClick(item) {
+  selElem = item;
+  renderPills('elem-grid', ELEMENTS, selElem?.id, onElemClick);
+  updateGenBtn();
+}
+
+function onCreatureClick(item) {
+  selCreature = item;
+  renderPills('creature-grid', CREATURES, selCreature?.id, onCreatureClick);
+  updateGenBtn();
+}
+
+renderPills('elem-grid',    ELEMENTS,  null, onElemClick);
+renderPills('creature-grid', CREATURES, null, onCreatureClick);
+
+// Style buttons
+document.getElementById('style-row').addEventListener('click', e => {
+  const btn = e.target.closest('.style-btn');
+  if (!btn) return;
+  document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selStyle = btn.dataset.style;
+});
+
+// Generate
+document.getElementById('gen-btn').addEventListener('click', () => {
+  if (!selElem || !selCreature) return;
+  document.getElementById('empty-hint').style.display = 'none';
+  const names = generateNames(selElem, selCreature, selStyle, 8);
+  renderResults(names, selElem);
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+</script>
+</body>
+</html>
