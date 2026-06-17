@@ -275,6 +275,7 @@ body{
         <div class="stat-row"><span class="stat-label">CREATURES</span><span class="stat-val" id="h-count">0</span></div>
         <div class="stat-row"><span class="stat-label">PARTY ATK</span><span class="stat-val" id="h-atk">0</span></div>
         <div class="stat-row"><span class="stat-label">HIGHEST WAVE</span><span class="stat-val" id="h-best">1</span></div>
+        <div class="stat-row"><span class="stat-label">PRESTIGE</span><span class="stat-val" id="h-prestige">0</span></div>
       </div>
     </div>
   </div>
@@ -551,41 +552,121 @@ function drawEnemyBoss(ctx, ox, oy, pw) {
   f(5,5,4,1,G); f(6,4,2,1,G); f(6,6,2,1,G);
 }
 
+function drawEnemyWraith(ctx, ox, oy, pw) {
+  const f = P(ox,oy,pw);
+  f(5,1,4,1,'#6d28d9');
+  f(4,2,6,2,'#7c3aed'); f(4,2,4,1,'#a78bfa');
+  f(3,3,8,4,'#7c3aed'); f(3,3,6,1,'#a78bfa');
+  f(2,7,10,2,'#6d28d9');
+  f(4,9,6,1,'#4c1d95');
+  f(5,4,2,1,'#e879f9'); f(8,4,2,1,'#e879f9');
+  f(6,4,1,1,'#fff');    f(9,4,1,1,'#fff');
+  f(1,7,1,2,'#6d28d9'); f(12,7,1,2,'#6d28d9');
+  f(0,8,1,1,'#4c1d95'); f(13,8,1,1,'#4c1d95');
+}
+
+function drawEnemyDrake(ctx, ox, oy, pw) {
+  const f = P(ox,oy,pw);
+  const [D,M,H,F] = ['#7f1d1d','#dc2626','#ef4444','#f97316'];
+  f(4,5,7,5,M); f(4,5,7,1,H);
+  f(7,2,4,4,M); f(7,2,3,1,H);
+  f(10,3,3,2,M); f(8,3,1,1,'#fbbf24');
+  f(12,2,2,1,F); f(12,3,2,2,F);
+  f(1,3,3,5,D);  f(11,3,3,5,D);
+  f(0,2,2,3,D);  f(12,2,1,2,D);
+  f(3,9,2,1,M);  f(9,9,2,1,M);
+  f(2,8,3,2,D);  f(1,9,2,1,D);
+}
+
+function drawEnemyCrystal(ctx, ox, oy, pw) {
+  const f = P(ox,oy,pw);
+  const [D,M,H,G] = ['#0e7490','#0891b2','#22d3ee','#a5f3fc'];
+  f(3,4,8,6,M); f(3,4,8,1,H);
+  f(4,1,6,3,M); f(4,1,6,1,H);
+  f(3,0,2,2,D); f(9,0,2,2,D); f(6,0,2,1,H);
+  f(5,2,2,1,G); f(8,2,2,1,G);
+  f(1,3,2,4,D); f(11,3,2,4,D);
+  f(4,9,2,1,D); f(8,9,2,1,D);
+  f(5,6,4,2,G);
+}
+
 // ─── Zone / Wave data ─────────────────────────────────────────────────────────
 const ZONES = [
   { name:'FOREST ZONE', bgTop:'#0a1f0a', bgBot:'#061206', ground:'#081508',
     waves:[
-      {name:'Goblin',       hp:80,   atk:6,  gold:8,  draw:drawEnemyGoblin, boss:false},
-      {name:'Cave Slime',   hp:130,  atk:10, gold:12, draw:drawEnemySlime,  boss:false},
-      {name:'Goblin',       hp:110,  atk:8,  gold:10, draw:drawEnemyGoblin, boss:false},
-      {name:'Cave Slime',   hp:180,  atk:13, gold:16, draw:drawEnemySlime,  boss:false},
-      {name:'Forest Troll', hp:260,  atk:16, gold:24, draw:drawEnemyTroll,  boss:false},
-      {name:'Goblin',       hp:150,  atk:10, gold:12, draw:drawEnemyGoblin, boss:false},
-      {name:'Cave Slime',   hp:240,  atk:15, gold:20, draw:drawEnemySlime,  boss:false},
-      {name:'Forest Troll', hp:360,  atk:20, gold:30, draw:drawEnemyTroll,  boss:false},
-      {name:'Cave Slime',   hp:300,  atk:18, gold:26, draw:drawEnemySlime,  boss:false},
-      {name:'GUARDIAN',     hp:800,  atk:28, gold:80, draw:drawEnemyBoss,   boss:true},
+      {name:'Goblin',        hp:80,   atk:6,  gold:8,   draw:drawEnemyGoblin, boss:false},
+      {name:'Cave Slime',    hp:130,  atk:10, gold:12,  draw:drawEnemySlime,  boss:false},
+      {name:'Goblin',        hp:110,  atk:8,  gold:10,  draw:drawEnemyGoblin, boss:false},
+      {name:'Cave Slime',    hp:180,  atk:13, gold:16,  draw:drawEnemySlime,  boss:false},
+      {name:'Forest Troll',  hp:260,  atk:16, gold:24,  draw:drawEnemyTroll,  boss:false},
+      {name:'Goblin',        hp:150,  atk:10, gold:12,  draw:drawEnemyGoblin, boss:false},
+      {name:'Cave Slime',    hp:240,  atk:15, gold:20,  draw:drawEnemySlime,  boss:false},
+      {name:'Forest Troll',  hp:360,  atk:20, gold:30,  draw:drawEnemyTroll,  boss:false},
+      {name:'Cave Slime',    hp:300,  atk:18, gold:26,  draw:drawEnemySlime,  boss:false},
+      {name:'GUARDIAN',      hp:800,  atk:28, gold:80,  draw:drawEnemyBoss,   boss:true},
     ]
   },
   { name:'RUINS ZONE', bgTop:'#1a0a2e', bgBot:'#0e0618', ground:'#120814',
     waves:[
-      {name:'Skeleton',     hp:160,  atk:14, gold:18, draw:drawEnemyGoblin, boss:false},
-      {name:'Stone Golem',  hp:300,  atk:20, gold:28, draw:drawEnemyTroll,  boss:false},
-      {name:'Phantom',      hp:200,  atk:22, gold:24, draw:drawEnemySlime,  boss:false},
-      {name:'Skeleton',     hp:220,  atk:16, gold:22, draw:drawEnemyGoblin, boss:false},
-      {name:'Stone Golem',  hp:420,  atk:26, gold:36, draw:drawEnemyTroll,  boss:false},
-      {name:'Phantom',      hp:300,  atk:28, gold:32, draw:drawEnemySlime,  boss:false},
-      {name:'Skeleton',     hp:300,  atk:20, gold:26, draw:drawEnemyGoblin, boss:false},
-      {name:'Stone Golem',  hp:560,  atk:32, gold:46, draw:drawEnemyTroll,  boss:false},
-      {name:'Phantom',      hp:420,  atk:30, gold:38, draw:drawEnemySlime,  boss:false},
-      {name:'RUIN KING',    hp:1800, atk:48, gold:150,draw:drawEnemyBoss,   boss:true},
+      {name:'Skeleton',      hp:160,  atk:14, gold:18,  draw:drawEnemyGoblin, boss:false},
+      {name:'Stone Golem',   hp:300,  atk:20, gold:28,  draw:drawEnemyTroll,  boss:false},
+      {name:'Phantom',       hp:200,  atk:22, gold:24,  draw:drawEnemySlime,  boss:false},
+      {name:'Skeleton',      hp:220,  atk:16, gold:22,  draw:drawEnemyGoblin, boss:false},
+      {name:'Stone Golem',   hp:420,  atk:26, gold:36,  draw:drawEnemyTroll,  boss:false},
+      {name:'Phantom',       hp:300,  atk:28, gold:32,  draw:drawEnemySlime,  boss:false},
+      {name:'Skeleton',      hp:300,  atk:20, gold:26,  draw:drawEnemyGoblin, boss:false},
+      {name:'Stone Golem',   hp:560,  atk:32, gold:46,  draw:drawEnemyTroll,  boss:false},
+      {name:'Phantom',       hp:420,  atk:30, gold:38,  draw:drawEnemySlime,  boss:false},
+      {name:'RUIN KING',     hp:1800, atk:48, gold:150, draw:drawEnemyBoss,   boss:true},
+    ]
+  },
+  { name:'VOID ZONE', bgTop:'#0c0018', bgBot:'#100020', ground:'#14002a',
+    waves:[
+      {name:'Wraith',        hp:300,  atk:30, gold:35,  draw:drawEnemyWraith, boss:false},
+      {name:'Void Imp',      hp:220,  atk:34, gold:30,  draw:drawEnemyGoblin, boss:false},
+      {name:'Wraith',        hp:400,  atk:32, gold:42,  draw:drawEnemyWraith, boss:false},
+      {name:'Void Imp',      hp:300,  atk:38, gold:38,  draw:drawEnemyGoblin, boss:false},
+      {name:'Shadow Drake',  hp:500,  atk:42, gold:52,  draw:drawEnemyDrake,  boss:false},
+      {name:'Wraith',        hp:600,  atk:44, gold:60,  draw:drawEnemyWraith, boss:false},
+      {name:'Void Imp',      hp:420,  atk:42, gold:50,  draw:drawEnemyGoblin, boss:false},
+      {name:'Shadow Drake',  hp:700,  atk:48, gold:72,  draw:drawEnemyDrake,  boss:false},
+      {name:'Wraith',        hp:800,  atk:50, gold:80,  draw:drawEnemyWraith, boss:false},
+      {name:'VOID LORD',     hp:4000, atk:80, gold:280, draw:drawEnemyBoss,   boss:true},
+    ]
+  },
+  { name:'VOLCANIC ZONE', bgTop:'#2d0a00', bgBot:'#1a0500', ground:'#3d1000',
+    waves:[
+      {name:'Lava Imp',      hp:460,  atk:55, gold:55,  draw:drawEnemyGoblin, boss:false},
+      {name:'Fire Drake',    hp:540,  atk:60, gold:62,  draw:drawEnemyDrake,  boss:false},
+      {name:'Lava Imp',      hp:580,  atk:58, gold:64,  draw:drawEnemyGoblin, boss:false},
+      {name:'Fire Drake',    hp:700,  atk:65, gold:74,  draw:drawEnemyDrake,  boss:false},
+      {name:'Magma Troll',   hp:900,  atk:70, gold:90,  draw:drawEnemyTroll,  boss:false},
+      {name:'Fire Drake',    hp:860,  atk:68, gold:88,  draw:drawEnemyDrake,  boss:false},
+      {name:'Lava Imp',      hp:700,  atk:64, gold:80,  draw:drawEnemyGoblin, boss:false},
+      {name:'Magma Troll',   hp:1100, atk:74, gold:102, draw:drawEnemyTroll,  boss:false},
+      {name:'Fire Drake',    hp:1000, atk:76, gold:100, draw:drawEnemyDrake,  boss:false},
+      {name:'INFERNO KING',  hp:8000, atk:130,gold:450, draw:drawEnemyBoss,   boss:true},
+    ]
+  },
+  { name:'CRYSTAL DEPTHS', bgTop:'#001a2e', bgBot:'#000e1a', ground:'#001428',
+    waves:[
+      {name:'Shard Wisp',    hp:620,  atk:72, gold:76,  draw:drawEnemyWraith, boss:false},
+      {name:'Crystal Golem', hp:800,  atk:78, gold:84,  draw:drawEnemyCrystal,boss:false},
+      {name:'Shard Wisp',    hp:760,  atk:76, gold:88,  draw:drawEnemyWraith, boss:false},
+      {name:'Crystal Golem', hp:980,  atk:84, gold:98,  draw:drawEnemyCrystal,boss:false},
+      {name:'Frost Drake',   hp:880,  atk:88, gold:98,  draw:drawEnemyDrake,  boss:false},
+      {name:'Crystal Golem', hp:1200, atk:90, gold:112, draw:drawEnemyCrystal,boss:false},
+      {name:'Shard Wisp',    hp:1000, atk:86, gold:108, draw:drawEnemyWraith, boss:false},
+      {name:'Frost Drake',   hp:1300, atk:94, gold:122, draw:drawEnemyDrake,  boss:false},
+      {name:'Crystal Golem', hp:1500, atk:98, gold:132, draw:drawEnemyCrystal,boss:false},
+      {name:'CRYSTAL SOVEREIGN',hp:16000,atk:200,gold:700,draw:drawEnemyBoss, boss:true},
     ]
   },
 ];
 
 // ─── State ─────────────────────────────────────────────────────────────────────
 let gold = 0, shards = 0, evPoints = 0;
-let zone = 0, wave = 0, bestWave = 1;
+let zone = 0, wave = 0, bestWave = 1, prestige = 0;
 let party = Array(9).fill(null);
 let collection = [];
 let enemy = null;
@@ -670,7 +751,8 @@ function createCreature(defId) {
 function spawnEnemy() {
   const z = ZONES[zone];
   const w = z.waves[wave];
-  enemy = { ...w, curHp: w.hp, atkTimer: 2.5 };
+  const scale = prestige > 0 ? Math.pow(1.8, prestige) : 1;
+  enemy = { ...w, hp: Math.floor(w.hp*scale), curHp: Math.floor(w.hp*scale), atk: Math.floor(w.atk*scale), gold: Math.floor(w.gold*scale), atkTimer: 2.5 };
 }
 
 function doAutoAttack(c) {
@@ -705,7 +787,13 @@ function killEnemy() {
   spawnFloat('+' + earnedShards + '❆', '#22d3ee');
   wave++;
   const zone_waves = ZONES[zone].waves.length;
-  if (wave >= zone_waves) { wave = 0; zone = (zone + 1) % ZONES.length; }
+  if (wave >= zone_waves) {
+    wave = 0; zone++;
+    if (zone >= ZONES.length) {
+      zone = 0; prestige++;
+      spawnFloat('PRESTIGE ★'+prestige, '#fbbf24', true);
+    }
+  }
   const abs = zone * 10 + wave + 1;
   if (abs > bestWave) bestWave = abs;
   // Partial heal on wave clear (20% of max HP)
@@ -767,11 +855,39 @@ function drawBg() {
       ctx.fillStyle = '#0d4a0d'; ctx.fillRect(tx-12, H*0.75-80, 32, 44);
       ctx.fillStyle = '#0f5c0f'; ctx.fillRect(tx-8, H*0.75-96, 24, 20);
     }
-  } else {
+  } else if (zone === 1) {
     for (let i=0; i<3; i++) {
       const tx = 30 + i*130;
       ctx.fillStyle = '#1e1b4b'; ctx.fillRect(tx, H*0.3, 18, H*0.45);
       ctx.fillStyle = '#2e2b5b'; ctx.fillRect(tx-4, H*0.28, 26, 10);
+    }
+  } else if (zone === 2) {
+    // void — floating orbs
+    for (let i=0; i<4; i++) {
+      const ox2 = 35+i*95, oy2 = H*0.22+(i%2)*18;
+      ctx.fillStyle='#4c1d95'; ctx.beginPath(); ctx.arc(ox2,oy2,9,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#7c3aed'; ctx.beginPath(); ctx.arc(ox2,oy2,6,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#a78bfa'; ctx.beginPath(); ctx.arc(ox2-2,oy2-2,3,0,Math.PI*2); ctx.fill();
+    }
+  } else if (zone === 3) {
+    // volcanic — lava cracks + fire columns
+    for (let i=0; i<3; i++) {
+      const lx = 40+i*120;
+      ctx.fillStyle='#dc2626'; ctx.fillRect(lx, H*0.75-4, 60, 6);
+      ctx.fillStyle='#f97316'; ctx.fillRect(lx+8, H*0.75-2, 38, 3);
+    }
+    for (let i=0; i<4; i++) {
+      const fx = 50+i*100;
+      ctx.fillStyle='#dc262644'; ctx.fillRect(fx, H*0.5, 6, H*0.25);
+      ctx.fillStyle='#f9731633'; ctx.fillRect(fx+1, H*0.44, 4, H*0.31);
+    }
+  } else {
+    // crystal depths — shard formations
+    for (let i=0; i<5; i++) {
+      const cx = 15+i*80, ch = 26+(i%3)*13;
+      ctx.fillStyle='#0e7490'; ctx.fillRect(cx, H*0.75-ch, 12, ch);
+      ctx.fillStyle='#22d3ee'; ctx.fillRect(cx+1, H*0.75-ch, 10, 5);
+      ctx.fillStyle='#a5f3fc22'; ctx.fillRect(cx+3, H*0.75-ch+6, 6, ch-10);
     }
   }
 }
@@ -812,10 +928,9 @@ function drawHUD() {
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   ctx.fillStyle = '#a78bfa'; ctx.fillText(z.name, 8, H - 26);
   ctx.fillStyle = '#7c6faa'; ctx.fillText('WAVE '+(wave+1)+'/10', 8, H - 16);
-  if (wave === 9) {
-    ctx.textAlign = 'right'; ctx.fillStyle = '#fbbf24';
-    ctx.fillText('⚠ BOSS', W-8, H - 26);
-  }
+  ctx.textAlign = 'right';
+  if (wave === 9) { ctx.fillStyle = '#fbbf24'; ctx.fillText('⚠ BOSS', W-8, H - 26); }
+  if (prestige > 0) { ctx.fillStyle = '#fbbf24'; ctx.fillText('★'+prestige, W-8, H - 16); }
 }
 
 function drawFloats() {
@@ -1027,13 +1142,14 @@ function updateHomeStat() {
   const totalAtk=party.reduce((s,c)=>s+(c?calcAtk(c):0),0);
   if(el('h-atk')) el('h-atk').textContent=totalAtk;
   if(el('h-best')) el('h-best').textContent=bestWave;
+  if(el('h-prestige')) el('h-prestige').textContent=prestige||'—';
 }
 
 // ─── Save / Load ──────────────────────────────────────────────────────────────
 function saveGame() {
   try {
     localStorage.setItem('ck_save', JSON.stringify({
-      gold, shards, evPoints, zone, wave, bestWave, nextId,
+      gold, shards, evPoints, zone, wave, bestWave, nextId, prestige,
       collection: collection.map(c=>({uid:c.uid,defId:c.defId,level:c.level,hp:c.hp,maxHp:c.maxHp,slot:c.slot,ivAtk:c.ivAtk,ivDef:c.ivDef,ivHp:c.ivHp,ivSpd:c.ivSpd,evAtk:c.evAtk||0,evDef:c.evDef||0,evHp:c.evHp||0,evSpd:c.evSpd||0})),
       party: party.map(c=>c?c.uid:null),
     }));
@@ -1046,7 +1162,7 @@ function loadGame() {
     const sv=JSON.parse(localStorage.getItem('ck_save')||'{}');
     if (!sv.collection) return false;
     gold=sv.gold||0; shards=sv.shards||0; evPoints=sv.evPoints||0;
-    zone=sv.zone||0; wave=sv.wave||0; bestWave=sv.bestWave||1; nextId=sv.nextId||1;
+    zone=sv.zone||0; wave=sv.wave||0; bestWave=sv.bestWave||1; nextId=sv.nextId||1; prestige=sv.prestige||0;
     collection=sv.collection.map(cd=>{
       const def=DEFS.find(d=>d.id===cd.defId)||DEFS[0];
       return {uid:cd.uid,defId:cd.defId,level:cd.level||1,hp:cd.hp,maxHp:cd.maxHp,slot:null,
