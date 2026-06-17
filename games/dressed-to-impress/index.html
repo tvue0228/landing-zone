@@ -224,83 +224,121 @@ const SKIN = '#F5C5A3';
 const SKIN2 = '#E8A882';
 
 const TOPS = [
-  {id:'tee-white',   name:'White Tee',     emoji:'👕', col:'#f8fafc', col2:'#e2e8f0', slv:0.35, len:0.95, neck:'crew', tags:['casual','everyday'],          vip:false},
-  {id:'crop-pink',   name:'Pink Crop',     emoji:'🩷', col:'#f9a8d4', col2:'#f472b6', slv:0,    len:0.5,  neck:'v',    tags:['casual','party','summer'],     vip:false},
-  {id:'blazer-blk',  name:'Black Blazer',  emoji:'🧥', col:'#1e1b4b', col2:'#312e81', slv:1,    len:1.0,  neck:'v',    tags:['formal','work','date'],        vip:false},
-  {id:'blouse-yel',  name:'Yellow Blouse', emoji:'🌼', col:'#fef08a', col2:'#fde047', slv:0.7,  len:0.95, neck:'v',    tags:['casual','garden','picnic'],    vip:false},
-  {id:'hoodie-red',  name:'Red Hoodie',    emoji:'❤️', col:'#dc2626', col2:'#b91c1c', slv:1,    len:1.0,  neck:'crew', tags:['casual','sporty','cozy'],      vip:false},
-  {id:'tank-blue',   name:'Sky Tank',      emoji:'🩵', col:'#bae6fd', col2:'#7dd3fc', slv:0,    len:0.95, neck:'crew', tags:['casual','beach','summer'],     vip:false},
-  {id:'stripe-nvy',  name:'Stripe Shirt',  emoji:'👔', col:'#dbeafe', col2:'#1e40af', slv:0.35, len:0.95, neck:'crew', tags:['casual','beach','work'],       vip:false},
-  {id:'trtl-prpl',   name:'Purple Turtle', emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:1,    len:1.0,  neck:'high', tags:['formal','winter','date'],      vip:true},
-  {id:'cami-grn',    name:'Sage Cami',     emoji:'🌿', col:'#86efac', col2:'#4ade80', slv:0,    len:0.95, neck:'v',    tags:['casual','garden','resort'],    vip:false},
-  {id:'bustier',     name:'Glam Bustier',  emoji:'✨', col:'#d97706', col2:'#b45309', slv:0,    len:0.5,  neck:'off',  tags:['party','date','night','glam'], vip:true},
+  {id:'tee-white',   name:'White Tee',       emoji:'👕', col:'#f8fafc', col2:'#e2e8f0', slv:0.35, len:0.95, neck:'crew', tags:['casual','everyday'],           vip:false},
+  {id:'crop-pink',   name:'Pink Crop',       emoji:'🩷', col:'#f9a8d4', col2:'#f472b6', slv:0,    len:0.5,  neck:'v',    tags:['casual','party','summer'],      vip:false},
+  {id:'blazer-blk',  name:'Black Blazer',    emoji:'🧥', col:'#1e1b4b', col2:'#312e81', slv:1,    len:1.0,  neck:'v',    tags:['formal','work','date'],         vip:false},
+  {id:'blouse-yel',  name:'Yellow Blouse',   emoji:'🌼', col:'#fef08a', col2:'#fde047', slv:0.7,  len:0.95, neck:'v',    tags:['casual','garden','picnic'],     vip:false},
+  {id:'hoodie-red',  name:'Red Hoodie',      emoji:'❤️', col:'#dc2626', col2:'#b91c1c', slv:1,    len:1.0,  neck:'crew', tags:['casual','sporty','cozy'],       vip:false},
+  {id:'tank-blue',   name:'Sky Tank',        emoji:'🩵', col:'#bae6fd', col2:'#7dd3fc', slv:0,    len:0.95, neck:'crew', tags:['casual','beach','summer'],      vip:false},
+  {id:'stripe-nvy',  name:'Stripe Shirt',    emoji:'👔', col:'#dbeafe', col2:'#1e40af', slv:0.35, len:0.95, neck:'crew', tags:['casual','beach','work'],        vip:false},
+  {id:'trtl-prpl',   name:'Purple Turtle',   emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:1,    len:1.0,  neck:'high', tags:['formal','winter','date'],       vip:true},
+  {id:'cami-grn',    name:'Sage Cami',       emoji:'🌿', col:'#86efac', col2:'#4ade80', slv:0,    len:0.95, neck:'v',    tags:['casual','garden','resort'],     vip:false},
+  {id:'bustier',     name:'Glam Bustier',    emoji:'✨', col:'#d97706', col2:'#b45309', slv:0,    len:0.5,  neck:'off',  tags:['party','date','night','glam'],  vip:true},
+  {id:'corset-blk',  name:'Black Corset',    emoji:'🖤', col:'#111827', col2:'#1f2937', slv:0,    len:0.5,  neck:'off',  tags:['party','date','night','edgy'],  vip:false},
+  {id:'cardigan-crm',name:'Cream Cardigan',  emoji:'🤍', col:'#faf7f0', col2:'#e8e0d0', slv:1,    len:1.0,  neck:'v',    tags:['casual','cozy','autumn'],       vip:false},
+  {id:'halter-grn',  name:'Green Halter',    emoji:'💚', col:'#16a34a', col2:'#15803d', slv:0,    len:0.5,  neck:'v',    tags:['party','summer','beach'],       vip:false},
+  {id:'plaid-shirt', name:'Plaid Shirt',     emoji:'🟥', col:'#b91c1c', col2:'#7f1d1d', slv:0.7,  len:1.0,  neck:'crew', tags:['casual','autumn','school'],     vip:false},
+  {id:'bodysuit-blk',name:'Black Bodysuit',  emoji:'🫶', col:'#1f2937', col2:'#111827', slv:1,    len:1.0,  neck:'high', tags:['date','night','edgy','glam'],   vip:true},
+  {id:'linen-top',   name:'Linen Top',       emoji:'🌾', col:'#fef9c3', col2:'#fde68a', slv:0.35, len:0.95, neck:'v',    tags:['casual','resort','garden'],     vip:false},
+  {id:'bomber-olv',  name:'Olive Bomber',    emoji:'🫒', col:'#4d7c0f', col2:'#365314', slv:1,    len:1.0,  neck:'crew', tags:['casual','edgy','autumn'],       vip:false},
 ];
 
 const BOTTOMS = [
-  {id:'jeans-blu',  name:'Blue Jeans',      emoji:'👖', col:'#1d4ed8', col2:'#1e3a8a', btype:'pants',      tags:['casual','everyday','work'],     vip:false},
-  {id:'skirt-red',  name:'Red Mini Skirt',  emoji:'❤️', col:'#dc2626', col2:'#b91c1c', btype:'skirt-mini', tags:['party','date','night'],         vip:false},
-  {id:'skirt-flrl', name:'Floral Skirt',    emoji:'🌸', col:'#c084fc', col2:'#a855f7', btype:'skirt-maxi', tags:['casual','garden','resort'],     vip:false},
-  {id:'shorts-dnm', name:'Denim Shorts',    emoji:'🩳', col:'#3b82f6', col2:'#2563eb', btype:'shorts',     tags:['casual','beach','summer'],      vip:false},
-  {id:'trouser-wht',name:'White Trousers',  emoji:'⬜', col:'#f1f5f9', col2:'#e2e8f0', btype:'pants',      tags:['formal','work','garden'],       vip:false},
-  {id:'skirt-plaid',name:'Plaid Skirt',     emoji:'🟫', col:'#b45309', col2:'#92400e', btype:'skirt-mini', tags:['casual','autumn','school'],     vip:false},
-  {id:'lthpant-blk',name:'Leather Pants',   emoji:'🖤', col:'#111827', col2:'#000',    btype:'pants',      tags:['date','night','rock','edgy'],   vip:true},
-  {id:'skirt-gold', name:'Gold Sequin',     emoji:'⭐', col:'#d97706', col2:'#f59e0b', btype:'skirt-mini', tags:['party','night','glam'],         vip:true},
-  {id:'bike-short', name:'Bike Shorts',     emoji:'🏃', col:'#1e293b', col2:'#0f172a', btype:'shorts',     tags:['sporty','gym','casual'],        vip:false},
-  {id:'skirt-midi', name:'Sage Midi Skirt', emoji:'🌿', col:'#86efac', col2:'#4ade80', btype:'skirt-midi', tags:['casual','garden','resort'],     vip:false},
+  {id:'jeans-blu',   name:'Blue Jeans',      emoji:'👖', col:'#1d4ed8', col2:'#1e3a8a', btype:'pants',      tags:['casual','everyday','work'],      vip:false},
+  {id:'skirt-red',   name:'Red Mini Skirt',  emoji:'❤️', col:'#dc2626', col2:'#b91c1c', btype:'skirt-mini', tags:['party','date','night'],          vip:false},
+  {id:'skirt-flrl',  name:'Floral Skirt',    emoji:'🌸', col:'#c084fc', col2:'#a855f7', btype:'skirt-maxi', tags:['casual','garden','resort'],      vip:false},
+  {id:'shorts-dnm',  name:'Denim Shorts',    emoji:'🩳', col:'#3b82f6', col2:'#2563eb', btype:'shorts',     tags:['casual','beach','summer'],       vip:false},
+  {id:'trouser-wht', name:'White Trousers',  emoji:'⬜', col:'#f1f5f9', col2:'#e2e8f0', btype:'pants',      tags:['formal','work','garden'],        vip:false},
+  {id:'skirt-plaid', name:'Plaid Skirt',     emoji:'🟫', col:'#b45309', col2:'#92400e', btype:'skirt-mini', tags:['casual','autumn','school'],      vip:false},
+  {id:'lthpant-blk', name:'Leather Pants',   emoji:'🖤', col:'#111827', col2:'#000',    btype:'pants',      tags:['date','night','rock','edgy'],    vip:true},
+  {id:'skirt-gold',  name:'Gold Sequin',     emoji:'⭐', col:'#d97706', col2:'#f59e0b', btype:'skirt-mini', tags:['party','night','glam'],          vip:true},
+  {id:'bike-short',  name:'Bike Shorts',     emoji:'🏃', col:'#1e293b', col2:'#0f172a', btype:'shorts',     tags:['sporty','gym','casual'],         vip:false},
+  {id:'skirt-midi',  name:'Sage Midi Skirt', emoji:'🌿', col:'#86efac', col2:'#4ade80', btype:'skirt-midi', tags:['casual','garden','resort'],      vip:false},
+  {id:'cargo-grn',   name:'Cargo Pants',     emoji:'🪖', col:'#4d7c0f', col2:'#3f6212', btype:'pants',      tags:['casual','sporty','edgy'],        vip:false},
+  {id:'tennis-skirt',name:'Tennis Skirt',    emoji:'🎾', col:'#f8fafc', col2:'#e2e8f0', btype:'skirt-mini', tags:['sporty','casual','summer'],      vip:false},
+  {id:'velvet-skirt',name:'Velvet Midi',     emoji:'💜', col:'#6d28d9', col2:'#5b21b6', btype:'skirt-midi', tags:['date','night','glam'],           vip:true},
+  {id:'palazzo-wht', name:'Palazzo Pants',   emoji:'🤍', col:'#f1f5f9', col2:'#d6d3d1', btype:'pants',      tags:['resort','casual','summer'],      vip:false},
+  {id:'jeans-blk',   name:'Black Jeans',     emoji:'🖤', col:'#1f2937', col2:'#111827', btype:'pants',      tags:['casual','everyday','night'],     vip:false},
+  {id:'skirt-satin', name:'Satin Skirt',     emoji:'✨', col:'#94a3b8', col2:'#64748b', btype:'skirt-midi', tags:['formal','gala','elegant','night'],vip:true},
 ];
 
 const DRESSES = [
-  {id:'lbd',        name:'Little Black Dress',emoji:'🖤', col:'#111827', col2:'#1f2937', slv:0,    neck:'v',    dlen:0.75, tags:['date','night','formal','elegant'], vip:false},
-  {id:'sundress',   name:'Floral Sundress',  emoji:'🌻', col:'#22c55e', col2:'#16a34a', slv:0,    neck:'v',    dlen:1.0,  tags:['casual','beach','garden','summer'],vip:false},
-  {id:'partydress', name:'Pink Party Dress', emoji:'💗', col:'#f472b6', col2:'#ec4899', slv:0,    neck:'v',    dlen:0.75, tags:['party','date','night'],            vip:false},
-  {id:'gown-red',   name:'Red Gown',         emoji:'👑', col:'#dc2626', col2:'#b91c1c', slv:0.7,  neck:'off',  dlen:1.2,  tags:['formal','gala','glam','night'],   vip:true},
-  {id:'babydoll',   name:'Yellow Babydoll',  emoji:'🌟', col:'#fde68a', col2:'#fbbf24', slv:0.35, neck:'crew', dlen:0.75, tags:['casual','summer','date'],          vip:false},
-  {id:'bodycon-prp',name:'Purple Bodycon',   emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:0,    neck:'v',    dlen:0.75, tags:['party','night','date','glam'],     vip:true},
-  {id:'wrap-grn',   name:'Wrap Dress',       emoji:'🌿', col:'#059669', col2:'#047857', slv:0.35, neck:'v',    dlen:1.0,  tags:['casual','garden','work'],          vip:false},
-  {id:'slip-slvr',  name:'Silver Slip Dress',emoji:'💫', col:'#94a3b8', col2:'#64748b', slv:0,    neck:'v',    dlen:1.0,  tags:['night','date','glam','formal'],   vip:false},
+  {id:'lbd',         name:'Little Black Dress',  emoji:'🖤', col:'#111827', col2:'#1f2937', slv:0,    neck:'v',    dlen:0.75, tags:['date','night','formal','elegant'],  vip:false},
+  {id:'sundress',    name:'Floral Sundress',     emoji:'🌻', col:'#22c55e', col2:'#16a34a', slv:0,    neck:'v',    dlen:1.0,  tags:['casual','beach','garden','summer'], vip:false},
+  {id:'partydress',  name:'Pink Party Dress',    emoji:'💗', col:'#f472b6', col2:'#ec4899', slv:0,    neck:'v',    dlen:0.75, tags:['party','date','night'],             vip:false},
+  {id:'gown-red',    name:'Red Gown',            emoji:'👑', col:'#dc2626', col2:'#b91c1c', slv:0.7,  neck:'off',  dlen:1.2,  tags:['formal','gala','glam','night'],    vip:true},
+  {id:'babydoll',    name:'Yellow Babydoll',     emoji:'🌟', col:'#fde68a', col2:'#fbbf24', slv:0.35, neck:'crew', dlen:0.75, tags:['casual','summer','date'],           vip:false},
+  {id:'bodycon-prp', name:'Purple Bodycon',      emoji:'💜', col:'#7c3aed', col2:'#6d28d9', slv:0,    neck:'v',    dlen:0.75, tags:['party','night','date','glam'],      vip:true},
+  {id:'wrap-grn',    name:'Wrap Dress',          emoji:'🌿', col:'#059669', col2:'#047857', slv:0.35, neck:'v',    dlen:1.0,  tags:['casual','garden','work'],           vip:false},
+  {id:'slip-slvr',   name:'Silver Slip Dress',   emoji:'💫', col:'#94a3b8', col2:'#64748b', slv:0,    neck:'v',    dlen:1.0,  tags:['night','date','glam','formal'],    vip:false},
+  {id:'sweater-dress',name:'Sweater Dress',      emoji:'🧶', col:'#c084fc', col2:'#a855f7', slv:1,    neck:'crew', dlen:0.75, tags:['casual','winter','cozy'],           vip:false},
+  {id:'satin-navy',  name:'Navy Satin Gown',     emoji:'💙', col:'#1e3a8a', col2:'#1e40af', slv:0,    neck:'v',    dlen:1.2,  tags:['formal','gala','elegant','night'], vip:true},
+  {id:'floral-midi', name:'Floral Midi Dress',   emoji:'🌺', col:'#f472b6', col2:'#ec4899', slv:0.35, neck:'v',    dlen:1.0,  tags:['casual','garden','resort'],        vip:false},
+  {id:'denim-dress', name:'Denim Dress',         emoji:'👖', col:'#3b82f6', col2:'#2563eb', slv:0.35, neck:'crew', dlen:0.75, tags:['casual','everyday','school'],      vip:false},
+  {id:'sequin-gold', name:'Gold Sequin Dress',   emoji:'🌟', col:'#d97706', col2:'#b45309', slv:0,    neck:'v',    dlen:0.75, tags:['party','gala','glam','night'],     vip:true},
 ];
 
 const SHOES = [
-  {id:'snkr-wht',  name:'White Sneakers',  emoji:'👟', col:'#f8fafc', col2:'#e2e8f0', stype:'flat',      tags:['casual','sporty','everyday'], vip:false},
-  {id:'heel-blk',  name:'Black Heels',     emoji:'👠', col:'#111827', col2:'#000',    stype:'heels',     tags:['formal','date','night'],      vip:false},
-  {id:'boot-pink', name:'Pink Boots',      emoji:'🥿', col:'#f9a8d4', col2:'#f472b6', stype:'boot-ankle',tags:['casual','autumn','edgy'],     vip:false},
-  {id:'sandal-brn',name:'Brown Sandals',   emoji:'🩴', col:'#92400e', col2:'#78350f', stype:'sandal',    tags:['casual','beach','summer'],    vip:false},
-  {id:'stiletto-r',name:'Red Stilettos',   emoji:'💄', col:'#dc2626', col2:'#b91c1c', stype:'heels',     tags:['date','night','glam','party'],vip:true},
-  {id:'loafer-slv',name:'Silver Loafers',  emoji:'🥈', col:'#94a3b8', col2:'#64748b', stype:'flat',      tags:['casual','work','formal'],     vip:false},
-  {id:'platform',  name:'Platform Boots',  emoji:'💜', col:'#5b21b6', col2:'#4c1d95', stype:'boot-knee', tags:['edgy','party','night'],       vip:true},
-  {id:'flat-beige',name:'Ballet Flats',    emoji:'🩰', col:'#d6c5a7', col2:'#c4a882', stype:'flat',      tags:['casual','work','garden'],     vip:false},
-  {id:'mule-wht',  name:'White Mules',     emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', stype:'heels',     tags:['casual','resort','summer'],   vip:false},
-  {id:'boot-cowboy',name:'Cowboy Boots',   emoji:'🤠', col:'#92400e', col2:'#78350f', stype:'boot-knee', tags:['casual','country','edgy'],    vip:false},
+  {id:'snkr-wht',   name:'White Sneakers',  emoji:'👟', col:'#f8fafc', col2:'#e2e8f0', stype:'flat',      tags:['casual','sporty','everyday'],  vip:false},
+  {id:'heel-blk',   name:'Black Heels',     emoji:'👠', col:'#111827', col2:'#000',    stype:'heels',     tags:['formal','date','night'],       vip:false},
+  {id:'boot-pink',  name:'Pink Boots',      emoji:'🥿', col:'#f9a8d4', col2:'#f472b6', stype:'boot-ankle',tags:['casual','autumn','edgy'],      vip:false},
+  {id:'sandal-brn', name:'Brown Sandals',   emoji:'🩴', col:'#92400e', col2:'#78350f', stype:'sandal',    tags:['casual','beach','summer'],     vip:false},
+  {id:'stiletto-r', name:'Red Stilettos',   emoji:'💄', col:'#dc2626', col2:'#b91c1c', stype:'heels',     tags:['date','night','glam','party'], vip:true},
+  {id:'loafer-slv', name:'Silver Loafers',  emoji:'🥈', col:'#94a3b8', col2:'#64748b', stype:'flat',      tags:['casual','work','formal'],      vip:false},
+  {id:'platform',   name:'Platform Boots',  emoji:'💜', col:'#5b21b6', col2:'#4c1d95', stype:'boot-knee', tags:['edgy','party','night'],        vip:true},
+  {id:'flat-beige', name:'Ballet Flats',    emoji:'🩰', col:'#d6c5a7', col2:'#c4a882', stype:'flat',      tags:['casual','work','garden'],      vip:false},
+  {id:'mule-wht',   name:'White Mules',     emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', stype:'heels',     tags:['casual','resort','summer'],    vip:false},
+  {id:'boot-cowboy',name:'Cowboy Boots',    emoji:'🤠', col:'#92400e', col2:'#78350f', stype:'boot-knee', tags:['casual','country','edgy'],     vip:false},
+  {id:'chunky-snkr',name:'Chunky Sneakers', emoji:'🖤', col:'#1e293b', col2:'#0f172a', stype:'flat',      tags:['casual','edgy','sporty'],      vip:false},
+  {id:'wedge-nude', name:'Nude Wedges',     emoji:'🌸', col:'#d6c5a7', col2:'#c4a882', stype:'heels',     tags:['casual','resort','date'],      vip:false},
+  {id:'oxford-brn', name:'Brown Oxfords',   emoji:'🟤', col:'#92400e', col2:'#78350f', stype:'flat',      tags:['work','formal','classic'],     vip:false},
+  {id:'thigh-boot', name:'Thigh Boots',     emoji:'💋', col:'#111827', col2:'#000',    stype:'boot-knee', tags:['night','edgy','date','party'], vip:true},
+  {id:'sandal-gold',name:'Gold Sandals',    emoji:'✨', col:'#d97706', col2:'#b45309', stype:'sandal',    tags:['beach','resort','party'],      vip:false},
+  {id:'sneaker-clr',name:'Color Sneakers',  emoji:'🌈', col:'#ec4899', col2:'#db2777', stype:'flat',      tags:['casual','sporty','party'],     vip:false},
 ];
 
 const BAGS = [
-  {id:'tote-wht',  name:'White Tote',    emoji:'🛍️', col:'#f8fafc', col2:'#94a3b8', bstyle:'tote',     tags:['casual','everyday','beach'],  vip:false},
-  {id:'clutch-blk',name:'Black Clutch',  emoji:'👛', col:'#111827', col2:'#374151', bstyle:'clutch',   tags:['formal','date','night'],      vip:false},
-  {id:'mini-pink', name:'Pink Mini Bag', emoji:'💗', col:'#f9a8d4', col2:'#f472b6', bstyle:'mini',     tags:['casual','party','date'],      vip:false},
-  {id:'shoulder-br',name:'Shoulder Bag', emoji:'👜', col:'#92400e', col2:'#78350f', bstyle:'shoulder', tags:['casual','work','everyday'],   vip:false},
-  {id:'gold-eve',  name:'Gold Evening',  emoji:'✨', col:'#d97706', col2:'#b45309', bstyle:'clutch',   tags:['night','party','glam','gala'],vip:true},
-  {id:'backpack',  name:'Backpack',      emoji:'🎒', col:'#374151', col2:'#1f2937', bstyle:'backpack', tags:['casual','sporty','school'],   vip:false},
-  {id:'rattan',    name:'Rattan Bag',    emoji:'🌿', col:'#a16207', col2:'#854d0e', bstyle:'tote',     tags:['beach','summer','resort'],    vip:false},
-  {id:'slvr-chain',name:'Chain Bag',     emoji:'💫', col:'#94a3b8', col2:'#64748b', bstyle:'mini',     tags:['night','glam','date'],        vip:true},
+  {id:'tote-wht',   name:'White Tote',      emoji:'🛍️', col:'#f8fafc', col2:'#94a3b8', bstyle:'tote',     tags:['casual','everyday','beach'],   vip:false},
+  {id:'clutch-blk', name:'Black Clutch',    emoji:'👛', col:'#111827', col2:'#374151', bstyle:'clutch',   tags:['formal','date','night'],       vip:false},
+  {id:'mini-pink',  name:'Pink Mini Bag',   emoji:'💗', col:'#f9a8d4', col2:'#f472b6', bstyle:'mini',     tags:['casual','party','date'],       vip:false},
+  {id:'shoulder-br',name:'Shoulder Bag',    emoji:'👜', col:'#92400e', col2:'#78350f', bstyle:'shoulder', tags:['casual','work','everyday'],    vip:false},
+  {id:'gold-eve',   name:'Gold Evening',    emoji:'✨', col:'#d97706', col2:'#b45309', bstyle:'clutch',   tags:['night','party','glam','gala'], vip:true},
+  {id:'backpack',   name:'Backpack',        emoji:'🎒', col:'#374151', col2:'#1f2937', bstyle:'backpack', tags:['casual','sporty','school'],    vip:false},
+  {id:'rattan',     name:'Rattan Bag',      emoji:'🌿', col:'#a16207', col2:'#854d0e', bstyle:'tote',     tags:['beach','summer','resort'],     vip:false},
+  {id:'slvr-chain', name:'Chain Bag',       emoji:'💫', col:'#94a3b8', col2:'#64748b', bstyle:'mini',     tags:['night','glam','date'],         vip:true},
+  {id:'crossbody',  name:'Tan Crossbody',   emoji:'🟤', col:'#a16207', col2:'#92400e', bstyle:'shoulder', tags:['casual','everyday','work'],    vip:false},
+  {id:'basket-bag', name:'Basket Bag',      emoji:'🧺', col:'#d97706', col2:'#b45309', bstyle:'tote',     tags:['beach','summer','garden'],     vip:false},
+  {id:'micro-prpl', name:'Micro Bag',       emoji:'💜', col:'#7c3aed', col2:'#6d28d9', bstyle:'mini',     tags:['party','night','glam'],        vip:true},
+  {id:'tote-canvas',name:'Canvas Tote',     emoji:'🎨', col:'#e8e0d0', col2:'#d6c5a7', bstyle:'tote',     tags:['casual','art','everyday'],     vip:false},
 ];
 
 const HATS = [
-  {id:'cap-blk',   name:'Black Cap',    emoji:'🧢', col:'#111827', col2:'#374151', hstyle:'cap',    tags:['casual','sporty','everyday'], vip:false},
-  {id:'bucket-bei',name:'Bucket Hat',   emoji:'⛑️', col:'#d6c5a7', col2:'#c4a882', hstyle:'bucket', tags:['casual','beach','summer'],    vip:false},
-  {id:'beret-red', name:'Red Beret',    emoji:'🎨', col:'#dc2626', col2:'#b91c1c', hstyle:'beret',  tags:['casual','garden','art'],      vip:false},
-  {id:'sun-hat',   name:'Sun Hat',      emoji:'👒', col:'#fde68a', col2:'#fbbf24', hstyle:'sun',    tags:['beach','summer','garden'],    vip:false},
-  {id:'crown-crys',name:'Crystal Crown',emoji:'👑', col:'#c084fc', col2:'#a855f7', hstyle:'crown',  tags:['party','glam','night'],       vip:true},
-  {id:'beanie-wht',name:'White Beanie', emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', hstyle:'beanie', tags:['winter','casual','cozy'],     vip:false},
+  {id:'cap-blk',    name:'Black Cap',       emoji:'🧢', col:'#111827', col2:'#374151', hstyle:'cap',    tags:['casual','sporty','everyday'],  vip:false},
+  {id:'bucket-bei', name:'Bucket Hat',      emoji:'⛑️', col:'#d6c5a7', col2:'#c4a882', hstyle:'bucket', tags:['casual','beach','summer'],     vip:false},
+  {id:'beret-red',  name:'Red Beret',       emoji:'🎨', col:'#dc2626', col2:'#b91c1c', hstyle:'beret',  tags:['casual','garden','art'],       vip:false},
+  {id:'sun-hat',    name:'Sun Hat',         emoji:'👒', col:'#fde68a', col2:'#fbbf24', hstyle:'sun',    tags:['beach','summer','garden'],     vip:false},
+  {id:'crown-crys', name:'Crystal Crown',   emoji:'👑', col:'#c084fc', col2:'#a855f7', hstyle:'crown',  tags:['party','glam','night'],        vip:true},
+  {id:'beanie-wht', name:'White Beanie',    emoji:'🤍', col:'#f1f5f9', col2:'#e2e8f0', hstyle:'beanie', tags:['winter','casual','cozy'],      vip:false},
+  {id:'cap-pink',   name:'Pink Cap',        emoji:'🩷', col:'#f9a8d4', col2:'#f472b6', hstyle:'cap',    tags:['casual','sporty','cute'],      vip:false},
+  {id:'beret-blk',  name:'Black Beret',     emoji:'🖤', col:'#111827', col2:'#1f2937', hstyle:'beret',  tags:['casual','formal','elegant'],   vip:false},
+  {id:'bucket-wht', name:'White Bucket',    emoji:'🤍', col:'#f8fafc', col2:'#e2e8f0', hstyle:'bucket', tags:['casual','beach','resort'],     vip:false},
+  {id:'cowgirl-hat',name:'Cowgirl Hat',     emoji:'🤠', col:'#b45309', col2:'#92400e', hstyle:'sun',    tags:['casual','country','edgy'],     vip:false},
+  {id:'tiara-gold', name:'Gold Tiara',      emoji:'👸', col:'#d97706', col2:'#b45309', hstyle:'crown',  tags:['gala','glam','formal','night'], vip:true},
 ];
 
 const JEWELRY = [
-  {id:'necklace-gld',name:'Gold Chain',   emoji:'📿', col:'#d97706', jtype:'necklace', tags:['casual','formal','everyday'],  vip:false},
-  {id:'pearl-earr',  name:'Pearl Earrings',emoji:'🤍',col:'#f8fafc', jtype:'earrings', tags:['formal','elegant','classic'],  vip:false},
-  {id:'slvr-bangle', name:'Silver Bangle',emoji:'💍', col:'#94a3b8', jtype:'bracelet', tags:['casual','everyday'],           vip:false},
-  {id:'heart-pend',  name:'Heart Pendant',emoji:'🩷', col:'#f472b6', jtype:'necklace', tags:['date','casual','cute'],        vip:false},
-  {id:'gem-tiara',   name:'Gem Tiara',    emoji:'👑', col:'#a855f7', jtype:'tiara',    tags:['party','glam','night'],        vip:true},
-  {id:'diam-studs',  name:'Diamond Studs',emoji:'💎', col:'#bae6fd', jtype:'earrings', tags:['formal','elegant','gala'],     vip:true},
-  {id:'layered-nk',  name:'Layered Chains',emoji:'✨',col:'#f59e0b', jtype:'necklace', tags:['casual','boho','beach'],       vip:false},
+  {id:'necklace-gld',name:'Gold Chain',     emoji:'📿', col:'#d97706', jtype:'necklace', tags:['casual','formal','everyday'],   vip:false},
+  {id:'pearl-earr',  name:'Pearl Earrings', emoji:'🤍', col:'#f8fafc', jtype:'earrings', tags:['formal','elegant','classic'],   vip:false},
+  {id:'slvr-bangle', name:'Silver Bangle',  emoji:'💍', col:'#94a3b8', jtype:'bracelet', tags:['casual','everyday'],            vip:false},
+  {id:'heart-pend',  name:'Heart Pendant',  emoji:'🩷', col:'#f472b6', jtype:'necklace', tags:['date','casual','cute'],         vip:false},
+  {id:'gem-tiara',   name:'Gem Tiara',      emoji:'👑', col:'#a855f7', jtype:'tiara',    tags:['party','glam','night'],         vip:true},
+  {id:'diam-studs',  name:'Diamond Studs',  emoji:'💎', col:'#bae6fd', jtype:'earrings', tags:['formal','elegant','gala'],      vip:true},
+  {id:'layered-nk',  name:'Layered Chains', emoji:'✨', col:'#f59e0b', jtype:'necklace', tags:['casual','boho','beach'],        vip:false},
+  {id:'choker-blk',  name:'Black Choker',   emoji:'🖤', col:'#111827', jtype:'necklace', tags:['edgy','night','date'],          vip:false},
+  {id:'hoop-gold',   name:'Gold Hoops',     emoji:'🔔', col:'#d97706', jtype:'earrings', tags:['casual','party','everyday'],    vip:false},
+  {id:'star-earr',   name:'Star Earrings',  emoji:'🌟', col:'#fbbf24', jtype:'earrings', tags:['party','casual','glam'],        vip:true},
+  {id:'pearl-neck',  name:'Pearl Necklace', emoji:'🫧', col:'#f1f5f9', jtype:'necklace', tags:['formal','elegant','classic'],   vip:false},
+  {id:'cuff-slvr',   name:'Silver Cuff',    emoji:'🥈', col:'#94a3b8', jtype:'bracelet', tags:['casual','edgy','everyday'],     vip:false},
 ];
 
 // ── Salon data ─────────────────────────────────────────────────────────────────
@@ -388,6 +426,7 @@ let challengeState = {
 };
 let isVip = false;
 let totalScore = 0;
+let gems = 0;
 
 // Load save
 try {
@@ -396,6 +435,7 @@ try {
   if (sv.salon)  Object.assign(salonState, sv.salon);
   if (sv.isVip)  isVip = sv.isVip;
   if (sv.totalScore) totalScore = sv.totalScore;
+  if (sv.gems)   gems = sv.gems;
   // resolve item refs
   if (outfit.top)     outfit.top     = TOPS.find(x=>x.id===outfit.top)||null;
   if (outfit.bottom)  outfit.bottom  = BOTTOMS.find(x=>x.id===outfit.bottom)||null;
@@ -422,7 +462,7 @@ function saveGame() {
         makeup: salonState.makeup?.id||null,
         nails: salonState.nails?.id||null,
       },
-      isVip, totalScore,
+      isVip, totalScore, gems,
     }));
   } catch(e){}
 }
@@ -1105,19 +1145,21 @@ function buildHomePanel() {
   p.innerHTML = `
     <div class="home-panel">
       <div class="hm-title">👗 Dressed to Impress</div>
-      <div class="hm-sub">Dress up your avatar using the Lobby and Lana's Salon, then take on the 6-minute style challenge!</div>
-      <div class="vip-badge-row ${isVip?'':'hidden'}" id="vip-row">
-        <span class="vip-icon">✨</span>
-        <span class="vip-text">VIP Member — exclusive items unlocked!</span>
+      <div class="hm-sub">Dress up your avatar, then take on the style challenge to earn 💎 Gems!</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border-radius:14px;padding:14px;">
+        <span style="font-size:36px">💎</span>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#7c3aed;">${gems} <span style="font-size:13px;color:#9ca3af;">/ 500</span></div>
+          <div style="font-size:11px;color:#9ca3af;">Gems — spend 500 for VIP</div>
+        </div>
       </div>
-      ${!isVip?`<div class="vip-badge-row" style="background:linear-gradient(135deg,#f3e8ff,#e9d5ff)">
-        <span class="vip-icon">🔒</span>
-        <span class="vip-text" style="color:#7c3aed">Score 300+ in a challenge to unlock VIP!</span>
-      </div>`:''}
+      <div style="background:#f3e8ff;border-radius:8px;height:8px;overflow:hidden;">
+        <div style="width:${Math.min(100,(gems/500)*100)}%;height:100%;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:8px;transition:width .4s;"></div>
+      </div>
+      ${isVip?`<div class="vip-badge-row"><span class="vip-icon">✨</span><span class="vip-text">VIP Member — all exclusive items unlocked!</span></div>`:''}
       <button class="big-btn" id="btn-reset-outfit">🔄 Reset Outfit</button>
     </div>`;
-  p.querySelector('#btn-reset-outfit').addEventListener('click', resetOutfit);
-  if (!isVip) p.querySelector('.vip-badge-row')?.classList.remove('hidden');
+  p.querySelector('#btn-reset-outfit').addEventListener('click', () => { resetOutfit(); buildHomePanel(); setTab('home'); });
   return p;
 }
 
@@ -1272,16 +1314,19 @@ function buildChallengeContent() {
     const base=challengeState.baseScore||sc;
     const mult=challengeState.mult;
     const multLabel=mult!==1?`<div style="font-size:12px;color:#9ca3af;margin-top:4px;">${base} base × ${mult} = <strong style="color:#a855f7">${sc}</strong> pts</div>`:'';
+    const gemsEarned=challengeState.gemsEarned||Math.ceil(sc/10);
     c.innerHTML=`
       <div class="theme-card" style="background:${theme.bg}">\
         <span class="te">${theme.emoji}</span>\
         <div class="td"><div class="tn">${theme.name}</div><div class="ts">Challenge complete!</div></div>\
       </div>
-      <div id="score-result" style="display:block;padding:16px 8px;">
+      <div id="score-result" style="display:block;padding:12px 8px;">
         <div class="sr-pts">${sc} pts</div>
         <div class="sr-grade">${scoreGrade(sc)}</div>
         ${multLabel}
-        <div style="font-size:12px;color:#9ca3af;margin-top:6px;">Best: ${Math.max(sc,totalScore)} pts total</div>
+        <div style="font-size:18px;margin-top:10px;">+${gemsEarned} 💎</div>
+        <div style="font-size:11px;color:#9ca3af;">Total gems: ${gems} / 500</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">All time: ${totalScore} pts</div>
       </div>`;
     const nb=document.createElement('button'); nb.className='big-btn';
     nb.textContent='▶ Next Challenge'; nb.addEventListener('click',nextChallenge); c.appendChild(nb);
@@ -1358,7 +1403,22 @@ function buildVipPanel() {
   p.id='tab-vip';
   const inner=document.createElement('div'); inner.className='vip-panel';
   if (!isVip) {
-    inner.innerHTML=`<div style="text-align:center;padding:20px;"><div style="font-size:40px">🔒</div><div style="font-weight:700;color:#7c3aed;margin:8px 0">VIP Locked</div><div style="font-size:12px;color:#9ca3af">Score 300+ in a challenge to unlock exclusive items!</div></div>`;
+    const canBuy=gems>=500;
+    inner.innerHTML=`<div style="text-align:center;padding:16px 10px;">
+      <div style="font-size:40px">💎</div>
+      <div style="font-weight:700;color:#7c3aed;margin:8px 0;font-size:16px;">VIP Membership</div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:14px;">Unlock all exclusive items by spending 500 Gems</div>
+      <div style="font-size:20px;font-weight:900;color:${canBuy?'#7c3aed':'#9ca3af'};margin-bottom:6px;">${gems} / 500 💎</div>
+      <div style="background:#f3e8ff;border-radius:8px;height:8px;overflow:hidden;margin-bottom:14px;">
+        <div style="width:${Math.min(100,(gems/500)*100)}%;height:100%;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:8px;"></div>
+      </div>
+      <button id="buy-vip-btn" class="big-btn" style="${canBuy?'':'opacity:.45;pointer-events:none;'}">${canBuy?'✨ Unlock VIP — 500 💎':'Keep earning gems in challenges!'}</button>
+    </div>`;
+    if(canBuy){
+      inner.querySelector('#buy-vip-btn').addEventListener('click',()=>{
+        gems-=500; isVip=true; saveGame(); buildUI(); setTab('vip');
+      });
+    }
   } else {
     inner.innerHTML=`<div style="text-align:center;padding:10px;font-weight:700;color:#d97706;font-size:14px;">✨ VIP Member — All items unlocked!</div>`;
     const allVip=[...TOPS,...BOTTOMS,...DRESSES,...SHOES,...BAGS,...HATS,...JEWELRY].filter(x=>x.vip);
@@ -1486,13 +1546,12 @@ function submitChallenge() {
   challengeState.active=false;
   const base=scoreOutfit();
   const sc=Math.round(base*challengeState.mult);
+  const earned=Math.ceil(sc/10);
   challengeState.baseScore=base;
   challengeState.score=sc;
+  challengeState.gemsEarned=earned;
   totalScore+=sc;
-  if(!isVip && sc>=300) {
-    isVip=true;
-    buildUI(); // Rebuild to show VIP content
-  }
+  gems+=earned;
   saveGame();
   buildChallengeContent(); redraw();
 }
@@ -1513,6 +1572,8 @@ function setTab(name) {
   if(name==='lobby') { document.querySelectorAll('#tab-lobby .ctb').forEach(b=>{b.classList.toggle('active',b.textContent.toLowerCase().includes(lobbyCategory.slice(0,-1)));});buildLobbyGrid();}
   if(name==='salon') buildSalonContent();
   if(name==='challenge') buildChallengeContent();
+  if(name==='home') { const old=document.getElementById('tab-home'); if(old){const n=buildHomePanel();n.classList.add('active');old.replaceWith(n);} }
+  if(name==='vip') { const old=document.getElementById('tab-vip'); if(old){const n=buildVipPanel();n.classList.add('active');old.replaceWith(n);} }
 }
 
 document.getElementById('nav-tabs').addEventListener('click',e=>{
