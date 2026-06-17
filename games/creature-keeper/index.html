@@ -120,12 +120,12 @@ body{
   gap:4px;padding:4px;align-content:start;
 }
 .coll-wrap::-webkit-scrollbar{display:none;}
-.coll-wrap *{touch-action:pan-y;}
+.coll-wrap *{touch-action:pan-y !important;}
 .ccard{
   border:2px solid #2a2560;border-radius:6px;
   background:#0d0b1e;padding:4px;
   display:flex;flex-direction:column;align-items:center;gap:2px;
-  cursor:pointer;touch-action:none;
+  cursor:pointer;touch-action:pan-y;
   transition:border-color .1s;
 }
 .ccard.in-party{border-color:#22c55e;}
@@ -154,7 +154,7 @@ body{
   font-family:'Press Start 2P',monospace;
 }
 .res-item{font-size:7px;display:flex;align-items:center;gap:4px;}
-.res-gold{color:#fbbf24;} .res-shard{color:#22d3ee;} .res-ev{color:#a78bfa;}
+.res-gold{color:#fbbf24;} .res-shard{color:#22d3ee;} .res-ev{color:#a78bfa;} .res-prestige{color:#fbbf24;letter-spacing:.02em;}
 /* ── Updated collection card ── */
 .ccard{padding:0;gap:0;flex-direction:column;overflow:hidden;}
 .cc-main{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;flex:1;cursor:pointer;}
@@ -246,6 +246,7 @@ body{
     <span class="res-item res-gold">💰 <span id="gold-count">0</span></span>
     <span class="res-item res-shard">✦ <span id="shard-count">0</span></span>
     <span class="res-item res-ev">★ <span id="ev-count">0</span></span>
+    <span class="res-item res-prestige">⬆ P<span id="prestige-count">0</span></span>
   </div>
   <div id="tc">
     <!-- Battle panel -->
@@ -1129,6 +1130,7 @@ function updateResources() {
   const sg=document.getElementById('summon-gold'); if(sg) sg.textContent=gold;
   const s=document.getElementById('shard-count'); if(s) s.textContent=shards;
   const e=document.getElementById('ev-count'); if(e) e.textContent=evPoints;
+  const p=document.getElementById('prestige-count'); if(p) p.textContent=prestige;
 }
 function updateGoldDisplay() { updateResources(); }
 
