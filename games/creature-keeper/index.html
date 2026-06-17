@@ -141,6 +141,16 @@ body{
 .stat-label{color:#7c6faa;}
 .stat-val{color:#e2d9f3;}
 .home-title{font-size:9px;color:#c084fc;text-align:center;margin-bottom:4px;}
+.prestige-btn{
+  width:100%;border:2px solid #7c3aed;border-radius:6px;
+  background:#140826;color:#fbbf24;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  padding:10px;cursor:pointer;touch-action:none;
+  letter-spacing:.04em;transition:background .12s,transform .08s;
+}
+.prestige-btn:not(:disabled):active{transform:translateY(1px);}
+.prestige-btn:disabled{color:#2a2560;border-color:#1a1840;cursor:default;}
+.prestige-hint{font-size:5px;color:#4a3d7a;text-align:center;margin-top:4px;line-height:1.6;}
 /* Desktop fallback */
 @media(pointer:fine){
   #controls{display:flex;height:42vh;}
@@ -276,7 +286,11 @@ body{
         <div class="stat-row"><span class="stat-label">CREATURES</span><span class="stat-val" id="h-count">0</span></div>
         <div class="stat-row"><span class="stat-label">PARTY ATK</span><span class="stat-val" id="h-atk">0</span></div>
         <div class="stat-row"><span class="stat-label">HIGHEST WAVE</span><span class="stat-val" id="h-best">1</span></div>
+        <div class="stat-row"><span class="stat-label">LOOPS DONE</span><span class="stat-val" id="h-loops">0</span></div>
         <div class="stat-row"><span class="stat-label">PRESTIGE</span><span class="stat-val" id="h-prestige">0</span></div>
+        <div style="border-top:1px solid #2a2560;margin:6px 0;"></div>
+        <button class="prestige-btn" id="prestige-btn" onclick="doPrestige()">★ PRESTIGE ★</button>
+        <div class="prestige-hint" id="prestige-hint"></div>
       </div>
     </div>
   </div>
@@ -667,7 +681,7 @@ const ZONES = [
 
 // ─── State ─────────────────────────────────────────────────────────────────────
 let gold = 0, shards = 0, evPoints = 0;
-let zone = 0, wave = 0, bestWave = 1, prestige = 0;
+let zone = 0, wave = 0, bestWave = 1, loops = 0, prestige = 0;
 let party = Array(9).fill(null);
 let collection = [];
 let enemy = null;
@@ -752,7 +766,7 @@ function createCreature(defId) {
 function spawnEnemy() {
   const z = ZONES[zone];
   const w = z.waves[wave];
-  const scale = prestige > 0 ? Math.pow(1.8, prestige) : 1;
+  const scale = loops > 0 ? Math.pow(1.4, loops) : 1;
   enemy = { ...w, hp: Math.floor(w.hp*scale), curHp: Math.floor(w.hp*scale), atk: Math.floor(w.atk*scale), gold: Math.floor(w.gold*scale), atkTimer: 2.5 };
 }
 
@@ -791,8 +805,8 @@ function killEnemy() {
   if (wave >= zone_waves) {
     wave = 0; zone++;
     if (zone >= ZONES.length) {
-      zone = 0; prestige++;
-      spawnFloat('PRESTIGE ★'+prestige, '#fbbf24', true);
+      zone = 0; loops++;
+      spawnFloat('LOOP '+loops+' ×'+loops.toFixed(0), '#22d3ee', true);
     }
   }
   const abs = zone * 10 + wave + 1;
@@ -802,6 +816,20 @@ function killEnemy() {
   spawnEnemy();
   updateResources();
   updateHomeStat();
+}
+
+function doPrestige() {
+  if (loops < 1) return;
+  const reward = (prestige + 1) * 100;
+  shards += reward;
+  evPoints += 50;
+  zone = 0; wave = 0; loops = 0;
+  prestige++;
+  spawnEnemy();
+  spawnFloat('PRESTIGE ★'+prestige+'!', '#fbbf24', true);
+  updateResources();
+  updateHomeStat();
+  saveGame();
 }
 
 function spawnFloat(val, col, big=false) {
@@ -931,7 +959,7 @@ function drawHUD() {
   ctx.fillStyle = '#7c6faa'; ctx.fillText('WAVE '+(wave+1)+'/10', 8, H - 16);
   ctx.textAlign = 'right';
   if (wave === 9) { ctx.fillStyle = '#fbbf24'; ctx.fillText('⚠ BOSS', W-8, H - 26); }
-  if (prestige > 0) { ctx.fillStyle = '#fbbf24'; ctx.fillText('★'+prestige, W-8, H - 16); }
+  if (loops > 0) { ctx.fillStyle = '#22d3ee'; ctx.fillText('LOOP '+loops, W-8, H - 16); }
 }
 
 function drawFloats() {
@@ -1144,14 +1172,23 @@ function updateHomeStat() {
   const totalAtk=party.reduce((s,c)=>s+(c?calcAtk(c):0),0);
   if(el('h-atk')) el('h-atk').textContent=totalAtk;
   if(el('h-best')) el('h-best').textContent=bestWave;
+  if(el('h-loops')) el('h-loops').textContent=loops;
   if(el('h-prestige')) el('h-prestige').textContent=prestige||'—';
+  const btn=el('prestige-btn'); const hint=el('prestige-hint');
+  if (btn) {
+    const canPrestige = loops >= 1;
+    btn.disabled = !canPrestige;
+    if (hint) hint.textContent = canPrestige
+      ? 'RESET to zone 1 · Gain '+(prestige+1)*100+' shards + 50 EV'
+      : 'Complete 1 full loop to unlock';
+  }
 }
 
 // ─── Save / Load ──────────────────────────────────────────────────────────────
 function saveGame() {
   try {
     localStorage.setItem('ck_save', JSON.stringify({
-      gold, shards, evPoints, zone, wave, bestWave, nextId, prestige,
+      gold, shards, evPoints, zone, wave, bestWave, nextId, loops, prestige,
       collection: collection.map(c=>({uid:c.uid,defId:c.defId,level:c.level,hp:c.hp,maxHp:c.maxHp,slot:c.slot,ivAtk:c.ivAtk,ivDef:c.ivDef,ivHp:c.ivHp,ivSpd:c.ivSpd,evAtk:c.evAtk||0,evDef:c.evDef||0,evHp:c.evHp||0,evSpd:c.evSpd||0})),
       party: party.map(c=>c?c.uid:null),
     }));
@@ -1164,7 +1201,7 @@ function loadGame() {
     const sv=JSON.parse(localStorage.getItem('ck_save')||'{}');
     if (!sv.collection) return false;
     gold=sv.gold||0; shards=sv.shards||0; evPoints=sv.evPoints||0;
-    zone=sv.zone||0; wave=sv.wave||0; bestWave=sv.bestWave||1; nextId=sv.nextId||1; prestige=sv.prestige||0;
+    zone=sv.zone||0; wave=sv.wave||0; bestWave=sv.bestWave||1; nextId=sv.nextId||1; loops=sv.loops||0; prestige=sv.prestige||0;
     collection=sv.collection.map(cd=>{
       const def=DEFS.find(d=>d.id===cd.defId)||DEFS[0];
       return {uid:cd.uid,defId:cd.defId,level:cd.level||1,hp:cd.hp,maxHp:cd.maxHp,slot:null,
