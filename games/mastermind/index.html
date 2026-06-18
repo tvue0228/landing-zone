@@ -15,11 +15,27 @@
 <meta name="twitter:image" content="https://tvue0228.github.io/landing-zone/games/mastermind/og-image.svg" />
 </head>
 <body>
-<div id="root"></div>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<div id="root"><div id="loading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#07090f;color:#404870;font-family:system-ui,sans-serif;font-size:14px;letter-spacing:.05em;">Loading…</div></div>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<script>
+// Guard: if any CDN script failed to load, show a useful message instead of blank
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (!window.React || !window.Babel || !window.LZString) {
+      document.getElementById('root').innerHTML =
+        '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#07090f;color:#dde1f0;font-family:system-ui,sans-serif;text-align:center;gap:12px;padding:20px">' +
+        '<div style="font-size:28px">🎮</div>' +
+        '<div style="font-size:18px;font-weight:700">Mastermind</div>' +
+        '<div style="font-size:14px;color:#404870;max-width:280px;line-height:1.6">Couldn\'t load the game. Check your connection and try refreshing.</div>' +
+        '<button onclick="location.reload()" style="margin-top:8px;padding:11px 24px;background:#22c55e;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer">Retry</button>' +
+        '</div>';
+    }
+  }, 8000);
+});
+</script>
 <script type="text/babel">
 const { useState, useMemo, useEffect, useRef } = React;
 
