@@ -121,23 +121,21 @@ canvas {
 /* ── Shop ── */
 #shop {
   flex-shrink: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  padding: 8px 12px max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-top: 1.5px solid #f3e8ff;
 }
-@media (pointer: coarse) { #shop { height: 46vh; } }
-@media (pointer: fine)   { #shop { max-height: 44vh; min-height: 200px; } }
+@media (pointer: coarse) { #shop { height: 48vh; } }
+@media (pointer: fine)   { #shop { max-height: 46vh; min-height: 220px; } }
 
-#shop-header {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #9ca3af;
-  padding: 0 2px 6px;
+#shop-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 8px 12px 4px;
 }
 
 .shop-grid {
@@ -190,14 +188,32 @@ canvas {
 }
 .shop-btn.synergy .shop-badge { color: #f59e0b; }
 
-/* ── Shop tabs ── */
-#shop-tabs { display: flex; gap: 6px; padding: 8px 0 4px; }
-.shop-tab {
-  flex: 1; padding: 8px 0; border-radius: 10px; border: 1.5px solid #e9d5ff;
-  background: #faf5ff; font-size: 12px; font-weight: 700; color: #9ca3af;
-  cursor: pointer; touch-action: manipulation; transition: all 0.15s;
+/* ── Bottom tab bar ── */
+#shop-tabs {
+  flex-shrink: 0;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid #f3e8ff;
+  padding: 4px 8px max(10px, env(safe-area-inset-bottom));
 }
-.shop-tab.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.shop-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  color: #9ca3af;
+  transition: color 0.15s;
+}
+.tab-icon { font-size: 20px; line-height: 1; }
+.tab-label { font-size: 10px; font-weight: 700; letter-spacing: 0.03em; }
+.shop-tab.active { color: #7c3aed; }
+.shop-tab.active .tab-label { color: #7c3aed; }
 
 /* ── Gear grid ── */
 .gear-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-bottom: 8px; }
@@ -283,18 +299,31 @@ canvas {
 </div>
 
 <div id="shop">
-  <div id="shop-tabs">
-    <button class="shop-tab active" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
-    <button class="shop-tab" id="tab-gear" onclick="switchTab('gear')">⚔️ Gear</button>
+  <div id="shop-content">
+    <div id="panel-upgrades">
+      <div class="shop-grid" id="upgrades-grid"></div>
+    </div>
+    <div id="panel-buildings" style="display:none">
+      <div class="shop-grid" id="buildings-grid"></div>
+    </div>
+    <div id="panel-gear" style="display:none">
+      <div class="gear-grid" id="gear-grid"></div>
+    </div>
   </div>
-  <div id="panel-shop">
-    <div id="shop-header">Upgrades &amp; Buildings</div>
-    <div class="shop-grid" id="shop-grid"></div>
-  </div>
-  <div id="panel-gear" style="display:none">
-    <div id="shop-header">⚔️ Gear Upgrades</div>
-    <div class="gear-grid" id="gear-grid"></div>
-  </div>
+  <nav id="shop-tabs">
+    <button class="shop-tab active" id="tab-upgrades" onclick="switchTab('upgrades')">
+      <span class="tab-icon">⬆️</span>
+      <span class="tab-label">Upgrades</span>
+    </button>
+    <button class="shop-tab" id="tab-buildings" onclick="switchTab('buildings')">
+      <span class="tab-icon">🏭</span>
+      <span class="tab-label">Buildings</span>
+    </button>
+    <button class="shop-tab" id="tab-gear" onclick="switchTab('gear')">
+      <span class="tab-icon">⚔️</span>
+      <span class="tab-label">Gear</span>
+    </button>
+  </nav>
 </div>
 
 <script>
@@ -664,8 +693,6 @@ btnCookie.addEventListener('mousedown', e => {
 });
 
 // ─── Shop ───────────────────────────────────────────────────────
-const shopGrid = document.getElementById('shop-grid');
-
 function makeBtn(icon, name, costNum, desc, badge, onBuy) {
   const btn = document.createElement('button');
   btn.className = 'shop-btn' + (badge === '★' ? ' synergy' : '');
@@ -690,45 +717,53 @@ function makeBtn(icon, name, costNum, desc, badge, onBuy) {
   return btn;
 }
 
-function buildShop() {
-  shopGrid.innerHTML = '';
+function buildUpgrades() {
+  const grid = document.getElementById('upgrades-grid');
+  grid.innerHTML = '';
 
-  // Building synergy upgrades — only show when unlock threshold met
   for (const u of BUPGRADES) {
     if (u.bought) continue;
     if (BUILDINGS[u.idx].owned < u.need) continue;
-    shopGrid.appendChild(makeBtn(u.icon, u.name, u.cost, u.desc, '★', () => {
+    grid.appendChild(makeBtn(u.icon, u.name, u.cost, u.desc, '★', () => {
       cookies -= u.cost;
       u.bought = true;
       BUILDINGS[u.idx].mult *= u.mult;
       recomputeCps();
-      saveGame(); buildShop();
+      saveGame(); buildUpgrades(); buildBuildings();
     }));
   }
 
-  // Click power upgrades
   for (const u of UPGRADES) {
     if (u.bought) continue;
-    shopGrid.appendChild(makeBtn(u.icon, u.name, u.cost, `+${fmt(u.bonus)}/click`, null, () => {
+    grid.appendChild(makeBtn(u.icon, u.name, u.cost, `+${fmt(u.bonus)}/click`, null, () => {
       cookies -= u.cost;
       u.bought = true;
       clickValue += u.bonus;
-      saveGame(); buildShop();
+      saveGame(); buildUpgrades();
     }));
   }
+}
 
-  // Buildings (repeatable)
+function buildBuildings() {
+  const grid = document.getElementById('buildings-grid');
+  grid.innerHTML = '';
+
   for (const b of BUILDINGS) {
     const cost = buildingCost(b);
     const cpsEach = (b.cps * b.mult).toFixed(b.cps * b.mult < 1 ? 2 : 1);
-    shopGrid.appendChild(makeBtn(b.icon, b.name, cost, `${cpsEach}/s each`,
+    grid.appendChild(makeBtn(b.icon, b.name, cost, `${cpsEach}/s each`,
       b.owned > 0 ? b.owned : null, () => {
         cookies -= cost;
         b.owned++;
         recomputeCps();
-        saveGame(); buildShop();
+        saveGame(); buildBuildings();
       }));
   }
+}
+
+function buildShop() {
+  buildUpgrades();
+  buildBuildings();
 }
 
 buildShop();
@@ -788,10 +823,10 @@ function buildGear() {
 }
 
 function switchTab(tab) {
-  document.getElementById('panel-shop').style.display = tab === 'shop' ? '' : 'none';
-  document.getElementById('panel-gear').style.display = tab === 'gear' ? '' : 'none';
-  document.getElementById('tab-shop').classList.toggle('active', tab === 'shop');
-  document.getElementById('tab-gear').classList.toggle('active', tab === 'gear');
+  ['upgrades', 'buildings', 'gear'].forEach(t => {
+    document.getElementById(`panel-${t}`).style.display = t === tab ? '' : 'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  });
 }
 
 buildGear();
