@@ -137,6 +137,8 @@ canvas {
   touch-action: pan-y;
   padding: 8px 12px 4px;
 }
+#shop-content::-webkit-scrollbar { display: none; }
+#shop-content * { touch-action: pan-y !important; }
 
 .shop-grid {
   display: grid;
@@ -154,7 +156,7 @@ canvas {
   background: #faf5ff;
   cursor: pointer;
   text-align: left;
-  touch-action: manipulation;
+  touch-action: pan-y;
   transition: background 0.1s, border-color 0.1s, transform 0.1s;
 }
 .shop-btn:active:not(:disabled) {
@@ -221,7 +223,7 @@ canvas {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 12px 8px 10px; border-radius: 14px; border: 1.5px solid #e9d5ff;
   background: linear-gradient(160deg, #faf5ff 60%, #ede9fe);
-  cursor: pointer; text-align: center; touch-action: manipulation;
+  cursor: pointer; text-align: center; touch-action: pan-y;
   transition: transform 0.1s, border-color 0.15s;
   position: relative;
 }
@@ -705,11 +707,6 @@ function makeBtn(icon, name, costNum, desc, badge, onBuy) {
        <div class="shop-desc">${desc}</div>
      </div>
      ${badge ? `<span class="shop-badge">${badge}</span>` : ''}`;
-  btn.addEventListener('touchstart', e => {
-    e.stopPropagation(); e.preventDefault();
-    if (cookies < costNum) return;
-    onBuy();
-  }, { passive: false });
   btn.addEventListener('click', () => {
     if (cookies < costNum) return;
     onBuy();
@@ -800,15 +797,6 @@ function buildGear() {
       }
     `;
     if (!maxed) {
-      card.addEventListener('touchstart', e => {
-        e.preventDefault();
-        if (cookies < cost) return;
-        cookies -= cost;
-        g.level++;
-        saveGame(); buildGear(); buildShop();
-        spawnParticles(W / 2, H * 0.55, 20);
-        spawnFloat(W / 2, H * 0.4, `⚔️ ${g.name} upgraded!`, true);
-      }, { passive: false });
       card.addEventListener('click', () => {
         if (cookies < cost) return;
         cookies -= cost;
