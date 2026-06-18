@@ -19,10 +19,9 @@ body{
 }
 /* ── Canvas area ── */
 #canvas-area{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  padding:38px 8px 4px;position:relative;min-height:0;
+  flex:1;position:relative;min-height:0;overflow:hidden;touch-action:none;
 }
-#c{display:block;max-width:100%;max-height:100%;image-rendering:pixelated;}
+#c{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block;}
 #back{
   position:absolute;top:10px;left:12px;
   font-size:8px;color:#7c6faa;text-decoration:none;z-index:10;
@@ -337,7 +336,7 @@ body{
 
 <div id="canvas-area">
   <a href="../../" id="back">← BACK</a>
-  <canvas id="c" width="400" height="220"></canvas>
+  <canvas id="c"></canvas>
 </div>
 
 <div id="controls">
@@ -437,9 +436,20 @@ body{
 // ─── Canvas setup ────────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
-const W = 400, H = 220;
+let W = 400, H = 220, dpr = 1;
 const isTouch = window.matchMedia('(pointer:coarse)').matches;
+
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = area.clientWidth;
+  H = area.clientHeight || 220;
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.imageSmoothingEnabled = false;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
 // ─── Pixel helpers ────────────────────────────────────────────────────────────
 // P(ctx, ox, oy, pw): returns a fill helper
@@ -1015,7 +1025,7 @@ function doPrestige() {
 }
 
 function spawnFloat(val, col, big=false) {
-  floats.push({ x: W/2 + (Math.random()-0.5)*40, y: H*0.45, val, col, big, life: 1.0 });
+  floats.push({ x: W/2 + (Math.random()-0.5)*(W*0.1), y: H*0.45, val, col, big, life: 1.0 });
 }
 
 // ─── Game loop ────────────────────────────────────────────────────────────────
@@ -1057,6 +1067,7 @@ setInterval(gameTick, 80);
 // ─── Canvas rendering ─────────────────────────────────────────────────────────
 function drawBg() {
   const z = ZONES[zone];
+  const SC = Math.min(W/400, H/220);
   const grd = ctx.createLinearGradient(0,0,0,H*0.75);
   grd.addColorStop(0, z.bgTop); grd.addColorStop(1, z.bgBot);
   ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
@@ -1064,53 +1075,50 @@ function drawBg() {
   ctx.fillStyle = '#ffffff18'; ctx.fillRect(0, Math.floor(H*0.75), W, 2);
   if (zone === 0) {
     for (let i=0; i<4; i++) {
-      const tx = 20 + i*90;
-      ctx.fillStyle = '#0a2e0a'; ctx.fillRect(tx, H*0.75-40, 8, 40);
-      ctx.fillStyle = '#0d4a0d'; ctx.fillRect(tx-12, H*0.75-80, 32, 44);
-      ctx.fillStyle = '#0f5c0f'; ctx.fillRect(tx-8, H*0.75-96, 24, 20);
+      const tx = W*0.05 + i*W*0.225;
+      ctx.fillStyle = '#0a2e0a'; ctx.fillRect(tx,       H*0.75-SC*40, SC*8,  SC*40);
+      ctx.fillStyle = '#0d4a0d'; ctx.fillRect(tx-SC*12, H*0.75-SC*80, SC*32, SC*44);
+      ctx.fillStyle = '#0f5c0f'; ctx.fillRect(tx-SC*8,  H*0.75-SC*96, SC*24, SC*20);
     }
   } else if (zone === 1) {
     for (let i=0; i<3; i++) {
-      const tx = 30 + i*130;
-      ctx.fillStyle = '#1e1b4b'; ctx.fillRect(tx, H*0.3, 18, H*0.45);
-      ctx.fillStyle = '#2e2b5b'; ctx.fillRect(tx-4, H*0.28, 26, 10);
+      const tx = W*0.075 + i*W*0.325;
+      ctx.fillStyle = '#1e1b4b'; ctx.fillRect(tx,      H*0.3,  SC*18, H*0.45);
+      ctx.fillStyle = '#2e2b5b'; ctx.fillRect(tx-SC*4, H*0.28, SC*26, SC*10);
     }
   } else if (zone === 2) {
-    // void — floating orbs
     for (let i=0; i<4; i++) {
-      const ox2 = 35+i*95, oy2 = H*0.22+(i%2)*18;
-      ctx.fillStyle='#4c1d95'; ctx.beginPath(); ctx.arc(ox2,oy2,9,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#7c3aed'; ctx.beginPath(); ctx.arc(ox2,oy2,6,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#a78bfa'; ctx.beginPath(); ctx.arc(ox2-2,oy2-2,3,0,Math.PI*2); ctx.fill();
+      const ox2 = W*0.0875 + i*W*0.2375, oy2 = H*0.22 + (i%2)*SC*18;
+      ctx.fillStyle='#4c1d95'; ctx.beginPath(); ctx.arc(ox2,oy2,SC*9,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#7c3aed'; ctx.beginPath(); ctx.arc(ox2,oy2,SC*6,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#a78bfa'; ctx.beginPath(); ctx.arc(ox2-SC*2,oy2-SC*2,SC*3,0,Math.PI*2); ctx.fill();
     }
   } else if (zone === 3) {
-    // volcanic — lava cracks + fire columns
     for (let i=0; i<3; i++) {
-      const lx = 40+i*120;
-      ctx.fillStyle='#dc2626'; ctx.fillRect(lx, H*0.75-4, 60, 6);
-      ctx.fillStyle='#f97316'; ctx.fillRect(lx+8, H*0.75-2, 38, 3);
+      const lx = W*0.1 + i*W*0.3;
+      ctx.fillStyle='#dc2626'; ctx.fillRect(lx,      H*0.75-SC*4, SC*60, SC*6);
+      ctx.fillStyle='#f97316'; ctx.fillRect(lx+SC*8, H*0.75-SC*2, SC*38, SC*3);
     }
     for (let i=0; i<4; i++) {
-      const fx = 50+i*100;
-      ctx.fillStyle='#dc262644'; ctx.fillRect(fx, H*0.5, 6, H*0.25);
-      ctx.fillStyle='#f9731633'; ctx.fillRect(fx+1, H*0.44, 4, H*0.31);
+      const fx = W*0.125 + i*W*0.25;
+      ctx.fillStyle='#dc262644'; ctx.fillRect(fx,      H*0.5,  SC*6, H*0.25);
+      ctx.fillStyle='#f9731633'; ctx.fillRect(fx+SC*1, H*0.44, SC*4, H*0.31);
     }
   } else {
-    // crystal depths — shard formations
     for (let i=0; i<5; i++) {
-      const cx = 15+i*80, ch = 26+(i%3)*13;
-      ctx.fillStyle='#0e7490'; ctx.fillRect(cx, H*0.75-ch, 12, ch);
-      ctx.fillStyle='#22d3ee'; ctx.fillRect(cx+1, H*0.75-ch, 10, 5);
-      ctx.fillStyle='#a5f3fc22'; ctx.fillRect(cx+3, H*0.75-ch+6, 6, ch-10);
+      const cx = W*0.0375 + i*W*0.2, ch = SC*(26 + (i%3)*13);
+      ctx.fillStyle='#0e7490';   ctx.fillRect(cx,       H*0.75-ch,      SC*12, ch);
+      ctx.fillStyle='#22d3ee';   ctx.fillRect(cx+SC*1,  H*0.75-ch,      SC*10, SC*5);
+      ctx.fillStyle='#a5f3fc22'; ctx.fillRect(cx+SC*3,  H*0.75-ch+SC*6, SC*6,  Math.max(1, ch-SC*10));
     }
   }
 }
 
 function drawEnemy() {
   if (!enemy) return;
-  const pw = 6;
-  const ew = 14*pw, eh = 10*pw; // 84 × 60px
-  // Enemy stands on the ground line
+  const SC = Math.min(W/400, H/220);
+  const pw = Math.max(3, Math.round(6 * SC));
+  const ew = 14*pw, eh = 10*pw;
   let ex = (W - ew) / 2;
   let ey = Math.floor(H * 0.75) - eh;
   if (hitFlash > 0) {
@@ -1122,36 +1130,38 @@ function drawEnemy() {
   enemy.draw(ctx, 0, 0, pw);
   ctx.restore(); ctx.globalAlpha = 1;
 
-  // Enemy name above HP bar at top
+  const fSz = Math.max(5, Math.round(7 * SC));
+  const barY = Math.round(SC*18), barW = W - 8;
   ctx.fillStyle = enemy.boss ? '#fbbf24' : '#e2d9f3';
-  ctx.font = '7px "Press Start 2P"';
+  ctx.font = fSz+'px "Press Start 2P"';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(enemy.name, W/2, 11);
+  ctx.fillText(enemy.name, W/2, Math.round(SC*11));
 
-  // HP bar at very top of canvas
-  const barX = 4, barY = 18, barW = W - 8;
-  ctx.fillStyle = '#1a1840'; ctx.fillRect(barX-1, barY-1, barW+2, 10);
+  ctx.fillStyle = '#1a1840'; ctx.fillRect(3, barY-1, barW+2, Math.round(SC*10));
   const pct = Math.max(0, enemy.curHp / enemy.hp);
   ctx.fillStyle = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
-  ctx.fillRect(barX, barY, barW * pct, 8);
+  ctx.fillRect(4, barY, barW * pct, Math.round(SC*8));
 }
 
 function drawHUD() {
   const z = ZONES[zone];
-  ctx.font = '6px "Press Start 2P"';
+  const SC = Math.min(W/400, H/220);
+  const fSz = Math.max(4, Math.round(6 * SC));
+  ctx.font = fSz+'px "Press Start 2P"';
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillStyle = '#a78bfa'; ctx.fillText(z.name, 8, H - 26);
-  ctx.fillStyle = '#7c6faa'; ctx.fillText('WAVE '+(wave+1)+'/10', 8, H - 16);
+  ctx.fillStyle = '#a78bfa'; ctx.fillText(z.name, 8, H - Math.round(26*SC));
+  ctx.fillStyle = '#7c6faa'; ctx.fillText('WAVE '+(wave+1)+'/10', 8, H - Math.round(16*SC));
   ctx.textAlign = 'right';
-  if (wave === 9) { ctx.fillStyle = '#fbbf24'; ctx.fillText('⚠ BOSS', W-8, H - 26); }
-  if (loops > 0) { ctx.fillStyle = '#22d3ee'; ctx.fillText('LOOP '+loops, W-8, H - 16); }
+  if (wave === 9) { ctx.fillStyle = '#fbbf24'; ctx.fillText('⚠ BOSS', W-8, H - Math.round(26*SC)); }
+  if (loops > 0) { ctx.fillStyle = '#22d3ee'; ctx.fillText('LOOP '+loops, W-8, H - Math.round(16*SC)); }
 }
 
 function drawFloats() {
   floats = floats.filter(f => f.life > 0);
+  const SC = Math.min(W/400, H/220);
   for (const f of floats) {
     ctx.globalAlpha = f.life;
-    ctx.font = (f.big ? 11 : 8)+'px "Press Start 2P"';
+    ctx.font = Math.max(6, Math.round((f.big ? 11 : 8) * SC))+'px "Press Start 2P"';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = f.col;
     ctx.fillText(f.val, f.x, f.y);
@@ -1161,21 +1171,23 @@ function drawFloats() {
 }
 
 function drawStateOverlay() {
+  const SC = Math.min(W/400, H/220);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   if (battleState === 'victory') {
-    ctx.fillStyle = '#22c55ecc'; ctx.font = '13px "Press Start 2P"';
-    ctx.fillText('CLEARED!', W/2, H/2 - 8);
+    ctx.fillStyle = '#22c55ecc'; ctx.font = Math.max(8, Math.round(13*SC))+'px "Press Start 2P"';
+    ctx.fillText('CLEARED!', W/2, H/2 - Math.round(8*SC));
   } else if (battleState === 'defeated') {
-    ctx.fillStyle = '#ef4444cc'; ctx.font = '12px "Press Start 2P"';
-    ctx.fillText('DEFEATED', W/2, H/2 - 8);
+    ctx.fillStyle = '#ef4444cc'; ctx.font = Math.max(8, Math.round(12*SC))+'px "Press Start 2P"';
+    ctx.fillText('DEFEATED', W/2, H/2 - Math.round(8*SC));
   } else if (battleState === 'idle') {
-    ctx.fillStyle = '#a78bfa66'; ctx.font = '8px "Press Start 2P"';
+    ctx.fillStyle = '#a78bfa66'; ctx.font = Math.max(6, Math.round(8*SC))+'px "Press Start 2P"';
     ctx.fillText('── PRESS FIGHT ──', W/2, H/2);
   }
 }
 
 function renderCanvas() {
-  ctx.clearRect(0,0,W,H);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
   drawBg(); drawEnemy(); drawHUD(); drawFloats(); drawStateOverlay();
   requestAnimationFrame(renderCanvas);
 }
@@ -1631,15 +1643,6 @@ function loadGame() {
   } catch(e){ return false; }
 }
 
-// ─── Canvas scale ─────────────────────────────────────────────────────────────
-function fitCanvas() {
-  const area=document.getElementById('canvas-area');
-  const aw=area.clientWidth-16, ah=area.clientHeight-44;
-  const sc=Math.min(aw/W,ah/H);
-  canvas.style.width=(W*sc)+'px'; canvas.style.height=(H*sc)+'px';
-}
-window.addEventListener('resize', fitCanvas);
-fitCanvas();
 
 // ─── Tap canvas for bonus attack ──────────────────────────────────────────────
 canvas.addEventListener('click', () => {
