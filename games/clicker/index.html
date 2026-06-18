@@ -525,13 +525,6 @@ function loadGame() {
 
 loadGame();
 
-// Show offline bonus after state is fully ready
-if (offlineBonusPending > 0) {
-  elOffline.textContent = `Welcome back! 🍪 +${fmt(offlineBonusPending)} cookies baked while you were away.`;
-  elOffline.classList.add('show');
-  offlineTimer = 5;
-}
-
 // Save on page hide/close
 window.addEventListener('beforeunload', saveGame);
 document.addEventListener('visibilitychange', () => {
@@ -570,6 +563,13 @@ const elOffline  = document.getElementById('offline-toast');
 
 let bannerTimer  = 0;
 let offlineTimer = 0;
+
+// Show offline bonus — must run after elOffline and offlineTimer are declared
+if (offlineBonusPending > 0) {
+  elOffline.textContent = `Welcome back! 🍪 +${fmt(offlineBonusPending)} cookies baked while you were away.`;
+  elOffline.classList.add('show');
+  offlineTimer = 5;
+}
 
 function updateHud() {
   elScore.textContent = fmt(cookies);
