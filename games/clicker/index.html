@@ -190,6 +190,37 @@ canvas {
 }
 .shop-btn.synergy .shop-badge { color: #f59e0b; }
 
+/* ── Shop tabs ── */
+#shop-tabs { display: flex; gap: 6px; padding: 8px 0 4px; }
+.shop-tab {
+  flex: 1; padding: 8px 0; border-radius: 10px; border: 1.5px solid #e9d5ff;
+  background: #faf5ff; font-size: 12px; font-weight: 700; color: #9ca3af;
+  cursor: pointer; touch-action: manipulation; transition: all 0.15s;
+}
+.shop-tab.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+
+/* ── Gear grid ── */
+.gear-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-bottom: 8px; }
+.gear-card {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 8px 10px; border-radius: 14px; border: 1.5px solid #e9d5ff;
+  background: linear-gradient(160deg, #faf5ff 60%, #ede9fe);
+  cursor: pointer; text-align: center; touch-action: manipulation;
+  transition: transform 0.1s, border-color 0.15s;
+  position: relative;
+}
+.gear-card.maxed { border-color: #f59e0b; background: linear-gradient(160deg, #fffbeb 60%, #fef3c7); }
+.gear-card:active:not(:disabled) { transform: scale(0.95); }
+.gear-card:disabled { opacity: 0.38; cursor: default; }
+.gear-icon-lg { font-size: 26px; line-height: 1; margin-bottom: 2px; }
+.gear-name { font-size: 11px; font-weight: 700; color: #374151; }
+.gear-tier { font-size: 10px; color: #7c3aed; font-weight: 600; margin-top: 1px; }
+.gear-bonus { font-size: 10px; color: #059669; font-weight: 600; }
+.gear-cost { font-size: 11px; font-weight: 700; color: #7c3aed; margin-top: 4px; }
+.gear-cost.maxed-label { color: #f59e0b; }
+.gear-stars { font-size: 8px; color: #d1d5db; letter-spacing: 1px; margin-top: 2px; }
+.gear-stars .lit { color: #f59e0b; }
+
 /* Shared overlay banner */
 .banner {
   position: absolute;
@@ -252,8 +283,18 @@ canvas {
 </div>
 
 <div id="shop">
-  <div id="shop-header">Upgrades &amp; Buildings</div>
-  <div class="shop-grid" id="shop-grid"></div>
+  <div id="shop-tabs">
+    <button class="shop-tab active" id="tab-shop" onclick="switchTab('shop')">🛒 Shop</button>
+    <button class="shop-tab" id="tab-gear" onclick="switchTab('gear')">⚔️ Gear</button>
+  </div>
+  <div id="panel-shop">
+    <div id="shop-header">Upgrades &amp; Buildings</div>
+    <div class="shop-grid" id="shop-grid"></div>
+  </div>
+  <div id="panel-gear" style="display:none">
+    <div id="shop-header">⚔️ Gear Upgrades</div>
+    <div class="gear-grid" id="gear-grid"></div>
+  </div>
 </div>
 
 <script>
@@ -359,6 +400,62 @@ const BUPGRADES = [
   { icon: '🧬', name: 'Quantum Theory',    cost: 5000000000,    desc: 'Labs ×3',          idx: 5, need: 25, mult: 3, bought: false },
 ];
 
+// ─── Gear ───────────────────────────────────────────────────────
+// Each gear piece has 5 upgrade tiers. mults[i] = total multiplier at level i+1.
+const GEAR = [
+  {
+    icons: ['🧤','⚡','💪','🌟','🔱'],
+    name: 'Power Mitt',
+    desc: 'click ×',
+    mults: [2, 4, 8, 16, 32],
+    costs: [200, 2000, 20000, 200000, 2000000],
+    level: 0,
+    type: 'click',
+  },
+  {
+    icons: ['👨‍🍳','🥼','🛡️','✨','🌌'],
+    name: "Chef's Apron",
+    desc: 'CPS ×',
+    mults: [2, 4, 8, 16, 32],
+    costs: [500, 5000, 50000, 500000, 5000000],
+    level: 0,
+    type: 'cps',
+  },
+  {
+    icons: ['🎩','👑','💎','🌠','🌌'],
+    name: "Baker's Hat",
+    desc: 'all ×',
+    mults: [1.5, 3, 6, 12, 25],
+    costs: [1000, 10000, 100000, 1000000, 10000000],
+    level: 0,
+    type: 'both',
+  },
+  {
+    icons: ['🔥','💥','⚡','☢️','🌀'],
+    name: 'Power Oven',
+    desc: 'CPS ×',
+    mults: [3, 6, 12, 24, 50],
+    costs: [5000, 50000, 500000, 5000000, 50000000],
+    level: 0,
+    type: 'cps',
+  },
+];
+
+function gearClickMult() {
+  let m = 1;
+  for (const g of GEAR) {
+    if (g.level > 0 && (g.type === 'click' || g.type === 'both')) m *= g.mults[g.level - 1];
+  }
+  return m;
+}
+function gearCpsMult() {
+  let m = 1;
+  for (const g of GEAR) {
+    if (g.level > 0 && (g.type === 'cps' || g.type === 'both')) m *= g.mults[g.level - 1];
+  }
+  return m;
+}
+
 function buildingCost(b) {
   return Math.floor(b.baseCost * Math.pow(1.15, b.owned));
 }
@@ -388,6 +485,7 @@ function saveGame() {
     buildings:  BUILDINGS.map(b => b.owned),
     upgrades:   UPGRADES.map(u => u.bought),
     bupgrades:  BUPGRADES.map(u => u.bought),
+    gear:       GEAR.map(g => g.level),
   }));
 }
 
@@ -408,6 +506,7 @@ function loadGame() {
         BUILDINGS[BUPGRADES[i].idx].mult *= BUPGRADES[i].mult;
       }
     });
+    if (s.gear) s.gear.forEach((lv, i) => { if (GEAR[i]) GEAR[i].level = lv; });
     recomputeCps();
 
     // ── Offline earnings ──────────────────────────────────────────
@@ -474,12 +573,14 @@ let offlineTimer = 0;
 
 function updateHud() {
   elScore.textContent = fmt(cookies);
-  const cpsStr = cps >= 0.1 ? ` · ${fmt(cps)}/s` : '';
+  const effCps = cps * gearCpsMult();
+  const cpsStr = effCps >= 0.1 ? ` · ${fmt(effCps)}/s` : '';
   elSub.textContent = `cookies${cpsStr}`;
   elBar.style.width = (levelProgress() * 100).toFixed(1) + '%';
   const lv = getLevel();
+  const effClick = Math.floor(clickValue * gearClickMult());
   elLvLabel.textContent =
-    `LV ${lv + 1}  ·  ${LEVELS[lv].name}  ·  ${clickValue}/click`;
+    `LV ${lv + 1}  ·  ${LEVELS[lv].name}  ·  ${effClick}/click`;
 }
 
 // ─── Level up ───────────────────────────────────────────────────
@@ -537,8 +638,9 @@ const btnCookie = document.getElementById('btn-cookie');
 const canvasArea = document.getElementById('canvas-area');
 
 function activateCookie(clientX, clientY) {
-  cookies     += clickValue;
-  totalEarned += clickValue;
+  const cv = Math.floor(clickValue * gearClickMult());
+  cookies     += cv;
+  totalEarned += cv;
   checkLevelUp();
 
   btnCookie.style.transform = 'scale(0.82)';
@@ -548,7 +650,7 @@ function activateCookie(clientX, clientY) {
   const px = clientX - rect.left;
   const py = clientY - rect.top;
   spawnParticles(px, py, 9);
-  spawnFloat(px, py - 24, `+${fmt(clickValue)}`, false);
+  spawnFloat(px, py - 24, `+${fmt(cv)}`, false);
 }
 
 btnCookie.addEventListener('touchstart', e => {
@@ -631,6 +733,69 @@ function buildShop() {
 
 buildShop();
 
+// ─── Gear UI ─────────────────────────────────────────────────────
+function buildGear() {
+  const grid = document.getElementById('gear-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < GEAR.length; i++) {
+    const g = GEAR[i];
+    const maxed = g.level >= 5;
+    const cost  = maxed ? 0 : g.costs[g.level];
+    const canBuy = !maxed && cookies >= cost;
+    const currentIcon = g.level === 0 ? '📦' : g.icons[g.level - 1];
+    const nextIcon    = maxed ? '✅' : g.icons[g.level];
+    const bonusText   = g.level === 0
+      ? 'No bonus yet'
+      : `${g.desc}${g.mults[g.level - 1]}`;
+    const stars = Array.from({length: 5}, (_, k) =>
+      `<span class="${k < g.level ? 'lit' : ''}">★</span>`).join('');
+
+    const card = document.createElement('button');
+    card.className = 'gear-card' + (maxed ? ' maxed' : '');
+    card.disabled = !canBuy && !maxed;
+    card.innerHTML = `
+      <div class="gear-icon-lg">${currentIcon}</div>
+      <div class="gear-name">${g.name}</div>
+      <div class="gear-stars">${stars}</div>
+      <div class="gear-bonus">${bonusText}</div>
+      ${maxed
+        ? `<div class="gear-cost maxed-label">MAX</div>`
+        : `<div class="gear-cost">🍪 ${fmt(cost)}</div>
+           <div style="font-size:9px;color:#9ca3af;margin-top:1px;">→ ${nextIcon} ${g.desc}${g.mults[g.level]}</div>`
+      }
+    `;
+    if (!maxed) {
+      card.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (cookies < cost) return;
+        cookies -= cost;
+        g.level++;
+        saveGame(); buildGear(); buildShop();
+        spawnParticles(W / 2, H * 0.55, 20);
+        spawnFloat(W / 2, H * 0.4, `⚔️ ${g.name} upgraded!`, true);
+      }, { passive: false });
+      card.addEventListener('click', () => {
+        if (cookies < cost) return;
+        cookies -= cost;
+        g.level++;
+        saveGame(); buildGear(); buildShop();
+        spawnParticles(W / 2, H * 0.55, 20);
+        spawnFloat(W / 2, H * 0.4, `⚔️ ${g.name} upgraded!`, true);
+      });
+    }
+    grid.appendChild(card);
+  }
+}
+
+function switchTab(tab) {
+  document.getElementById('panel-shop').style.display = tab === 'shop' ? '' : 'none';
+  document.getElementById('panel-gear').style.display = tab === 'gear' ? '' : 'none';
+  document.getElementById('tab-shop').classList.toggle('active', tab === 'shop');
+  document.getElementById('tab-gear').classList.toggle('active', tab === 'gear');
+}
+
+buildGear();
+
 // ─── Game loop ───────────────────────────────────────────────────
 let shopTimer = 0;
 let saveTimer = 5;
@@ -640,7 +805,7 @@ function loop(now) {
   lastTime = now;
 
   if (cps > 0) {
-    const gain = cps * dt;
+    const gain = cps * gearCpsMult() * dt;
     cookies     += gain;
     totalEarned += gain;
     checkLevelUp();
