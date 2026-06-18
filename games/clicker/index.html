@@ -536,8 +536,7 @@ function drawCanvas() {
 const btnCookie = document.getElementById('btn-cookie');
 const canvasArea = document.getElementById('canvas-area');
 
-btnCookie.addEventListener('pointerdown', e => {
-  e.preventDefault();
+function activateCookie(clientX, clientY) {
   cookies     += clickValue;
   totalEarned += clickValue;
   checkLevelUp();
@@ -546,11 +545,21 @@ btnCookie.addEventListener('pointerdown', e => {
   setTimeout(() => { btnCookie.style.transform = ''; }, 110);
 
   const rect = canvasArea.getBoundingClientRect();
-  const px = e.clientX - rect.left;
-  const py = e.clientY - rect.top;
+  const px = clientX - rect.left;
+  const py = clientY - rect.top;
   spawnParticles(px, py, 9);
   spawnFloat(px, py - 24, `+${fmt(clickValue)}`, false);
+}
+
+btnCookie.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  activateCookie(t.clientX, t.clientY);
 }, { passive: false });
+
+btnCookie.addEventListener('mousedown', e => {
+  activateCookie(e.clientX, e.clientY);
+});
 
 // ─── Shop ───────────────────────────────────────────────────────
 const shopGrid = document.getElementById('shop-grid');
@@ -567,11 +576,15 @@ function makeBtn(icon, name, costNum, desc, badge, onBuy) {
        <div class="shop-desc">${desc}</div>
      </div>
      ${badge ? `<span class="shop-badge">${badge}</span>` : ''}`;
-  btn.addEventListener('pointerdown', e => {
+  btn.addEventListener('touchstart', e => {
     e.stopPropagation(); e.preventDefault();
     if (cookies < costNum) return;
     onBuy();
   }, { passive: false });
+  btn.addEventListener('click', () => {
+    if (cookies < costNum) return;
+    onBuy();
+  });
   return btn;
 }
 
