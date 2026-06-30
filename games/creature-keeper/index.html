@@ -420,6 +420,11 @@ body{
         <div style="border-top:1px solid #2a2560;margin:6px 0;"></div>
         <button class="prestige-btn" id="prestige-btn" onclick="doPrestige()">★ PRESTIGE ★</button>
         <div class="prestige-hint" id="prestige-hint"></div>
+        <div style="border-top:1px solid #2a2560;margin:8px 0 4px"></div>
+        <button class="prestige-btn" style="background:linear-gradient(135deg,#78350f,#92400e);border-color:#b45309" onclick="doRestartZone()">↺ RESTART ZONE</button>
+        <div class="prestige-hint">Revives all creatures · resets to wave 1</div>
+        <button class="prestige-btn" style="background:linear-gradient(135deg,#1e293b,#334155);border-color:#475569;margin-top:6px" onclick="doNewGame()">⚠ NEW GAME</button>
+        <div class="prestige-hint">Wipes all progress and starts over</div>
       </div>
     </div>
   </div>
@@ -1014,6 +1019,43 @@ function doPrestige() {
   saveGame();
 }
 
+function doRestartZone() {
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  wave = 0;
+  enemy = null;
+  battleState = 'idle';
+  lastWaveRewards = null;
+  for (const c of collection) {
+    if (c.hp <= 0) c.hp = Math.max(1, Math.floor(c.maxHp * 0.3));
+    else c.hp = c.maxHp;
+  }
+  spawnFloat('ZONE RESET', '#f59e0b', true);
+  updateGrid();
+  updateResources();
+  updateHomeStat();
+  updateBattleStatus();
+  saveGame();
+}
+
+function doNewGame() {
+  if (!confirm('Start a new game? All progress will be lost.')) return;
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  gold = 50; shards = 30; evPoints = 0;
+  zone = 0; wave = 0; bestWave = 1; loops = 0; prestige = 0;
+  party = Array(9).fill(null);
+  collection = [];
+  items = { potion: 0, superPotion: 0, maxPotion: 0 };
+  nextId = 1;
+  detailUid = null;
+  enemy = null;
+  battleState = 'idle';
+  lastWaveRewards = null;
+  const starter = createCreature('slime');
+  collection.push(starter); party[0] = starter; starter.slot = 0;
+  buildGrid(); updateGrid(); buildCollection(); updateResources(); updateHomeStat(); updateBattleStatus();
+  saveGame();
+}
+
 function spawnFloat(val, col, big=false) {
   floats.push({ x: W/2 + (Math.random()-0.5)*40, y: H*0.45, val, col, big, life: 1.0 });
 }
@@ -1485,12 +1527,18 @@ function updateBattleStatus() {
     } : startBattle);
   } else if (battleState === 'defeated') {
     const canRetry = alive > 0;
+    const hasRevive = items.maxPotion > 0;
+    const stuck = !canRetry && !hasRevive;
     el.innerHTML = `<div class="bs-info">
       <div class="bs-defeat-msg">PARTY FAINTED</div>
-      <div class="bs-wave-lbl">${canRetry ? 'READY TO RETRY' : 'HEAL IN ITEMS TAB'}</div>
+      <div class="bs-wave-lbl">${canRetry ? 'HEAL &amp; RETRY' : hasRevive ? 'USE MAX POTION TO REVIVE' : 'USE ITEMS OR RESTART'}</div>
     </div>
-    <button class="fight-btn retry" id="bs-btn" ${canRetry?'':'disabled'}>⚔ RETRY</button>`;
+    <div style="display:flex;gap:4px;flex-direction:column;width:100%">
+      <button class="fight-btn retry" id="bs-btn" ${canRetry?'':'disabled'}>⚔ RETRY</button>
+      ${stuck ? `<button class="fight-btn" id="bs-restart-btn" style="font-size:5px;background:linear-gradient(135deg,#78350f,#92400e);border-color:#b45309">↺ RESTART ZONE</button>` : ''}
+    </div>`;
     document.getElementById('bs-btn')?.addEventListener('click', startBattle);
+    document.getElementById('bs-restart-btn')?.addEventListener('click', doRestartZone);
   } else {
     const canFight = alive > 0;
     el.innerHTML = `<div class="bs-info">
