@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workemon Manager</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f3ff;
+  color: #1e1b4b;
+  min-height: 100vh;
+  -webkit-user-select: none;
+  user-select: none;
+}
+a { text-decoration: none; color: inherit; }
+
+/* ── Header ── */
+.header {
+  background: #1e1b4b;
+  color: #fff;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.back-link { font-size: 12px; color: #a78bfa; flex-shrink: 0; }
+.header-title {
+  font-size: 17px;
+  font-weight: 800;
+  flex: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.mult-pill {
+  background: #f59e0b;
+  color: #1e1b4b;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 99px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  border: none;
+  touch-action: manipulation;
+}
+.mult-pill:hover { background: #fbbf24; }
+.hbtn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+.hbtn:hover { background: rgba(255,255,255,0.18); }
+.hbtn.purple { background: #7c3aed; border-color: #7c3aed; }
+.hbtn.purple:hover { background: #6d28d9; }
+
+/* ── Stats bar ── */
+.stats-bar {
+  display: flex;
+  background: #ede9fe;
+  border-bottom: 1px solid #c4b5fd;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stat-item {
+  flex: 1;
+  min-width: 72px;
+  padding: 9px 10px;
+  text-align: center;
+  border-right: 1px solid #c4b5fd;
+}
+.stat-item:last-child { border-right: none; }
+.stat-val {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #4c1d95;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-lbl {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #7c3aed;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+/* ── Formula hint ── */
+.formula-hint {
+  font-size: 10px;
+  color: #7c3aed;
+  text-align: center;
+  padding: 5px 12px;
+  background: #f5f3ff;
+  border-bottom: 1px solid #ddd6fe;
+  letter-spacing: 0.01em;
+}
+
+/* ── Table ── */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  width: 100%;
+  min-width: 580px;
+  border-collapse: collapse;
+  background: #fff;
+}
+thead th {
+  background: #faf8ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7c3aed;
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 2px solid #ede9fe;
+  white-space: nowrap;
+  position: sticky;
+  top: 44px;
+}
+thead th.right { text-align: right; }
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #f3f0ff;
+  font-size: 13px;
+  vertical-align: middle;
+}
+td.right { text-align: right; }
+tbody tr:hover td { background: #faf8ff; cursor: pointer; }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ── Rank badge ── */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 4px;
+}
+.r1 { background: #fef3c7; color: #92400e; }
+.r2 { background: #e2e8f0; color: #475569; }
+.r3 { background: #fde8d0; color: #9a3412; }
+.rn { background: #f3f4f6; color: #6b7280; font-weight: 700; }
+
+/* ── Level badge ── */
+.lvl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.lvl-gold { background: #fef3c7; color: #92400e; }
+.lvl-exp  { background: #e0f2fe; color: #0369a1; }
+.lvl-none { background: #f3f4f6; color: #9ca3af; font-size: 12px; }
+
+/* ── Diff ── */
+.diff-pos { color: #15803d; font-weight: 700; }
+.diff-neg { color: #b91c1c; font-weight: 700; }
+.mono { font-variant-numeric: tabular-nums; }
+
+/* ── Player name ── */
+.pname { font-weight: 600; color: #111827; }
+
+/* ── Modal ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,12,40,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+}
+.modal-hd {
+  background: #1e1b4b;
+  color: #fff;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-hd h2 { font-size: 14px; font-weight: 700; }
+.modal-x {
+  background: none; border: none; color: #a78bfa;
+  font-size: 17px; cursor: pointer; padding: 2px 5px;
+  border-radius: 4px; line-height: 1; touch-action: manipulation;
+}
+.modal-x:hover { background: rgba(255,255,255,0.1); }
+.modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.field label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6d28d9;
+  margin-bottom: 5px;
+}
+.field input {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1.5px solid #ddd6fe;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  font-family: inherit;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+.field input:focus { border-color: #7c3aed; }
+
+/* Track selector */
+.track-row { display: flex; gap: 8px; }
+.track-btn {
+  flex: 1; padding: 9px 8px;
+  border-radius: 9px;
+  border: 1.5px solid #ddd6fe;
+  background: #f9fafb;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; touch-action: manipulation;
+  color: #6b7280;
+  transition: all 0.12s;
+}
+.track-btn.active-gold { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.track-btn.active-exp  { background: #e0f2fe; border-color: #38bdf8; color: #0369a1; }
+
+/* Level presets */
+.preset-row { display: flex; gap: 5px; margin-bottom: 6px; }
+.preset-btn {
+  flex: 1; padding: 8px 4px;
+  border-radius: 7px;
+  border: 1.5px solid #ddd6fe;
+  background: #f9fafb;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; touch-action: manipulation;
+  color: #6b7280; text-align: center;
+  transition: all 0.1s;
+}
+.preset-btn.active { background: #ede9fe; border-color: #7c3aed; color: #4c1d95; }
+.preset-btn:hover:not(.active) { background: #f3f0ff; }
+
+/* Modal footer */
+.modal-ft {
+  padding: 12px 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid #f3f0ff;
+}
+.spacer { flex: 1; }
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; touch-action: manipulation;
+  border: 1.5px solid transparent;
+  font-family: inherit;
+}
+.btn-del  { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+.btn-del:hover  { background: #fecaca; }
+.btn-cxl  { background: #f9fafb; color: #6b7280; border-color: #e5e7eb; }
+.btn-cxl:hover  { background: #f3f4f6; }
+.btn-save { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+.btn-save:hover { background: #6d28d9; }
+
+/* Empty state */
+.empty-row td {
+  text-align: center;
+  padding: 40px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <a href="../../" class="back-link">← Back</a>
+  <div class="header-title">⚡ Workemon</div>
+  <button class="mult-pill" onclick="editMult()" title="Edit multiplier">✕<span id="mult-display">200</span></button>
+  <button class="hbtn" onclick="exportCSV()">Export</button>
+  <button class="hbtn purple" onclick="openModal(null)">+ Player</button>
+</header>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <span class="stat-val" id="s-count">0</span>
+    <span class="stat-lbl">Players</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-val" id="s-payout">$0</span>
+    <span class="stat-lbl">Total Payout</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-val" id="s-salaries">$0</span>
+    <span class="stat-lbl">Total Salaries</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-val" id="s-ratio">0%</span>
+    <span class="stat-lbl">Avg Ratio</span>
+  </div>
+</div>
+
+<div class="formula-hint">
+  Payout = Level × Multiplier &nbsp;·&nbsp; Diff = Payout − Monthly &nbsp;·&nbsp; Ranked by Diff ↓
+</div>
+
+<!-- Leaderboard -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Level</th>
+        <th class="right">Monthly</th>
+        <th class="right">Payout</th>
+        <th class="right">Diff</th>
+        <th class="right">Ratio</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" style="display:none" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2 id="modal-title">Add Player</h2>
+      <button class="modal-x" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="f-name" placeholder="Player name" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Annual Salary</label>
+        <input type="number" id="f-salary" placeholder="e.g. 28000" min="0" step="1">
+      </div>
+      <div class="field">
+        <label>Track</label>
+        <div class="track-row">
+          <button class="track-btn" id="t-gold" onclick="setTrack('gold')">🥇 GOLD</button>
+          <button class="track-btn" id="t-exp"  onclick="setTrack('exp')">⭐ EXP</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Level</label>
+        <div class="preset-row">
+          <div class="preset-btn" onclick="setPreset(0)">0</div>
+          <div class="preset-btn" onclick="setPreset(20)">20</div>
+          <div class="preset-btn" onclick="setPreset(25)">25</div>
+          <div class="preset-btn" onclick="setPreset(30)">30</div>
+        </div>
+        <input type="number" id="f-level" placeholder="or enter custom level" min="0" step="1">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-del" id="btn-del" style="display:none" onclick="deletePlayer()">Delete</button>
+      <span class="spacer"></span>
+      <button class="btn btn-cxl" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-save" onclick="savePlayer()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Default data ─────────────────────────────────────────────────────────────
+const DEFAULTS = [
+  { id:1,  name:'Matthew', annual:24896, gold:30, exp:0  },
+  { id:2,  name:'Josh',    annual:30772, gold:30, exp:0  },
+  { id:3,  name:'Melody',  annual:25460, gold:25, exp:0  },
+  { id:4,  name:'Samuel',  annual:26814, gold:25, exp:0  },
+  { id:5,  name:'Xavier',  annual:27132, gold:25, exp:0  },
+  { id:6,  name:'Isaiah',  annual:30536, gold:25, exp:0  },
+  { id:7,  name:'Taylor',  annual:34465, gold:0,  exp:25 },
+  { id:8,  name:'Danny',   annual:34518, gold:25, exp:0  },
+  { id:9,  name:'Sofia',   annual:23088, gold:20, exp:0  },
+  { id:10, name:'Riya',    annual:23384, gold:20, exp:0  },
+  { id:11, name:'Anna',    annual:24016, gold:20, exp:0  },
+  { id:12, name:'Aiden',   annual:25089, gold:20, exp:0  },
+  { id:13, name:'Mya',     annual:25232, gold:20, exp:0  },
+  { id:14, name:'Ruhi',    annual:25303, gold:20, exp:0  },
+  { id:15, name:'Diya',    annual:26560, gold:0,  exp:20 },
+  { id:16, name:'Makayla', annual:39572, gold:25, exp:0  },
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let mult = 200;
+let players = [];
+let nextId = 100;
+let editingId = null;
+let track = 'gold';
+
+// ── Compute ──────────────────────────────────────────────────────────────────
+function compute(p) {
+  const monthly = Math.floor(p.annual / 12);
+  const payout  = (p.gold + p.exp) * mult;
+  const diff    = payout - monthly;
+  const ratio   = monthly > 0 ? payout / monthly * 100 : 0;
+  return { monthly, payout, diff, ratio };
+}
+
+function ranked() {
+  return players
+    .map(p => ({ ...p, ...compute(p) }))
+    .sort((a, b) => b.diff - a.diff)
+    .map((p, i) => ({ ...p, rank: i + 1 }));
+}
+
+// ── Format ───────────────────────────────────────────────────────────────────
+function $K(n) {
+  const abs = Math.abs(n);
+  if (abs >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+  if (abs >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+function diffStr(n) {
+  const sign = n >= 0 ? '+' : '';
+  const abs = Math.abs(n);
+  if (abs >= 1e3) return sign + (n / 1e3).toFixed(1) + 'K';
+  return sign + Math.round(n).toLocaleString();
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const list = ranked();
+
+  // Stats
+  const totalPayout  = list.reduce((s, p) => s + p.payout,  0);
+  const totalSalary  = list.reduce((s, p) => s + p.monthly, 0);
+  const avgRatio     = list.length ? list.reduce((s, p) => s + p.ratio, 0) / list.length : 0;
+  document.getElementById('s-count').textContent   = list.length;
+  document.getElementById('s-payout').textContent  = $K(totalPayout);
+  document.getElementById('s-salaries').textContent = $K(totalSalary);
+  document.getElementById('s-ratio').textContent   = Math.round(avgRatio) + '%';
+
+  // Table
+  const tbody = document.getElementById('tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No players yet — click + Player to add one.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(p => {
+    // Rank badge
+    const rankClass = p.rank === 1 ? 'r1' : p.rank === 2 ? 'r2' : p.rank === 3 ? 'r3' : 'rn';
+    const rankLabel = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank;
+
+    // Level badge
+    let lvl;
+    if (p.gold > 0 && p.exp > 0) {
+      lvl = `<span class="lvl-badge lvl-gold">🥇${p.gold}</span> <span class="lvl-badge lvl-exp">⭐${p.exp}</span>`;
+    } else if (p.gold > 0) {
+      lvl = `<span class="lvl-badge lvl-gold">🥇 GOLD ${p.gold}</span>`;
+    } else if (p.exp > 0) {
+      lvl = `<span class="lvl-badge lvl-exp">⭐ EXP ${p.exp}</span>`;
+    } else {
+      lvl = `<span class="lvl-badge lvl-none">—</span>`;
+    }
+
+    const diffCls = p.diff >= 0 ? 'diff-pos' : 'diff-neg';
+
+    return `<tr onclick="openModal(${p.id})">
+      <td><span class="rank-badge ${rankClass}">${rankLabel}</span></td>
+      <td class="pname">${esc(p.name)}</td>
+      <td>${lvl}</td>
+      <td class="right mono">${$K(p.monthly)}</td>
+      <td class="right mono">${$K(p.payout)}</td>
+      <td class="right mono ${diffCls}">${diffStr(p.diff)}</td>
+      <td class="right mono">${Math.round(p.ratio)}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  editingId = id;
+  const isEdit = id !== null;
+  document.getElementById('modal-title').textContent = isEdit ? 'Edit Player' : 'Add Player';
+  document.getElementById('btn-del').style.display   = isEdit ? '' : 'none';
+
+  if (isEdit) {
+    const p = players.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('f-name').value   = p.name;
+    document.getElementById('f-salary').value = p.annual;
+    const level = p.exp > 0 && p.gold === 0 ? p.exp : p.gold;
+    document.getElementById('f-level').value  = level || '';
+    setTrack(p.exp > 0 && p.gold === 0 ? 'exp' : 'gold');
+    highlightPreset(level || 0);
+  } else {
+    document.getElementById('f-name').value   = '';
+    document.getElementById('f-salary').value = '';
+    document.getElementById('f-level').value  = '';
+    setTrack('gold');
+    highlightPreset(null);
+  }
+
+  document.getElementById('overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('f-name').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('overlay').style.display = 'none';
+  editingId = null;
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+function setTrack(t) {
+  track = t;
+  document.getElementById('t-gold').className = 'track-btn' + (t === 'gold' ? ' active-gold' : '');
+  document.getElementById('t-exp').className  = 'track-btn' + (t === 'exp'  ? ' active-exp'  : '');
+}
+
+function setPreset(v) {
+  document.getElementById('f-level').value = v;
+  highlightPreset(v);
+}
+
+function highlightPreset(v) {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.textContent) === v);
+  });
+}
+
+document.getElementById('f-level').addEventListener('input', () => {
+  const v = parseInt(document.getElementById('f-level').value);
+  highlightPreset(isNaN(v) ? null : v);
+});
+
+function savePlayer() {
+  const name   = document.getElementById('f-name').value.trim();
+  const annual = parseFloat(document.getElementById('f-salary').value) || 0;
+  const level  = parseInt(document.getElementById('f-level').value)  || 0;
+  if (!name) { document.getElementById('f-name').focus(); return; }
+
+  const gold = track === 'gold' ? level : 0;
+  const exp  = track === 'exp'  ? level : 0;
+
+  if (editingId !== null) {
+    const p = players.find(x => x.id === editingId);
+    if (p) { p.name = name; p.annual = annual; p.gold = gold; p.exp = exp; }
+  } else {
+    players.push({ id: nextId++, name, annual, gold, exp });
+  }
+
+  save(); render(); closeModal();
+}
+
+function deletePlayer() {
+  if (editingId === null) return;
+  if (!confirm(`Remove ${players.find(p=>p.id===editingId)?.name}?`)) return;
+  players = players.filter(p => p.id !== editingId);
+  save(); render(); closeModal();
+}
+
+// ── Multiplier ───────────────────────────────────────────────────────────────
+function editMult() {
+  const v = prompt('Enter new multiplier:', mult);
+  if (v === null) return;
+  const n = Number(v);
+  if (!isFinite(n) || n <= 0) { alert('Enter a positive number.'); return; }
+  mult = n;
+  document.getElementById('mult-display').textContent = mult;
+  save(); render();
+}
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+const KEY = 'workemon_v1';
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify({ mult, players, nextId }));
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      mult    = d.mult    ?? 200;
+      players = d.players ?? DEFAULTS.map(p => ({...p}));
+      nextId  = d.nextId  ?? 100;
+    } else {
+      players = DEFAULTS.map(p => ({...p}));
+    }
+  } catch (_) {
+    players = DEFAULTS.map(p => ({...p}));
+  }
+  document.getElementById('mult-display').textContent = mult;
+}
+
+// ── Export CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const list = ranked();
+  const rows = [
+    ['Rank','Name','Track','Level','Annual Salary','Monthly','Payout','Diff','Ratio'],
+    ...list.map(p => [
+      p.rank, p.name,
+      p.gold > 0 ? 'GOLD' : p.exp > 0 ? 'EXP' : '-',
+      p.gold > 0 ? p.gold : p.exp,
+      p.annual, Math.round(p.monthly), Math.round(p.payout),
+      Math.round(p.diff), Math.round(p.ratio) + '%',
+    ])
+  ];
+  const csv  = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const url  = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'workemon.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+load();
+render();
+</script>
+</body>
+</html>
