@@ -18,26 +18,28 @@ const { useState, useMemo, useCallback, useRef, useEffect } = React;
 const LS_KEY = "wm-current";
 const uid    = () => Math.random().toString(36).slice(2, 9);
 
-// Seed roster taken from the user's existing spreadsheet (Value/point = 200).
+// Seed roster taken from the user's current spreadsheet (Value/point = 200).
 // `position` is the desk number the Workemon sits at in the game — a fixed
 // seat assignment, independent of the computed profitability rank.
 const SEED_ROSTER = [
-  { id: uid(), name: "Matthew", position: 4,  annualSalary: 24896, gold: 30, exp: 0 },
-  { id: uid(), name: "Josh",    position: 1,  annualSalary: 30772, gold: 30, exp: 0 },
-  { id: uid(), name: "Melody",  position: 9,  annualSalary: 25460, gold: 25, exp: 0 },
-  { id: uid(), name: "Samuel",  position: 16, annualSalary: 26814, gold: 25, exp: 0 },
-  { id: uid(), name: "Xavier",  position: 5,  annualSalary: 27132, gold: 25, exp: 0 },
-  { id: uid(), name: "Isaiah",  position: 2,  annualSalary: 30536, gold: 25, exp: 0 },
-  { id: uid(), name: "Taylor",  position: 13, annualSalary: 34465, gold: 0,  exp: 25 },
-  { id: uid(), name: "Danny",   position: 11, annualSalary: 34518, gold: 25, exp: 0 },
+  { id: uid(), name: "Macy",    position: 8,  annualSalary: 18576, gold: 0,  exp: 30 },
+  { id: uid(), name: "Jonas",   position: 18, annualSalary: 20311, gold: 0,  exp: 30 },
+  { id: uid(), name: "Matthew", position: 4,  annualSalary: 28879, gold: 30, exp: 0 },
+  { id: uid(), name: "Josh",    position: 1,  annualSalary: 38125, gold: 30, exp: 0 },
+  { id: uid(), name: "Melody",  position: 9,  annualSalary: 28515, gold: 25, exp: 0 },
+  { id: uid(), name: "Zoey",    position: 17, annualSalary: 29088, gold: 25, exp: 0 },
+  { id: uid(), name: "Hailey",  position: 3,  annualSalary: 19890, gold: 0,  exp: 20 },
+  { id: uid(), name: "Samuel",  position: 16, annualSalary: 31908, gold: 25, exp: 0 },
+  { id: uid(), name: "Xavier",  position: 5,  annualSalary: 32015, gold: 25, exp: 0 },
   { id: uid(), name: "Sofia",   position: 12, annualSalary: 23088, gold: 20, exp: 0 },
-  { id: uid(), name: "Riya",    position: 14, annualSalary: 23384, gold: 20, exp: 0 },
-  { id: uid(), name: "Anna",    position: 10, annualSalary: 24016, gold: 20, exp: 0 },
-  { id: uid(), name: "Aiden",   position: 3,  annualSalary: 25089, gold: 20, exp: 0 },
-  { id: uid(), name: "Mya",     position: 15, annualSalary: 25232, gold: 20, exp: 0 },
-  { id: uid(), name: "Ruhi",    position: 7,  annualSalary: 25303, gold: 20, exp: 0 },
-  { id: uid(), name: "Diya",    position: 8,  annualSalary: 26560, gold: 0,  exp: 20 },
-  { id: uid(), name: "Makayla", position: 6,  annualSalary: 39572, gold: 25, exp: 0 },
+  { id: uid(), name: "Isaiah",  position: 2,  annualSalary: 35421, gold: 25, exp: 0 },
+  { id: uid(), name: "Taylor",  position: 6,  annualSalary: 23490, gold: 20, exp: 0 },
+  { id: uid(), name: "Riya",    position: 14, annualSalary: 25956, gold: 20, exp: 0 },
+  { id: uid(), name: "Danny",   position: 11, annualSalary: 37969, gold: 25, exp: 0 },
+  { id: uid(), name: "Taylor",  position: 13, annualSalary: 38600, gold: 0,  exp: 25 },
+  { id: uid(), name: "Ruhi",    position: 7,  annualSalary: 28086, gold: 20, exp: 0 },
+  { id: uid(), name: "Mya",     position: 15, annualSalary: 28259, gold: 20, exp: 0 },
+  { id: uid(), name: "Anna",    position: 10, annualSalary: 28579, gold: 20, exp: 0 },
 ];
 const EMPTY = { roster: SEED_ROSTER, goldRate: 200, expRate: 200 };
 
@@ -197,10 +199,128 @@ a{color:inherit;text-decoration:none;}
 .wm-io-btn:hover{border-color:#cbd5e1;color:#0f172a;}
 .wm-slider{width:100%;accent-color:#d97706;}
 .wm-sim-summary{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:#475569;margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;}
+.wm-th-btn{background:none;border:none;font:inherit;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:2px;white-space:nowrap;}
+.wm-th-btn:hover{color:#0f172a;}
+.wm-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;}
+.wm-modal{background:#fff;border-radius:16px;max-width:600px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);}
+.wm-modal-hd{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid #f1f5f9;position:sticky;top:0;background:#fff;z-index:1;}
+.wm-modal-nav{width:32px;height:32px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;font-size:17px;cursor:pointer;flex-shrink:0;color:#64748b;line-height:1;}
+.wm-modal-nav:hover{background:#f8fafc;color:#0f172a;}
+.wm-modal-title{flex:1;display:flex;align-items:center;gap:10px;min-width:0;}
+.wm-modal-name{font-size:16px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wm-modal-sub{font-size:11.5px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wm-modal-close{width:28px;height:28px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;font-size:12px;cursor:pointer;flex-shrink:0;}
+.wm-modal-close:hover{background:#e2e8f0;color:#0f172a;}
+.wm-modal-body{padding:20px;}
+.wm-modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px;}
+@media(max-width:520px){.wm-modal-stats{grid-template-columns:repeat(2,1fr);}}
+.wm-modal-stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px;}
+.wm-modal-stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:3px;}
+.wm-modal-stat-val{font-size:14.5px;font-weight:700;}
+.wm-modal-sim{border-top:1px solid #f1f5f9;padding-top:18px;}
+.wm-preset-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.wm-preset-chip{flex:1;min-width:86px;text-align:center;padding:8px 10px;border-radius:9px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;color:#475569;}
+.wm-preset-chip .pct{font-weight:700;font-size:12.5px;display:block;margin-bottom:3px;color:#0f172a;}
+.wm-preset-chip.ok{background:#f0fdf4;border-color:#bbf7d0;color:#15803d;}
+.wm-preset-chip.bad{background:#fef2f2;border-color:#fecaca;color:#dc2626;}
+.wm-modal-ft{display:flex;gap:8px;padding:14px 18px;border-top:1px solid #f1f5f9;position:sticky;bottom:0;background:#fff;}
 @media(max-width:600px){
   .wm-tbl td,.wm-tbl th{padding:9px 8px;}
 }
 `;
+
+// ─── Sortable Column Header ─────────────────────────────────────────────────────
+function SortTh({ field, label, sortField, sortDir, toggleSort }) {
+  const active = sortField === field;
+  return (
+    <button className="wm-th-btn" onClick={() => toggleSort(field)}>
+      {label}{active && <span style={{ marginLeft:3 }}>{sortDir === "asc" ? "▲" : "▼"}</span>}
+    </button>
+  );
+}
+
+// ─── Workemon Detail Modal ──────────────────────────────────────────────────────
+function WorkemonDetailModal({ w, index, total, raisePct, setRaisePct, onClose, onPrev, onNext, onEdit, onDelete }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") onPrev();
+      else if (e.key === "ArrowRight") onNext();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, onPrev, onNext]);
+
+  const rankIcon = r => ["🥇","🥈","🥉"][r-1] ?? r;
+  const presets = [5, 10, 15, 20].map(pct => {
+    const projMonthly = Math.floor((w.annualSalary * (1 + pct / 100)) / 12);
+    const projDiff = w.totalValue - projMonthly;
+    return { pct, projDiff, profitable: projDiff >= 0 };
+  });
+  const curProjMonthly = Math.floor((w.annualSalary * (1 + raisePct / 100)) / 12);
+  const curProjDiff = w.totalValue - curProjMonthly;
+
+  return (
+    <div className="wm-modal-backdrop" onClick={onClose}>
+      <div className="wm-modal" onClick={e => e.stopPropagation()}>
+        <div className="wm-modal-hd">
+          <button className="wm-modal-nav" onClick={onPrev} aria-label="Previous Workemon">‹</button>
+          <div className="wm-modal-title">
+            <span className={`wm-badge${w.rank <= 3 ? ` r${w.rank}` : " rn"}`}>{rankIcon(w.rank)}</span>
+            <div style={{ minWidth:0 }}>
+              <div className="wm-modal-name">{w.name}</div>
+              <div className="wm-modal-sub">Desk {w.position ?? "—"} · Rank #{w.rank} · {index + 1} of {total}</div>
+            </div>
+          </div>
+          <button className="wm-modal-nav" onClick={onNext} aria-label="Next Workemon">›</button>
+          <button className="wm-modal-close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        <div className="wm-modal-body">
+          <div className="wm-modal-stats">
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">Annual Salary</div><div className="wm-modal-stat-val">{money(w.annualSalary)}</div></div>
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">Monthly Salary</div><div className="wm-modal-stat-val">{money(w.monthlySalary)}</div></div>
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">GOLD / mo</div><div className="wm-modal-stat-val">{w.gold || 0}</div></div>
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">EXP / mo</div><div className="wm-modal-stat-val">{w.exp || 0}</div></div>
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">Value Earned</div><div className="wm-modal-stat-val">{money(w.totalValue)}</div></div>
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">DIFF</div><div className="wm-modal-stat-val" style={{ color: w.diff >= 0 ? "#16a34a" : "#dc2626" }}>{money(w.diff)}</div></div>
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">Ratio</div><div className="wm-modal-stat-val">{w.ratio === null ? "—" : w.ratio.toFixed(2) + "×"}</div></div>
+            <div className="wm-modal-stat"><div className="wm-modal-stat-lbl">Max Raise %</div><div className="wm-modal-stat-val" style={{ color: w.maxRaisePct !== null && w.maxRaisePct < 0 ? "#dc2626" : "#0f172a" }}>{w.maxRaisePct === null ? "—" : w.maxRaisePct.toFixed(1) + "%"}</div></div>
+          </div>
+
+          <div className="wm-modal-sim">
+            <div className="wm-card-hd" style={{ marginBottom:10 }}>Simulated Raise</div>
+            <label className="wm-lbl">
+              Raise: <strong style={{ color:"#0f172a" }}>{raisePct}%</strong>{" "}
+              <span style={{ color:"#94a3b8", fontWeight:400 }}>(shared with the Raise Simulator above)</span>
+            </label>
+            <input className="wm-slider" type="range" min="0" max="25" step="1" value={raisePct} onChange={e => setRaisePct(+e.target.value)} />
+            <div className="wm-sim-summary" style={{ marginTop:10, paddingTop:10 }}>
+              <span>Projected annual: <strong style={{ color:"#0f172a" }}>{money(w.annualSalary * (1 + raisePct / 100))}</strong></span>
+              <span>Projected DIFF: <strong style={{ color: curProjDiff >= 0 ? "#16a34a" : "#dc2626" }}>{money(curProjDiff)}</strong></span>
+              <span style={{ fontWeight:600, color: curProjDiff >= 0 ? "#16a34a" : "#dc2626" }}>
+                {curProjDiff >= 0 ? "Still profitable" : "Would be unprofitable"}
+              </span>
+            </div>
+            <div className="wm-preset-row">
+              {presets.map(p => (
+                <div key={p.pct} className={`wm-preset-chip ${p.profitable ? "ok" : "bad"}`}>
+                  <span className="pct">+{p.pct}%</span>
+                  {money(p.projDiff)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="wm-modal-ft">
+          <button className="wm-btn wm-btn-sec" style={{ flex:1 }} onClick={() => onEdit(w)}>Edit Workemon</button>
+          <button className="wm-btn wm-btn-del" style={{ flex:1, fontSize:13, padding:"9px 16px" }} onClick={() => onDelete(w.id)}>Remove</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Share Bar ────────────────────────────────────────────────────────────────
 function ShareBar({ urlStamp, onNew }) {
@@ -237,6 +357,9 @@ function MainApp({ initialData, onNew, source }) {
   const [setupOpen, setSetupOpen] = useState(source !== "url");
   const [raisePct, setRaisePct]  = useState(10);
   const [isMobile, setIsMobile]  = useState(() => window.innerWidth <= 700);
+  const [sortField, setSortField] = useState("rank");
+  const [sortDir, setSortDir]     = useState("asc");
+  const [selectedId, setSelectedId] = useState("");
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 700);
@@ -289,6 +412,42 @@ function MainApp({ initialData, onNew, source }) {
     });
     return { projectedPayroll, projectedNet: summary.totalValue - projectedPayroll, flips };
   }, [ranked, raisePct, summary.totalValue]);
+
+  // Table is browsable in any sort order; rank itself stays fixed to profitability.
+  const SORT_DEFAULT_DIR = { rank:"asc", position:"asc", name:"asc", annualSalary:"desc", gold:"desc", exp:"desc", totalValue:"desc", diff:"desc", ratio:"desc", maxRaisePct:"desc" };
+  const toggleSort = (field) => {
+    if (sortField === field) { setSortDir(d => d === "asc" ? "desc" : "asc"); }
+    else { setSortField(field); setSortDir(SORT_DEFAULT_DIR[field] || "asc"); }
+  };
+
+  const displayList = useMemo(() => {
+    const list = [...ranked];
+    const dir = sortDir === "asc" ? 1 : -1;
+    list.sort((a, b) => {
+      const av = a[sortField], bv = b[sortField];
+      const aNull = av === null || av === undefined;
+      const bNull = bv === null || bv === undefined;
+      if (aNull && bNull) return 0;
+      if (aNull) return 1;
+      if (bNull) return -1;
+      if (typeof av === "string") return av.localeCompare(bv) * dir;
+      return (av - bv) * dir;
+    });
+    return list;
+  }, [ranked, sortField, sortDir]);
+
+  const selectedIndex = useMemo(() => displayList.findIndex(w => w.id === selectedId), [displayList, selectedId]);
+  const selectedWorkemon = selectedIndex >= 0 ? displayList[selectedIndex] : null;
+
+  const openDetail = (id) => setSelectedId(id);
+  const closeDetail = () => setSelectedId("");
+  const stepDetail = (delta) => {
+    if (selectedIndex < 0 || displayList.length === 0) return;
+    const next = (selectedIndex + delta + displayList.length) % displayList.length;
+    setSelectedId(displayList[next].id);
+  };
+  const editFromModal = (w) => { closeDetail(); startEdit(w); };
+  const deleteFromModal = (id) => { removeWorkemon(id); closeDetail(); };
 
   const resetForm = () => { setEditId(""); setFName(""); setFPosition(""); setFSalary(""); setFGold(""); setFExp(""); };
 
@@ -418,7 +577,7 @@ function MainApp({ initialData, onNew, source }) {
           {/* Roster Table */}
           <div className="wm-card" style={{ padding:0 }}>
             <div style={{ padding:"20px 20px 4px" }}>
-              <div className="wm-card-hd" style={{ marginBottom:4 }}>Roster — Ranked by Profitability</div>
+              <div className="wm-card-hd" style={{ marginBottom:4 }}>Roster — Click a row for details</div>
             </div>
             {ranked.length === 0 ? (
               <div className="wm-empty">Add a Workemon below to get started</div>
@@ -427,25 +586,25 @@ function MainApp({ initialData, onNew, source }) {
                 <table className="wm-tbl">
                   <thead>
                     <tr>
-                      <th style={{ width:40 }}>#</th>
-                      <th className="tr" style={{ width:56 }}>Desk</th>
-                      <th>Name</th>
-                      <th className="tr">Annual Salary</th>
-                      {!isMobile && <th className="tr">Monthly Salary</th>}
-                      {!isMobile && <th className="tr">GOLD</th>}
-                      {!isMobile && <th className="tr">EXP</th>}
-                      <th className="tr">Value Earned</th>
-                      <th className="tr">DIFF</th>
-                      {!isMobile && <th className="tr">Ratio</th>}
-                      {!isMobile && <th className="tr">Max Raise %</th>}
+                      <th style={{ width:40 }}><SortTh field="rank" label="#" {...{ sortField, sortDir, toggleSort }} /></th>
+                      <th className="tr" style={{ width:56 }}><SortTh field="position" label="Desk" {...{ sortField, sortDir, toggleSort }} /></th>
+                      <th><SortTh field="name" label="Name" {...{ sortField, sortDir, toggleSort }} /></th>
+                      <th className="tr"><SortTh field="annualSalary" label="Annual Salary" {...{ sortField, sortDir, toggleSort }} /></th>
+                      {!isMobile && <th className="tr"><SortTh field="monthlySalary" label="Monthly Salary" {...{ sortField, sortDir, toggleSort }} /></th>}
+                      {!isMobile && <th className="tr"><SortTh field="gold" label="GOLD" {...{ sortField, sortDir, toggleSort }} /></th>}
+                      {!isMobile && <th className="tr"><SortTh field="exp" label="EXP" {...{ sortField, sortDir, toggleSort }} /></th>}
+                      <th className="tr"><SortTh field="totalValue" label="Value Earned" {...{ sortField, sortDir, toggleSort }} /></th>
+                      <th className="tr"><SortTh field="diff" label="DIFF" {...{ sortField, sortDir, toggleSort }} /></th>
+                      {!isMobile && <th className="tr"><SortTh field="ratio" label="Ratio" {...{ sortField, sortDir, toggleSort }} /></th>}
+                      {!isMobile && <th className="tr"><SortTh field="maxRaisePct" label="Max Raise %" {...{ sortField, sortDir, toggleSort }} /></th>}
                       <th style={{ width:110 }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {ranked.map(w => {
+                    {displayList.map(w => {
                       const willFlip = w.diff >= 0 && raisePct > 0 && w.maxRaisePct !== null && w.maxRaisePct < raisePct;
                       return (
-                        <tr key={w.id}>
+                        <tr key={w.id} onClick={() => openDetail(w.id)} style={{ cursor:"pointer" }}>
                           <td><span className={`wm-badge${w.rank <= 3 ? ` r${w.rank}` : " rn"}`}>{rankIcon(w.rank)}</span></td>
                           <td className="tr" style={{ color:"#94a3b8" }}>{w.position == null ? "—" : w.position}</td>
                           <td>
@@ -467,8 +626,8 @@ function MainApp({ initialData, onNew, source }) {
                           )}
                           <td className="tr">
                             <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
-                              <button className="wm-btn wm-btn-edit" onClick={() => startEdit(w)}>Edit</button>
-                              <button className="wm-btn wm-btn-del" onClick={() => removeWorkemon(w.id)}>✕</button>
+                              <button className="wm-btn wm-btn-edit" onClick={(e) => { e.stopPropagation(); startEdit(w); }}>Edit</button>
+                              <button className="wm-btn wm-btn-del" onClick={(e) => { e.stopPropagation(); removeWorkemon(w.id); }}>✕</button>
                             </div>
                           </td>
                         </tr>
@@ -574,6 +733,21 @@ function MainApp({ initialData, onNew, source }) {
 
         </div>
       </div>
+
+      {selectedWorkemon && (
+        <WorkemonDetailModal
+          w={selectedWorkemon}
+          index={selectedIndex}
+          total={displayList.length}
+          raisePct={raisePct}
+          setRaisePct={setRaisePct}
+          onClose={closeDetail}
+          onPrev={() => stepDetail(-1)}
+          onNext={() => stepDetail(1)}
+          onEdit={editFromModal}
+          onDelete={deleteFromModal}
+        />
+      )}
     </>
   );
 }
