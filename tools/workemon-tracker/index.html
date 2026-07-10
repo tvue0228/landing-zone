@@ -19,23 +19,25 @@ const LS_KEY = "wm-current";
 const uid    = () => Math.random().toString(36).slice(2, 9);
 
 // Seed roster taken from the user's existing spreadsheet (Value/point = 200).
+// `position` is the desk number the Workemon sits at in the game — a fixed
+// seat assignment, independent of the computed profitability rank.
 const SEED_ROSTER = [
-  { id: uid(), name: "Matthew", annualSalary: 24896, gold: 30, exp: 0 },
-  { id: uid(), name: "Josh",    annualSalary: 30772, gold: 30, exp: 0 },
-  { id: uid(), name: "Melody",  annualSalary: 25460, gold: 25, exp: 0 },
-  { id: uid(), name: "Samuel",  annualSalary: 26814, gold: 25, exp: 0 },
-  { id: uid(), name: "Xavier",  annualSalary: 27132, gold: 25, exp: 0 },
-  { id: uid(), name: "Isaiah",  annualSalary: 30536, gold: 25, exp: 0 },
-  { id: uid(), name: "Taylor",  annualSalary: 34465, gold: 0,  exp: 25 },
-  { id: uid(), name: "Danny",   annualSalary: 34518, gold: 25, exp: 0 },
-  { id: uid(), name: "Sofia",   annualSalary: 23088, gold: 20, exp: 0 },
-  { id: uid(), name: "Riya",    annualSalary: 23384, gold: 20, exp: 0 },
-  { id: uid(), name: "Anna",    annualSalary: 24016, gold: 20, exp: 0 },
-  { id: uid(), name: "Aiden",   annualSalary: 25089, gold: 20, exp: 0 },
-  { id: uid(), name: "Mya",     annualSalary: 25232, gold: 20, exp: 0 },
-  { id: uid(), name: "Ruhi",    annualSalary: 25303, gold: 20, exp: 0 },
-  { id: uid(), name: "Diya",    annualSalary: 26560, gold: 0,  exp: 20 },
-  { id: uid(), name: "Makayla", annualSalary: 39572, gold: 25, exp: 0 },
+  { id: uid(), name: "Matthew", position: 4,  annualSalary: 24896, gold: 30, exp: 0 },
+  { id: uid(), name: "Josh",    position: 1,  annualSalary: 30772, gold: 30, exp: 0 },
+  { id: uid(), name: "Melody",  position: 9,  annualSalary: 25460, gold: 25, exp: 0 },
+  { id: uid(), name: "Samuel",  position: 16, annualSalary: 26814, gold: 25, exp: 0 },
+  { id: uid(), name: "Xavier",  position: 5,  annualSalary: 27132, gold: 25, exp: 0 },
+  { id: uid(), name: "Isaiah",  position: 2,  annualSalary: 30536, gold: 25, exp: 0 },
+  { id: uid(), name: "Taylor",  position: 13, annualSalary: 34465, gold: 0,  exp: 25 },
+  { id: uid(), name: "Danny",   position: 11, annualSalary: 34518, gold: 25, exp: 0 },
+  { id: uid(), name: "Sofia",   position: 12, annualSalary: 23088, gold: 20, exp: 0 },
+  { id: uid(), name: "Riya",    position: 14, annualSalary: 23384, gold: 20, exp: 0 },
+  { id: uid(), name: "Anna",    position: 10, annualSalary: 24016, gold: 20, exp: 0 },
+  { id: uid(), name: "Aiden",   position: 3,  annualSalary: 25089, gold: 20, exp: 0 },
+  { id: uid(), name: "Mya",     position: 15, annualSalary: 25232, gold: 20, exp: 0 },
+  { id: uid(), name: "Ruhi",    position: 7,  annualSalary: 25303, gold: 20, exp: 0 },
+  { id: uid(), name: "Diya",    position: 8,  annualSalary: 26560, gold: 0,  exp: 20 },
+  { id: uid(), name: "Makayla", position: 6,  annualSalary: 39572, gold: 25, exp: 0 },
 ];
 const EMPTY = { roster: SEED_ROSTER, goldRate: 200, expRate: 200 };
 
@@ -59,6 +61,7 @@ function migrateState(state) {
     roster: (state.roster || []).map(w => ({
       id: w.id || uid(),
       name: w.name || "",
+      position: w.position === "" || w.position == null ? null : +w.position,
       annualSalary: +w.annualSalary || 0,
       gold: +w.gold || 0,
       exp: +w.exp || 0,
@@ -243,6 +246,7 @@ function MainApp({ initialData, onNew, source }) {
 
   const [editId, setEditId]     = useState("");
   const [fName, setFName]       = useState("");
+  const [fPosition, setFPosition] = useState("");
   const [fSalary, setFSalary]   = useState("");
   const [fGold, setFGold]       = useState("");
   const [fExp, setFExp]         = useState("");
@@ -286,10 +290,11 @@ function MainApp({ initialData, onNew, source }) {
     return { projectedPayroll, projectedNet: summary.totalValue - projectedPayroll, flips };
   }, [ranked, raisePct, summary.totalValue]);
 
-  const resetForm = () => { setEditId(""); setFName(""); setFSalary(""); setFGold(""); setFExp(""); };
+  const resetForm = () => { setEditId(""); setFName(""); setFPosition(""); setFSalary(""); setFGold(""); setFExp(""); };
 
   const startEdit = (w) => {
-    setEditId(w.id); setFName(w.name); setFSalary(String(w.annualSalary));
+    setEditId(w.id); setFName(w.name); setFPosition(w.position == null ? "" : String(w.position));
+    setFSalary(String(w.annualSalary));
     setFGold(String(w.gold || 0)); setFExp(String(w.exp || 0));
     setSetupOpen(true);
     nameRef.current?.focus();
@@ -300,11 +305,12 @@ function MainApp({ initialData, onNew, source }) {
     const salary = parseFloat(fSalary);
     const gold = parseFloat(fGold) || 0;
     const exp = parseFloat(fExp) || 0;
+    const position = fPosition.trim() === "" ? null : parseInt(fPosition, 10);
     if (!name || isNaN(salary) || salary <= 0) return;
     if (editId) {
-      setRoster(roster.map(w => w.id === editId ? { ...w, name, annualSalary: salary, gold, exp } : w));
+      setRoster(roster.map(w => w.id === editId ? { ...w, name, position, annualSalary: salary, gold, exp } : w));
     } else {
-      setRoster([...roster, { id: uid(), name, annualSalary: salary, gold, exp }]);
+      setRoster([...roster, { id: uid(), name, position, annualSalary: salary, gold, exp }]);
     }
     resetForm();
   };
@@ -422,6 +428,7 @@ function MainApp({ initialData, onNew, source }) {
                   <thead>
                     <tr>
                       <th style={{ width:40 }}>#</th>
+                      <th className="tr" style={{ width:56 }}>Desk</th>
                       <th>Name</th>
                       <th className="tr">Annual Salary</th>
                       {!isMobile && <th className="tr">Monthly Salary</th>}
@@ -440,6 +447,7 @@ function MainApp({ initialData, onNew, source }) {
                       return (
                         <tr key={w.id}>
                           <td><span className={`wm-badge${w.rank <= 3 ? ` r${w.rank}` : " rn"}`}>{rankIcon(w.rank)}</span></td>
+                          <td className="tr" style={{ color:"#94a3b8" }}>{w.position == null ? "—" : w.position}</td>
                           <td>
                             <span style={{ fontWeight:500 }}>{w.name}</span>
                             {w.diff < 0 && <span className="wm-tag bad">unprofitable</span>}
@@ -482,11 +490,19 @@ function MainApp({ initialData, onNew, source }) {
               {/* Add / Edit Workemon */}
               <div className="wm-card">
                 <div className="wm-card-hd">{editId ? "Edit Workemon" : "Add Workemon"}</div>
-                <div className="wm-field">
-                  <label className="wm-lbl">Name</label>
-                  <input ref={nameRef} className="wm-inp" placeholder="Workemon name" maxLength={40}
-                    value={fName} onChange={e => setFName(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && submitForm()} />
+                <div style={{ display:"flex", gap:8 }}>
+                  <div className="wm-field" style={{ flex:1 }}>
+                    <label className="wm-lbl">Name</label>
+                    <input ref={nameRef} className="wm-inp" placeholder="Workemon name" maxLength={40}
+                      value={fName} onChange={e => setFName(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && submitForm()} />
+                  </div>
+                  <div className="wm-field" style={{ width:84 }}>
+                    <label className="wm-lbl">Desk #</label>
+                    <input className="wm-inp" type="number" min={1} step={1} placeholder="—"
+                      value={fPosition} onChange={e => setFPosition(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && submitForm()} />
+                  </div>
                 </div>
                 <div className="wm-field">
                   <label className="wm-lbl">Annual Salary ($)</label>
