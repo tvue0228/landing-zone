@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workemon Tracker</title>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo, useCallback, useRef, useEffect } = React;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const LS_KEY = "wm-current";
+const uid    = () => Math.random().toString(36).slice(2, 9);
+
+// Seed roster taken from the user's existing spreadsheet (Value/point = 200).
+const SEED_ROSTER = [
+  { id: uid(), name: "Matthew", annualSalary: 24896, gold: 30, exp: 0 },
+  { id: uid(), name: "Josh",    annualSalary: 30772, gold: 30, exp: 0 },
+  { id: uid(), name: "Melody",  annualSalary: 25460, gold: 25, exp: 0 },
+  { id: uid(), name: "Samuel",  annualSalary: 26814, gold: 25, exp: 0 },
+  { id: uid(), name: "Xavier",  annualSalary: 27132, gold: 25, exp: 0 },
+  { id: uid(), name: "Isaiah",  annualSalary: 30536, gold: 25, exp: 0 },
+  { id: uid(), name: "Taylor",  annualSalary: 34465, gold: 0,  exp: 25 },
+  { id: uid(), name: "Danny",   annualSalary: 34518, gold: 25, exp: 0 },
+  { id: uid(), name: "Sofia",   annualSalary: 23088, gold: 20, exp: 0 },
+  { id: uid(), name: "Riya",    annualSalary: 23384, gold: 20, exp: 0 },
+  { id: uid(), name: "Anna",    annualSalary: 24016, gold: 20, exp: 0 },
+  { id: uid(), name: "Aiden",   annualSalary: 25089, gold: 20, exp: 0 },
+  { id: uid(), name: "Mya",     annualSalary: 25232, gold: 20, exp: 0 },
+  { id: uid(), name: "Ruhi",    annualSalary: 25303, gold: 20, exp: 0 },
+  { id: uid(), name: "Diya",    annualSalary: 26560, gold: 0,  exp: 20 },
+  { id: uid(), name: "Makayla", annualSalary: 39572, gold: 25, exp: 0 },
+];
+const EMPTY = { roster: SEED_ROSTER, goldRate: 200, expRate: 200 };
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+const money = (n) => (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
+
+// State is encoded in the URL hash with LZ-string AND mirrored to localStorage.
+function tryDecode(compressed) {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(compressed);
+    return json ? JSON.parse(json) : null;
+  } catch { return null; }
+}
+
+function migrateState(state) {
+  if (!state) return state;
+  return {
+    ...state,
+    goldRate: state.goldRate ?? 200,
+    expRate: state.expRate ?? 200,
+    roster: (state.roster || []).map(w => ({
+      id: w.id || uid(),
+      name: w.name || "",
+      annualSalary: +w.annualSalary || 0,
+      gold: +w.gold || 0,
+      exp: +w.exp || 0,
+    })),
+  };
+}
+
+function resolveInitialState() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash) {
+    const state = tryDecode(hash);
+    if (state) {
+      const migrated = migrateState(state);
+      try { localStorage.setItem(LS_KEY, hash); } catch {}
+      return { state: migrated, hasData: true, source: "url" };
+    }
+  }
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) {
+      const state = tryDecode(saved);
+      if (state) {
+        const migrated = migrateState(state);
+        window.history.replaceState(null, "", "#" + saved);
+        return { state: migrated, hasData: true, source: "local" };
+      }
+    }
+  } catch {}
+  return { state: null, hasData: false, source: null };
+}
+
+function encodeToUrl(state) {
+  const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
+  window.history.replaceState(null, "", "#" + compressed);
+  try { localStorage.setItem(LS_KEY, compressed); } catch {}
+}
+
+// Computes derived stats for every Workemon and ranks by profitability (DIFF desc).
+function computeRoster(roster, goldRate, expRate) {
+  return roster
+    .map(w => {
+      const annual = w.annualSalary || 0;
+      const monthlySalary = Math.floor(annual / 12);
+      const goldValue = (w.gold || 0) * goldRate;
+      const expValue = (w.exp || 0) * expRate;
+      const totalValue = goldValue + expValue;
+      const diff = totalValue - monthlySalary;
+      const ratio = monthlySalary > 0 ? totalValue / monthlySalary : null;
+      // Breakeven raise %: how big a raise could this Workemon absorb before flipping unprofitable.
+      const maxRaisePct = annual > 0 ? (totalValue * 12 / annual - 1) * 100 : null;
+      return { ...w, monthlySalary, goldValue, expValue, totalValue, diff, ratio, maxRaisePct };
+    })
+    .sort((a, b) => b.diff - a.diff)
+    .map((w, i) => ({ ...w, rank: i + 1 }));
+}
+
+// ─── CSS ──────────────────────────────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+.wm{padding:0 16px 80px;}
+.wm-hd{max-width:1040px;margin:0 auto;padding:24px 0 20px;}
+.wm-back{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#64748b;margin-bottom:14px;transition:color .15s;}
+.wm-back:hover{color:#0f172a;}
+.wm-title{font-size:26px;font-weight:700;letter-spacing:-.02em;}
+.wm-sub{font-size:14px;color:#64748b;margin-top:3px;}
+.wm-share{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;margin-top:14px;}
+.wm-share-url{flex:1;font-size:12px;color:#475569;font-family:monospace;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wm-share-copy{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;background:#fff;color:#64748b;transition:all .15s;white-space:nowrap;}
+.wm-share-copy:hover{border-color:#cbd5e1;color:#0f172a;}
+.wm-share-copy.ok{background:#fffbeb;border-color:#fde68a;color:#b45309;}
+.wm-share-note{font-size:11px;color:#94a3b8;}
+.wm-landing{max-width:460px;margin:80px auto;text-align:center;padding:44px 36px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;}
+.wm-landing-icon{font-size:52px;margin-bottom:16px;}
+.wm-landing-title{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px;}
+.wm-landing-desc{font-size:15px;color:#64748b;line-height:1.65;margin-bottom:28px;}
+.wm-main{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:18px;}
+.wm-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;}
+.wm-card-hd{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#64748b;margin-bottom:16px;}
+.wm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:640px){.wm-grid2{grid-template-columns:1fr;}}
+.wm-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+@media(max-width:820px){.wm-stats{grid-template-columns:repeat(2,1fr);}}
+.wm-stat{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;}
+.wm-stat-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:6px;}
+.wm-stat-val{font-size:20px;font-weight:700;letter-spacing:-.01em;}
+.wm-field{margin-bottom:11px;}
+.wm-lbl{display:block;font-size:12px;font-weight:500;color:#64748b;margin-bottom:4px;}
+.wm-inp{width:100%;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:14px;font-family:inherit;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s;}
+.wm-inp:focus{border-color:#d97706;box-shadow:0 0 0 3px rgba(217,119,6,.1);}
+.wm-inp::placeholder{color:#cbd5e1;}
+.wm-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:7px;border:none;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
+.wm-btn-g{background:#d97706;color:#fff;}
+.wm-btn-g:hover{background:#b45309;}
+.wm-btn-g:disabled{opacity:.35;cursor:not-allowed;}
+.wm-btn-lg{font-size:15px;padding:13px 32px;border-radius:9px;}
+.wm-btn-sec{background:#f1f5f9;color:#475569;}
+.wm-btn-sec:hover{background:#e2e8f0;}
+.wm-btn-del{padding:4px 8px;font-size:12px;border-radius:5px;background:transparent;border:1px solid #fecaca;color:#dc2626;}
+.wm-btn-del:hover{background:#fef2f2;}
+.wm-btn-edit{padding:4px 8px;font-size:12px;border-radius:5px;background:transparent;border:1px solid #e2e8f0;color:#64748b;}
+.wm-btn-edit:hover{background:#f8fafc;color:#0f172a;}
+.wm-tbl{width:100%;border-collapse:collapse;}
+.wm-tbl th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;padding:8px 12px;text-align:left;border-bottom:1px solid #f1f5f9;white-space:nowrap;}
+.wm-tbl th.tr,.wm-tbl td.tr{text-align:right;}
+.wm-tbl td{padding:11px 12px;border-bottom:1px solid #f8fafc;font-size:13.5px;transition:background .1s;}
+.wm-tbl tr:last-child td{border-bottom:none;}
+.wm-tbl tr:hover td{background:#f8fafc;}
+.wm-tbl-wrap{overflow-x:auto;}
+.wm-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:700;}
+.wm-badge.r1{background:#fef9c3;color:#a16207;}
+.wm-badge.r2{background:#f1f5f9;color:#475569;}
+.wm-badge.r3{background:#fff7ed;color:#c2410c;}
+.wm-badge.rn{background:#f8fafc;color:#94a3b8;font-size:11px;}
+.wm-tag{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:5px;margin-left:6px;white-space:nowrap;}
+.wm-tag.bad{background:#fef2f2;color:#dc2626;}
+.wm-tag.warn{background:#fffbeb;color:#b45309;}
+.wm-empty{text-align:center;padding:28px;color:#94a3b8;font-size:14px;font-style:italic;}
+.wm-clist{margin-top:14px;display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.wm-citem{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;gap:8px;animation:slidein .18s ease;}
+@keyframes slidein{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#f8fafc;}
+::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px;}
+.wm-setup-toggle{display:flex;align-items:center;gap:7px;padding:8px 0;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;background:none;border:none;font-family:inherit;transition:color .15s;user-select:none;}
+.wm-setup-toggle:hover{color:#0f172a;}
+.wm-setup-toggle-chevron{font-size:11px;display:inline-block;transition:transform .2s;line-height:1;}
+.wm-setup-toggle-chevron.open{transform:rotate(90deg);}
+.wm-io-bar{display:flex;gap:8px;margin-top:8px;}
+.wm-io-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;background:#fff;color:#64748b;transition:all .15s;white-space:nowrap;}
+.wm-io-btn:hover{border-color:#cbd5e1;color:#0f172a;}
+.wm-slider{width:100%;accent-color:#d97706;}
+.wm-sim-summary{display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:#475569;margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;}
+@media(max-width:600px){
+  .wm-tbl td,.wm-tbl th{padding:9px 8px;}
+}
+`;
+
+// ─── Share Bar ────────────────────────────────────────────────────────────────
+function ShareBar({ urlStamp, onNew }) {
+  const [copied, setCopied] = useState(false);
+  const url = window.location.href; // read at render; urlStamp re-triggers render on each save
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); } catch { return; }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="wm-share">
+      <span style={{ fontSize:13 }}>🔗</span>
+      <span className="wm-share-url">{url}</span>
+      <button className={`wm-share-copy${copied ? " ok" : ""}`} onClick={copy}>
+        {copied ? "✓ Copied" : "Copy link"}
+      </button>
+      <span className="wm-share-note">Copy after each update to save the latest</span>
+      <button onClick={onNew} style={{ background:"none", border:"none", fontSize:12, color:"#94a3b8", cursor:"pointer", padding:0, whiteSpace:"nowrap" }}>
+        Reset roster
+      </button>
+    </div>
+  );
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+function MainApp({ initialData, onNew, source }) {
+  const [roster, setRosterRaw]   = useState(initialData.roster || []);
+  const [goldRate, setGoldRate]  = useState(initialData.goldRate ?? 200);
+  const [expRate, setExpRate]    = useState(initialData.expRate ?? 200);
+  const [urlStamp, setUrlStamp]  = useState(0);
+  const [setupOpen, setSetupOpen] = useState(source !== "url");
+  const [raisePct, setRaisePct]  = useState(10);
+  const [isMobile, setIsMobile]  = useState(() => window.innerWidth <= 700);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 700);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const [editId, setEditId]     = useState("");
+  const [fName, setFName]       = useState("");
+  const [fSalary, setFSalary]   = useState("");
+  const [fGold, setFGold]       = useState("");
+  const [fExp, setFExp]         = useState("");
+  const nameRef   = useRef(null);
+  const uploadRef = useRef(null);
+
+  const rosterRef = useRef(roster);
+  const goldRateRef = useRef(goldRate);
+  const expRateRef = useRef(expRate);
+  rosterRef.current = roster;
+  goldRateRef.current = goldRate;
+  expRateRef.current = expRate;
+
+  const save = useCallback((r, g, e) => {
+    encodeToUrl({ roster: r, goldRate: g, expRate: e });
+    setUrlStamp(n => n + 1);
+  }, []);
+
+  const setRoster = (r) => { setRosterRaw(r); save(r, goldRateRef.current, expRateRef.current); };
+  const commitGoldRate = (g) => { setGoldRate(g); save(rosterRef.current, g, expRateRef.current); };
+  const commitExpRate  = (e) => { setExpRate(e); save(rosterRef.current, goldRateRef.current, e); };
+
+  const ranked = useMemo(() => computeRoster(roster, goldRate, expRate), [roster, goldRate, expRate]);
+
+  const summary = useMemo(() => {
+    const headcount = ranked.length;
+    const profitable = ranked.filter(w => w.diff >= 0).length;
+    const totalPayroll = ranked.reduce((s, w) => s + w.monthlySalary, 0);
+    const totalValue = ranked.reduce((s, w) => s + w.totalValue, 0);
+    return { headcount, profitable, totalPayroll, totalValue, net: totalValue - totalPayroll };
+  }, [ranked]);
+
+  const simulation = useMemo(() => {
+    const mult = 1 + raisePct / 100;
+    let flips = 0, projectedPayroll = 0;
+    ranked.forEach(w => {
+      const projMonthly = Math.floor((w.annualSalary * mult) / 12);
+      projectedPayroll += projMonthly;
+      if (w.diff >= 0 && (w.totalValue - projMonthly) < 0) flips += 1;
+    });
+    return { projectedPayroll, projectedNet: summary.totalValue - projectedPayroll, flips };
+  }, [ranked, raisePct, summary.totalValue]);
+
+  const resetForm = () => { setEditId(""); setFName(""); setFSalary(""); setFGold(""); setFExp(""); };
+
+  const startEdit = (w) => {
+    setEditId(w.id); setFName(w.name); setFSalary(String(w.annualSalary));
+    setFGold(String(w.gold || 0)); setFExp(String(w.exp || 0));
+    setSetupOpen(true);
+    nameRef.current?.focus();
+  };
+
+  const submitForm = () => {
+    const name = fName.trim();
+    const salary = parseFloat(fSalary);
+    const gold = parseFloat(fGold) || 0;
+    const exp = parseFloat(fExp) || 0;
+    if (!name || isNaN(salary) || salary <= 0) return;
+    if (editId) {
+      setRoster(roster.map(w => w.id === editId ? { ...w, name, annualSalary: salary, gold, exp } : w));
+    } else {
+      setRoster([...roster, { id: uid(), name, annualSalary: salary, gold, exp }]);
+    }
+    resetForm();
+  };
+
+  const removeWorkemon = (id) => {
+    setRoster(roster.filter(w => w.id !== id));
+    if (editId === id) resetForm();
+  };
+
+  const downloadJson = () => {
+    const json = JSON.stringify({ roster, goldRate, expRate }, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl; a.download = "workemon-roster.json"; a.click();
+    URL.revokeObjectURL(blobUrl);
+  };
+
+  const handleUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data.roster)) throw new Error("Invalid");
+        const migrated = migrateState(data);
+        setRosterRaw(migrated.roster);
+        setGoldRate(migrated.goldRate);
+        setExpRate(migrated.expRate);
+        save(migrated.roster, migrated.goldRate, migrated.expRate);
+      } catch {
+        alert("Could not read file. Make sure it's a valid roster JSON.");
+      }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  };
+
+  const rankIcon = r => ["🥇","🥈","🥉"][r-1] ?? r;
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="wm">
+        <div className="wm-hd">
+          <a href="../../" className="wm-back">← Tools</a>
+          <div>
+            <h1 className="wm-title">Workemon Tracker</h1>
+            <p className="wm-sub">Track each Workemon's salary vs. GOLD/EXP earnings, rank by profitability, and simulate year-end raises</p>
+          </div>
+          <ShareBar urlStamp={urlStamp} onNew={onNew} />
+          <div className="wm-io-bar">
+            <button className="wm-io-btn" onClick={downloadJson}>↓ Download JSON</button>
+            <label className="wm-io-btn">
+              ↑ Upload JSON
+              <input ref={uploadRef} type="file" accept=".json,application/json" style={{ display:"none" }} onChange={handleUpload} />
+            </label>
+          </div>
+        </div>
+
+        <div className="wm-main">
+
+          {/* Company Overview */}
+          <div className="wm-stats">
+            <div className="wm-stat">
+              <div className="wm-stat-lbl">Headcount</div>
+              <div className="wm-stat-val">{summary.headcount}</div>
+            </div>
+            <div className="wm-stat">
+              <div className="wm-stat-lbl">Profitable</div>
+              <div className="wm-stat-val" style={{ color: summary.profitable === summary.headcount ? "#16a34a" : "#0f172a" }}>
+                {summary.profitable} / {summary.headcount}
+              </div>
+            </div>
+            <div className="wm-stat">
+              <div className="wm-stat-lbl">Monthly Payroll</div>
+              <div className="wm-stat-val">{money(summary.totalPayroll)}</div>
+            </div>
+            <div className="wm-stat">
+              <div className="wm-stat-lbl">Monthly Value Earned</div>
+              <div className="wm-stat-val">{money(summary.totalValue)}</div>
+            </div>
+            <div className="wm-stat">
+              <div className="wm-stat-lbl">Net Company Profit</div>
+              <div className="wm-stat-val" style={{ color: summary.net >= 0 ? "#16a34a" : "#dc2626" }}>{money(summary.net)}</div>
+            </div>
+          </div>
+
+          {/* Raise Simulator */}
+          <div className="wm-card">
+            <div className="wm-card-hd">Year-End Raise Simulator</div>
+            <label className="wm-lbl">Simulated raise for everyone: <strong style={{ color:"#0f172a" }}>{raisePct}%</strong></label>
+            <input
+              className="wm-slider" type="range" min="0" max="25" step="1"
+              value={raisePct} onChange={e => setRaisePct(+e.target.value)}
+            />
+            <div className="wm-sim-summary">
+              <span>Projected monthly payroll: <strong style={{ color:"#0f172a" }}>{money(simulation.projectedPayroll)}</strong></span>
+              <span>Projected net profit: <strong style={{ color: simulation.projectedNet >= 0 ? "#16a34a" : "#dc2626" }}>{money(simulation.projectedNet)}</strong></span>
+              <span>Would flip unprofitable: <strong style={{ color: simulation.flips > 0 ? "#dc2626" : "#16a34a" }}>{simulation.flips}</strong></span>
+            </div>
+          </div>
+
+          {/* Roster Table */}
+          <div className="wm-card" style={{ padding:0 }}>
+            <div style={{ padding:"20px 20px 4px" }}>
+              <div className="wm-card-hd" style={{ marginBottom:4 }}>Roster — Ranked by Profitability</div>
+            </div>
+            {ranked.length === 0 ? (
+              <div className="wm-empty">Add a Workemon below to get started</div>
+            ) : (
+              <div className="wm-tbl-wrap">
+                <table className="wm-tbl">
+                  <thead>
+                    <tr>
+                      <th style={{ width:40 }}>#</th>
+                      <th>Name</th>
+                      <th className="tr">Annual Salary</th>
+                      {!isMobile && <th className="tr">Monthly Salary</th>}
+                      {!isMobile && <th className="tr">GOLD</th>}
+                      {!isMobile && <th className="tr">EXP</th>}
+                      <th className="tr">Value Earned</th>
+                      <th className="tr">DIFF</th>
+                      {!isMobile && <th className="tr">Ratio</th>}
+                      {!isMobile && <th className="tr">Max Raise %</th>}
+                      <th style={{ width:110 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranked.map(w => {
+                      const willFlip = w.diff >= 0 && raisePct > 0 && w.maxRaisePct !== null && w.maxRaisePct < raisePct;
+                      return (
+                        <tr key={w.id}>
+                          <td><span className={`wm-badge${w.rank <= 3 ? ` r${w.rank}` : " rn"}`}>{rankIcon(w.rank)}</span></td>
+                          <td>
+                            <span style={{ fontWeight:500 }}>{w.name}</span>
+                            {w.diff < 0 && <span className="wm-tag bad">unprofitable</span>}
+                            {willFlip && <span className="wm-tag warn">flips at +{raisePct}%</span>}
+                          </td>
+                          <td className="tr">{money(w.annualSalary)}</td>
+                          {!isMobile && <td className="tr" style={{ color:"#64748b" }}>{money(w.monthlySalary)}</td>}
+                          {!isMobile && <td className="tr" style={{ color:"#64748b" }}>{w.gold || 0}</td>}
+                          {!isMobile && <td className="tr" style={{ color:"#64748b" }}>{w.exp || 0}</td>}
+                          <td className="tr">{money(w.totalValue)}</td>
+                          <td className="tr" style={{ fontWeight:600, color: w.diff >= 0 ? "#16a34a" : "#dc2626" }}>{money(w.diff)}</td>
+                          {!isMobile && <td className="tr" style={{ color:"#64748b" }}>{w.ratio === null ? "—" : w.ratio.toFixed(2) + "×"}</td>}
+                          {!isMobile && (
+                            <td className="tr" style={{ color: w.maxRaisePct === null ? "#94a3b8" : w.maxRaisePct < 0 ? "#dc2626" : "#64748b" }}>
+                              {w.maxRaisePct === null ? "—" : w.maxRaisePct.toFixed(1) + "%"}
+                            </td>
+                          )}
+                          <td className="tr">
+                            <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+                              <button className="wm-btn wm-btn-edit" onClick={() => startEdit(w)}>Edit</button>
+                              <button className="wm-btn wm-btn-del" onClick={() => removeWorkemon(w.id)}>✕</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <button className="wm-setup-toggle" onClick={() => setSetupOpen(o => !o)}>
+              <span className={`wm-setup-toggle-chevron${setupOpen ? " open" : ""}`}>▶</span>
+              Manage Roster &amp; Settings
+            </button>
+            {setupOpen && <div className="wm-grid2">
+
+              {/* Add / Edit Workemon */}
+              <div className="wm-card">
+                <div className="wm-card-hd">{editId ? "Edit Workemon" : "Add Workemon"}</div>
+                <div className="wm-field">
+                  <label className="wm-lbl">Name</label>
+                  <input ref={nameRef} className="wm-inp" placeholder="Workemon name" maxLength={40}
+                    value={fName} onChange={e => setFName(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && submitForm()} />
+                </div>
+                <div className="wm-field">
+                  <label className="wm-lbl">Annual Salary ($)</label>
+                  <input className="wm-inp" type="number" min={0} step={1} placeholder="0"
+                    value={fSalary} onChange={e => setFSalary(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && submitForm()} />
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <div className="wm-field" style={{ flex:1 }}>
+                    <label className="wm-lbl">GOLD earned / mo</label>
+                    <input className="wm-inp" type="number" min={0} step={1} placeholder="0"
+                      value={fGold} onChange={e => setFGold(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && submitForm()} />
+                  </div>
+                  <div className="wm-field" style={{ flex:1 }}>
+                    <label className="wm-lbl">EXP earned / mo</label>
+                    <input className="wm-inp" type="number" min={0} step={1} placeholder="0"
+                      value={fExp} onChange={e => setFExp(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && submitForm()} />
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button className="wm-btn wm-btn-g" style={{ flex:1 }}
+                    disabled={!fName.trim() || !fSalary} onClick={submitForm}>
+                    {editId ? "Save Changes" : "+ Add Workemon"}
+                  </button>
+                  {editId && <button className="wm-btn wm-btn-sec" onClick={resetForm}>Cancel</button>}
+                </div>
+                <p style={{ fontSize:12, color:"#94a3b8", marginTop:8 }}>
+                  Enter the current GOLD or EXP earn rate after training — the tool doesn't need to know training mechanics, just the result.
+                </p>
+              </div>
+
+              {/* Settings + list */}
+              <div className="wm-card">
+                <div className="wm-card-hd">Settings</div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <div className="wm-field" style={{ flex:1 }}>
+                    <label className="wm-lbl">$ value per GOLD point</label>
+                    <input className="wm-inp" type="number" min={0} step={1}
+                      value={goldRate} onChange={e => commitGoldRate(+e.target.value || 0)} />
+                  </div>
+                  <div className="wm-field" style={{ flex:1 }}>
+                    <label className="wm-lbl">$ value per EXP point</label>
+                    <input className="wm-inp" type="number" min={0} step={1}
+                      value={expRate} onChange={e => commitExpRate(+e.target.value || 0)} />
+                  </div>
+                </div>
+                <p style={{ fontSize:12, color:"#94a3b8", marginBottom:10 }}>
+                  Matches the spreadsheet's shared multiplier (200) — adjust if your game's exchange rate changes.
+                </p>
+                {roster.length > 0 && (
+                  <div className="wm-clist">
+                    {roster.map(w => (
+                      <div key={w.id} className="wm-citem">
+                        <span style={{ fontWeight:500 }}>{w.name}</span>
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <span style={{ color:"#64748b" }}>{money(w.annualSalary)}/yr</span>
+                          <button className="wm-btn wm-btn-del" onClick={() => removeWorkemon(w.id)}>✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>}
+          </div>
+
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+function App() {
+  const { state: initialState, hasData, source: initialSource } = useMemo(resolveInitialState, []);
+  const [phase, setPhase]         = useState(hasData ? "ready" : "landing");
+  const [appKey, setAppKey]       = useState(0);
+  const [loadedState, setLoaded]  = useState(initialState);
+  const [loadedSource, setSource] = useState(initialSource);
+  const [importUrl, setImportUrl] = useState("");
+  const [importErr, setImportErr] = useState("");
+
+  const handleCreate = () => {
+    const state = EMPTY;
+    encodeToUrl(state);
+    setLoaded(state);
+    setSource(null);
+    setPhase("ready");
+    setAppKey(k => k + 1);
+  };
+
+  const handleNew = () => {
+    if (!window.confirm("Reset the roster back to the starter example data? Your current roster will still be accessible via its URL.")) return;
+    try { localStorage.removeItem(LS_KEY); } catch {}
+    window.history.replaceState(null, "", window.location.pathname);
+    setImportUrl("");
+    setImportErr("");
+    setPhase("landing");
+    setAppKey(k => k + 1);
+  };
+
+  const handleLoadUrl = () => {
+    setImportErr("");
+    const raw = importUrl.trim();
+    let hash = "";
+    try {
+      const u = new URL(raw);
+      hash = u.hash.replace(/^#/, "");
+    } catch {
+      hash = raw.replace(/^#/, "");
+    }
+    if (!hash) { setImportErr("No roster data found in that URL."); return; }
+    const state = tryDecode(hash);
+    if (!state) { setImportErr("Couldn't decode roster data — make sure you copied the full URL."); return; }
+    const migrated = migrateState(state);
+    encodeToUrl(migrated);
+    setLoaded(migrated);
+    setSource("url");
+    setPhase("ready");
+    setAppKey(k => k + 1);
+  };
+
+  if (phase === "landing") return (
+    <>
+      <style>{CSS}</style>
+      <div className="wm">
+        <div style={{ maxWidth:1040, margin:"0 auto", padding:"24px 16px 0" }}>
+          <a href="../../" className="wm-back">← Tools</a>
+        </div>
+        <div className="wm-landing">
+          <div className="wm-landing-icon">🪙</div>
+          <div className="wm-landing-title">Workemon Tracker</div>
+          <div className="wm-landing-desc">
+            Track each Workemon's salary against what they earn in GOLD or EXP, rank the roster by profitability,
+            and simulate year-end raises to see who'd stop being worth keeping. Comes pre-loaded with example data.
+          </div>
+          <button className="wm-btn wm-btn-g wm-btn-lg" onClick={handleCreate}>
+            Start Tracking →
+          </button>
+          <div style={{ margin:"28px 0 0", borderTop:"1px solid #e2e8f0", paddingTop:24 }}>
+            <p style={{ fontSize:13, color:"#64748b", marginBottom:10 }}>Or load an existing roster from a shared link:</p>
+            <div style={{ display:"flex", gap:8 }}>
+              <input
+                className="wm-inp"
+                placeholder="Paste roster URL here…"
+                value={importUrl}
+                onChange={e => { setImportUrl(e.target.value); setImportErr(""); }}
+                onKeyDown={e => e.key === "Enter" && handleLoadUrl()}
+                style={{ flex:1, fontSize:13 }}
+              />
+              <button
+                className="wm-btn wm-btn-g"
+                onClick={handleLoadUrl}
+                disabled={!importUrl.trim()}
+                style={{ whiteSpace:"nowrap" }}
+              >
+                Load →
+              </button>
+            </div>
+            {importErr && <p style={{ fontSize:12, color:"#dc2626", marginTop:8 }}>{importErr}</p>}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  return <MainApp key={appKey} initialData={loadedState || EMPTY} onNew={handleNew} source={loadedSource} />;
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
