@@ -100,13 +100,13 @@ const SPICE = [
   {name: "Inferno",  icon: "🔥", hint: "dragon breath"}
 ];
 const RECIPES = [
-  {id: "fried",   name: "Fried Egg",           em: "🍳", price: 12,  flips: 5, zone: .54, speed: 1.00, need: 0},
-  {id: "omelet",  name: "Cheesy Omelette",     em: "🧀", price: 22,  flips: 5, zone: .52, speed: 1.05, need: 5},
-  {id: "rice",    name: "Egg Fried Rice",      em: "🍚", price: 38,  flips: 6, zone: .50, speed: 1.10, need: 15},
-  {id: "shak",    name: "Shakshuka",           em: "🍅", price: 60,  flips: 6, zone: .48, speed: 1.15, need: 30},
-  {id: "benny",   name: "Eggs Benedict",       em: "🥓", price: 95,  flips: 6, zone: .46, speed: 1.20, need: 55},
-  {id: "souffle", name: "Truffle Soufflé",     em: "🍄", price: 150, flips: 6, zone: .44, speed: 1.25, need: 90},
-  {id: "dragon",  name: "Dragon's Gold Egg",   em: "🐉", price: 400, flips: 7, zone: .42, speed: 1.30, secret: true}
+  {id: "fried",   name: "Fried Egg",           em: "🍳", price: 12,  flips: 4, zone: .60, speed: 1.00, need: 0},
+  {id: "omelet",  name: "Cheesy Omelette",     em: "🧀", price: 22,  flips: 4, zone: .58, speed: 1.05, need: 5},
+  {id: "rice",    name: "Egg Fried Rice",      em: "🍚", price: 38,  flips: 5, zone: .56, speed: 1.10, need: 15},
+  {id: "shak",    name: "Shakshuka",           em: "🍅", price: 60,  flips: 5, zone: .54, speed: 1.15, need: 30},
+  {id: "benny",   name: "Eggs Benedict",       em: "🥓", price: 95,  flips: 5, zone: .52, speed: 1.20, need: 55},
+  {id: "souffle", name: "Truffle Soufflé",     em: "🍄", price: 150, flips: 5, zone: .50, speed: 1.25, need: 90},
+  {id: "dragon",  name: "Dragon's Gold Egg",   em: "🐉", price: 400, flips: 6, zone: .48, speed: 1.30, secret: true}
 ];
 const SECRET_VIP_NEEDED = 3;
 const CHEFS = [
@@ -325,8 +325,8 @@ function startCook() {
   const loop = (t) => {
     if (screen !== "cook") return;
     const dt = Math.min((t - last) / 1000, .05); last = t;
-    const near = Math.abs(cook.pos - cook.target) < r.zone * .75 ? .55 : 1; // ball eases off near the zone
-    const speed = .27 * (1 + cook.done * .01) * r.speed * near;
+    const near = Math.abs(cook.pos - cook.target) < r.zone * .8 ? .4 : 1; // ball eases off near the zone
+    const speed = .2 * (1 + cook.done * .01) * r.speed * near;
     cook.pos += cook.dir * speed * dt;
     if (cook.pos >= 1) { cook.pos = 1; cook.dir = -1; tone(300, .05, "triangle", .08); } else if (cook.pos <= 0) { cook.pos = 0; cook.dir = 1; tone(300, .05, "triangle", .08); }
     const ball = $("#ball"), zone = $("#zone");
@@ -340,7 +340,7 @@ function flip() {
   if (screen !== "cook" || cook.lock) return;
   cook.lock = true; setTimeout(() => { if (cook) cook.lock = false; }, 260);
   const r = cook.recipe, half = r.zone / 2, d = Math.abs(cook.pos - cook.target);
-  const res = d <= half * .9 ? "perfect" : d <= half * 1.6 ? "good" : "miss";
+  const res = d <= half * 1.0 ? "perfect" : d <= half * 1.8 ? "good" : "miss";
   sfx(res);
   cook.pts += res === "perfect" ? 10 : res === "good" ? 7 : 0;
   cook.results.push(res); cook.done++;
