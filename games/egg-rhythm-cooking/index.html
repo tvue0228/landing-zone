@@ -390,6 +390,8 @@ function paint() {
   chef.innerHTML = `<div class="bob">${chefSvg("pan", eggStage(), burns())}</div>`;
   dots.innerHTML = dotsHtml();
   pts.textContent = cook.pts;
+  const z = $("#zone");
+  if (z) z.style.top = ((cook.target - cook.recipe.zone / 2) * 100) + "%";
 }
 function dotsHtml() {
   let h = "";
