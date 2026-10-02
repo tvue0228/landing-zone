@@ -360,7 +360,8 @@ function finishOrder() {
 function hud() {
   const el = $("#hud");
   if (screen === "setup") { el.innerHTML = muteBtn(); return; }
-  el.innerHTML = `<span class="pill gold">💰 ${money(S.cash)}</span><span class="pill">📅 Day ${S.day}</span><span class="pill" title="Reputation">${stars(Math.round(S.rep / 20))}</span>${muteBtn()}`;
+  const home = screen === "hub" ? "" : `<button class="pill" data-act="home" aria-label="Back to the café" style="cursor:pointer">🏠 Home</button>`;
+  el.innerHTML = `${home}<span class="pill gold">💰 ${money(S.cash)}</span><span class="pill">📅 Day ${S.day}</span><span class="pill" title="Reputation">${stars(Math.round(S.rep / 20))}</span>${muteBtn()}`;
 }
 function muteBtn() { return `<button class="pill" data-act="mute" aria-label="Toggle sound" style="cursor:pointer">${muted ? "🔇" : "🔊"}</button>`; }
 
@@ -559,6 +560,11 @@ document.addEventListener("click", (e) => {
   if (a === "cook") return startCook();
   if (a === "next") return day.queue.length ? nextCustomer() : endDay();
   if (a === "hub") { screen = "hub"; return render(); }
+  if (a === "home") {
+    if ((screen === "service" || screen === "cook") && !confirm("Go home? The rest of today's customers will leave.")) return;
+    cancelAnimationFrame(rafId); clearTimers(); cook = null; day = null;
+    screen = "hub"; return render();
+  }
 });
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space" && screen === "cook") { e.preventDefault(); flip(); }
