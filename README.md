@@ -20,7 +20,7 @@ An R&D repo for micro-tools and games. Each project lives in its own directory a
 | [Dressed to Impress](games/dressed-to-impress/) | `games/dressed-to-impress/` | Fashion quiz — pick the perfect outfit for each occasion before time runs out |
 | [Pixel Explorer](games/pixel-explorer/) | `games/pixel-explorer/` | Pixel-art platformer RPG — explore dungeon and jungle levels, fight slimes, goblins, and more |
 | [A Little Adventure for Mia](games/mia-adventure/) | `games/mia-adventure/` | Personalized storybook — 5 illustrated scenes with swipe navigation and sparkle effects |
-| [Egg Rhythm Cooking](games/egg-rhythm-cooking/) | `games/egg-rhythm-cooking/` | Café sim — cook to the beat, match sauces to spice levels, hire chefs, serve VIPs, unlock recipes and a secret dish |
+| [Egg Rhythm Cooking](games/egg-rhythm-cooking/) | `games/egg-rhythm-cooking/` | Café sim — cook to the beat, hire chefs, serve VIPs, unlock recipes and a secret dish |
 
 ## Tools
 

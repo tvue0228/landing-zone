@@ -45,13 +45,6 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:8px
 .chip{padding:2px 10px;border-radius:999px;border:3px solid var(--ink);font-weight:700}
 .vip{display:inline-block;background:linear-gradient(90deg,#fbbf24,#f59e0b);border:3px solid var(--ink);border-radius:999px;padding:0 10px;font-weight:700;font-size:.95rem;transform:rotate(-3deg)}
 .face{font-size:4.5rem;line-height:1}
-.sauces{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%}
-@media(max-width:560px){.sauces{grid-template-columns:repeat(3,1fr)}}
-.sauce{border:4px solid var(--ink);border-radius:1rem;background:#fff;padding:8px 4px;box-shadow:3px 3px 0 var(--ink);font-weight:700;position:relative}
-.sauce:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
-.sauce small{display:block;font-weight:400;font-size:.8rem}
-.sauce.mine::after{content:"your taste";position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#fcd34d;border:2px solid var(--ink);border-radius:999px;font-size:.7rem;padding:0 6px;white-space:nowrap}
-input[type=range]{width:100%;accent-color:#ef4444;height:34px}
 .cookgrid{display:grid;grid-template-columns:7fr 3fr;gap:12px;width:100%}
 .track{position:relative;width:100%;height:min(54vh,440px);min-height:280px;border:4px solid var(--ink);border-radius:2rem;background:#fffdf4;overflow:hidden;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;outline:none}
 .zone{position:absolute;left:4px;right:4px;border-radius:999px;background:#4ade80;border:4px solid #14532d;transition:box-shadow .1s}
@@ -92,13 +85,6 @@ footer{text-align:center;padding:6px 0 20px;color:#737373}
 "use strict";
 /* ---------------- data ---------------- */
 const SAVE_KEY = "egg-rhythm-cooking-v2";
-const SPICE = [
-  {name: "No sauce", icon: "🥚", hint: "plain"},
-  {name: "Mild",     icon: "🌶️", hint: "a drizzle"},
-  {name: "Medium",   icon: "🌶️🌶️", hint: "a kick"},
-  {name: "Hot",      icon: "🌶️🌶️🌶️", hint: "sweaty"},
-  {name: "Inferno",  icon: "🔥", hint: "dragon breath"}
-];
 const RECIPES = [
   {id: "fried",   name: "Fried Egg",           em: "🍳", price: 12,  flips: 5, zone: .57, speed: 1.00, need: 0},
   {id: "omelet",  name: "Cheesy Omelette",     em: "🧀", price: 22,  flips: 5, zone: .55, speed: 1.05, need: 5},
@@ -110,9 +96,9 @@ const RECIPES = [
 ];
 const SECRET_VIP_NEEDED = 3;
 const CHEFS = [
-  {id: "line",  name: "Line Cook",  em: "🧑‍🍳", cost: 150,  wage: 20, skill: 55, sauce: .50},
-  {id: "sous",  name: "Sous Chef",  em: "👩‍🍳", cost: 500,  wage: 60, skill: 70, sauce: .70},
-  {id: "head",  name: "Head Chef",  em: "👨‍🍳", cost: 1500, wage: 150, skill: 85, sauce: .90}
+  {id: "line",  name: "Line Cook",  em: "🧑‍🍳", cost: 150,  wage: 20, skill: 55},
+  {id: "sous",  name: "Sous Chef",  em: "👩‍🍳", cost: 500,  wage: 60, skill: 70},
+  {id: "head",  name: "Head Chef",  em: "👨‍🍳", cost: 1500, wage: 150, skill: 85}
 ];
 const MAX_CHEFS = 6;
 const FACES = ["🧑","👵","🧔","👧","🤠","👨‍🚀","👩‍🎤","🧓","👱‍♀️","🧑‍🎨"];
@@ -127,11 +113,11 @@ const VIPS = [
 
 /* ---------------- save state ---------------- */
 function fresh() {
-  return {spice: null, cash: 0, rep: 50, day: 1, served: 0, vipGood: 0, vipTotal: 0, chefs: [], seen: ["fried"], best: 0};
+  return {started: false, cash: 0, rep: 50, day: 1, served: 0, vipGood: 0, vipTotal: 0, chefs: [], seen: ["fried"], best: 0};
 }
 let S = load();
 function load() {
-  try { const o = JSON.parse(localStorage.getItem(SAVE_KEY)); if (o && typeof o === "object") return Object.assign(fresh(), o); } catch (e) {}
+  try { const o = JSON.parse(localStorage.getItem(SAVE_KEY)); if (o && typeof o === "object") { const f = Object.assign(fresh(), o); if (f.spice != null || f.served > 0) f.started = true; return f; } } catch (e) {}
   return fresh();
 }
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -213,7 +199,7 @@ function chefSvg(holding, stage, burns, em) {
 }
 
 /* ---------------- game logic ---------------- */
-let screen = "setup";           // setup | hub | service | cook | sauce | result | dayend
+let screen = "setup";           // setup | hub | service | cook | result | dayend
 let day = null;                 // current day session
 let cook = null;                // active rhythm session
 let rafId = 0;
@@ -236,8 +222,7 @@ function makeCustomer(forceVip) {
     recipe = pick(list.filter(r => !r.secret));
   }
   const v = vip ? pick(VIPS) : null;
-  const spice = vip ? Math.floor(rnd(0, 5)) : clamp(Math.round(S.spice + rnd(-1.2, 1.2)), 0, 4);
-  return {vip, name: v ? v.name : pick(NAMES), face: v ? v.face : pick(FACES), recipe, spice};
+  return {vip, name: v ? v.name : pick(NAMES), face: v ? v.face : pick(FACES), recipe};
 }
 function startDay() {
   const n = customerCount();
@@ -253,9 +238,8 @@ function nextCustomer() {
 }
 
 /* score a finished order */
-function evaluate(c, score, sauce) {
-  const diff = Math.abs(sauce - c.spice);
-  const q = clamp(score * 0.8 + [20, 10, -5, -15, -25][diff], 0, 100);
+function evaluate(c, score) {
+  const q = clamp(score * 0.8 + 20, 0, 100);
   const st = q >= 88 ? 5 : q >= 72 ? 4 : q >= 52 ? 3 : q >= 32 ? 2 : 1;
   let pay = c.recipe.price * [0.2, 0.5, 0.8, 1, 1.2][st - 1];
   if (st === 5) pay *= 1.25;           // tip
@@ -264,14 +248,12 @@ function evaluate(c, score, sauce) {
   let rep = [-6, -3, 0, 1.5, 3][st - 1];
   if (c.vip) rep *= rep < 0 ? 2 : 1.5;
   let review;
-  if (diff >= 2 && sauce > c.spice) review = pick(["WAY too spicy! My mouth is on fire!", "I asked for less heat...", "Tears. So many tears."]);
-  else if (diff >= 2) review = pick(["Bland. Where's the sauce?!", "Needs way more kick.", "Tastes like nothing, honestly."]);
-  else if (st === 5) review = pick(["Chef's kiss! Best egg ever!", "Perfect cook, perfect sauce!", "I'm telling EVERYONE about this place."]);
+  if (st === 5) review = pick(["Chef's kiss! Best egg ever!", "Perfect cook, perfect plate!", "I'm telling EVERYONE about this place."]);
   else if (st === 4) review = pick(["Really tasty, would come back!", "Nice and crispy. Solid!"]);
   else if (st === 3) review = pick(["It's okay. Decent diner food.", "Not bad, not great."]);
   else if (st === 2) review = pick(["Rubbery and a bit burnt...", "Meh. I've had better."]);
   else review = pick(["Burnt! The smoke alarm is applauding.", "I want my money back!"]);
-  return {st, pay, rep, review, diff, vip: c.vip, customer: c, recipe: c.recipe};
+  return {st, pay, rep, review, vip: c.vip, customer: c, recipe: c.recipe};
 }
 function applyResult(r) {
   S.cash += r.pay; S.rep = clamp(S.rep + r.rep, 0, 100); S.served++; S.best = Math.max(S.best, S.cash);
@@ -286,8 +268,7 @@ function chefsServe() {
     if (!ch || i < 0) return;
     const c = day.queue.splice(i, 1)[0];
     const score = clamp(ch.skill + rnd(-15, 12), 5, 100);
-    const sauce = Math.random() < ch.sauce ? c.spice : clamp(c.spice + (Math.random() < .5 ? -1 : 1), 0, 4);
-    const r = evaluate(c, score, sauce);
+    const r = evaluate(c, score);
     applyResult(r);
     logs.push(`${ch.em} ${ch.name} served ${c.name} a ${c.recipe.name} — ${stars(r.st)} (${money(r.pay)})`);
   });
@@ -352,7 +333,7 @@ function flip() {
     cancelAnimationFrame(rafId);
     cook.score = Math.round(cook.pts / (r.flips * 10) * 100);
     paint();
-    later(() => { screen = "sauce"; render(); }, 1000);
+    later(finishOrder, 1000);
     return;
   }
   do { cook.target = rnd(.16, .84); } while (Math.abs(cook.target - cook.pos) < .3);
@@ -365,6 +346,16 @@ function eggStage() {
 }
 function burns() { return cook.results.filter(x => x === "miss").length; }
 
+function finishOrder() {
+  const r = evaluate(day.current, cook.score);
+  applyResult(r); day.last = r;
+  day.chefLog = chefsServe();
+  day.newUnlocks = checkUnlocks();
+  if (day.newUnlocks.length) sfx("unlock"); else if (r.st >= 4) sfx("cash"); else if (r.st <= 2) sfx("miss");
+  save();
+  screen = "result"; render();
+}
+
 /* ---------------- rendering ---------------- */
 function hud() {
   const el = $("#hud");
@@ -376,9 +367,8 @@ function muteBtn() { return `<button class="pill" data-act="mute" aria-label="To
 function render() {
   hud();
   const app = $("#app");
-  const fn = {setup: vSetup, hub: vHub, service: vService, cook: vCook, sauce: vSauce, result: vResult, dayend: vDayEnd}[screen];
+  const fn = {setup: vSetup, hub: vHub, service: vService, cook: vCook, result: vResult, dayend: vDayEnd}[screen];
   app.innerHTML = fn();
-  if (screen === "setup") bindSetup();
   window.scrollTo({top: 0});
 }
 /* lightweight updates during the rhythm game */
@@ -404,28 +394,19 @@ function dotsHtml() {
 }
 
 function vSetup() {
-  const t = S.spice == null ? 2 : S.spice;
   return `<div class="col center" style="padding-top:8px">
     <div><h2 class="big"><span class="wig">Egg Rhythm Café!</span></h2><p style="font-size:1.3rem">Cook to the beat, run a restaurant, impress the VIPs.</p></div>
     <div class="grid2">
       <div class="card bob">${chefSvg("pan", 0, 0)}</div>
       <div class="card" style="text-align:left;display:flex;flex-direction:column;gap:10px;justify-content:center">
-        <h3 style="font-size:1.6rem">🌶️ What's your spice tolerance?</h3>
-        <p class="muted">Your palate shapes your café — customers tend to crave heat levels close to yours.</p>
-        <input id="spice" type="range" min="0" max="4" step="1" value="${t}" aria-label="Spice tolerance">
-        <div id="spiceLbl" class="center" style="font-size:1.4rem;font-weight:700"></div>
-        <div class="muted" style="font-size:1rem">
-          <b>How to play:</b> tap <b>FLIP!</b> (or press <b>SPACE</b>) when the ball is in the <b style="color:#16a34a">green zone</b>. Then pick a sauce that matches what your customer wants. Great food earns cash and reputation — burnt or badly-sauced plates mean bad reviews and fewer customers.
-        </div>
+        <h3 style="font-size:1.6rem">How to play</h3>
+        <p>Tap <b>FLIP!</b> (or press <b>SPACE</b>) when the ball is in the <b style="color:#16a34a">green zone</b> to cook each order.</p>
+        <p>Great food earns cash and reputation. Burnt plates mean bad reviews and fewer customers.</p>
+        <p>Hire chefs to help, unlock new recipes the more you serve, and cook for VIPs to find the secret recipe.</p>
       </div>
     </div>
-    <button class="btn" data-act="begin">${S.served > 0 ? "Save spice & back to café" : "Open my café!"}</button>
+    <button class="btn" data-act="begin">Open my café!</button>
   </div>`;
-}
-function bindSetup() {
-  const r = $("#spice"), l = $("#spiceLbl");
-  const up = () => { const s = SPICE[+r.value]; l.textContent = `${s.icon} ${s.name}`; };
-  r.addEventListener("input", up); up();
 }
 
 function vHub() {
@@ -448,7 +429,6 @@ function vHub() {
       <span class="chip" style="background:#fff">Reputation <span class="bar" style="display:inline-block;width:110px;height:12px;vertical-align:middle"><i style="width:${S.rep}%"></i></span> ${Math.round(S.rep)}%</span>
       <span class="chip" style="background:#fff">🍽️ ${S.served} served</span>
       <span class="chip" style="background:#fff">👑 ${S.vipTotal} VIPs</span>
-      <span class="chip" style="background:#fff">Spice: ${SPICE[S.spice].icon} ${SPICE[S.spice].name}</span>
     </div>
     <div class="card center" style="width:100%">
       <h2 style="font-size:1.8rem">Day ${S.day} — about ${customerCount()} customers expected</h2>
@@ -458,7 +438,7 @@ function vHub() {
     <div class="grid2">
       <div class="card"><h3 style="font-size:1.4rem;margin-bottom:8px">📖 Menu (${nUnlocked}/${RECIPES.length})</h3><div style="display:grid;gap:8px">${recipeCards}</div></div>
       <div class="card"><h3 style="font-size:1.4rem;margin-bottom:8px">👩‍🍳 Hire help</h3>${chefRows}${rosterHtml}
-        <div class="row" style="margin-top:12px"><button class="btn sm" data-act="spice">🌶️ Change spice tolerance</button><button class="btn sm red" data-act="reset">Reset game</button></div>
+        <div class="row" style="margin-top:12px"><button class="btn sm red" data-act="reset">Reset game</button></div>
       </div>
     </div>
   </div>`;
@@ -470,7 +450,6 @@ function custCard(c) {
     <div class="face bob">${c.face}</div>
     <h3 style="font-size:1.6rem">${c.name}</h3>
     <p style="font-size:1.3rem;margin-top:4px">Orders: <b>${c.recipe.em} ${c.recipe.name}</b></p>
-    <p style="font-size:1.2rem">Likes it: <b>${SPICE[c.spice].icon} ${SPICE[c.spice].name}</b></p>
     <p class="muted">Pays up to ${money(c.recipe.price * (c.vip ? 2.5 : 1) * 1.25)}</p>
   </div>`;
 }
@@ -507,19 +486,6 @@ function vCook() {
         <span class="muted" style="font-size:.9rem;margin-top:-6px">…or press SPACE</span>
       </div>
     </div>
-  </div>`;
-}
-function vSauce() {
-  const c = day.current, tol = S.spice;
-  const score = cook.score;
-  return `<div class="col center">
-    <h2 class="big">Add the sauce!</h2>
-    <div class="row" style="align-items:flex-start">
-      ${custCard(c)}
-      <div class="card" style="width:200px"><div style="transform:scale(1.05)">${chefSvg("plate", eggStage(), burns())}</div><p><b>Cook score ${score}</b></p></div>
-    </div>
-    <p style="font-size:1.3rem">${c.name} likes: <b>${SPICE[c.spice].icon} ${SPICE[c.spice].name}</b></p>
-    <div class="sauces">${SPICE.map((s, i) => `<button class="sauce ${i === tol ? "mine" : ""}" data-act="sauce" data-lvl="${i}"><div style="font-size:1.5rem">${s.icon}</div>${s.name}<small>${s.hint}</small></button>`).join("")}</div>
   </div>`;
 }
 function vResult() {
@@ -580,10 +546,9 @@ document.addEventListener("click", (e) => {
   if (a === "flip") return; // handled on pointerdown
   if (a === "mute") { muted = !muted; if (master) master.gain.value = muted ? 0 : .4; if (!muted) tone(740, .1, "triangle", .2); return render(); }
   if (a === "begin") {
-    const r = $("#spice"); if (r) S.spice = +r.value;
+    S.started = true;
     save(); screen = "hub"; return render();
   }
-  if (a === "spice") { screen = "setup"; return render(); }
   if (a === "reset") { if (confirm("Reset all progress?")) { S = fresh(); save(); screen = "setup"; render(); } return; }
   if (a === "hire") {
     const c = CHEFS.find(x => x.id === b.dataset.id);
@@ -592,16 +557,6 @@ document.addEventListener("click", (e) => {
   }
   if (a === "open") { try { audio(); } catch (er) {} return startDay(); }
   if (a === "cook") return startCook();
-  if (a === "sauce") {
-    const lvl = +b.dataset.lvl, c = day.current;
-    const r = evaluate(c, cook.score, lvl);
-    applyResult(r); day.last = r;
-    day.chefLog = chefsServe();
-    day.newUnlocks = checkUnlocks();
-    if (day.newUnlocks.length) sfx("unlock"); else if (r.st >= 4) sfx("cash"); else if (r.st <= 2) sfx("miss");
-    save();
-    screen = "result"; return render();
-  }
   if (a === "next") return day.queue.length ? nextCustomer() : endDay();
   if (a === "hub") { screen = "hub"; return render(); }
 });
@@ -610,7 +565,7 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "Enter" && screen === "cook" && document.activeElement && document.activeElement.id === "track") { e.preventDefault(); flip(); }
 });
 
-screen = S.spice == null ? "setup" : "hub";
+screen = S.started ? "hub" : "setup";
 render();
 </script>
 </body>
