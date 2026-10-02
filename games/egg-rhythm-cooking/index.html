@@ -100,13 +100,13 @@ const SPICE = [
   {name: "Inferno",  icon: "🔥", hint: "dragon breath"}
 ];
 const RECIPES = [
-  {id: "fried",   name: "Fried Egg",           em: "🍳", price: 12,  flips: 6,  zone: .26, speed: 1.00, need: 0},
-  {id: "omelet",  name: "Cheesy Omelette",     em: "🧀", price: 22,  flips: 7,  zone: .23, speed: 1.08, need: 5},
-  {id: "rice",    name: "Egg Fried Rice",      em: "🍚", price: 38,  flips: 8,  zone: .21, speed: 1.16, need: 15},
-  {id: "shak",    name: "Shakshuka",           em: "🍅", price: 60,  flips: 9,  zone: .19, speed: 1.24, need: 30},
-  {id: "benny",   name: "Eggs Benedict",       em: "🥓", price: 95,  flips: 10, zone: .17, speed: 1.32, need: 55},
-  {id: "souffle", name: "Truffle Soufflé",     em: "🍄", price: 150, flips: 11, zone: .15, speed: 1.40, need: 90},
-  {id: "dragon",  name: "Dragon's Gold Egg",   em: "🐉", price: 400, flips: 12, zone: .13, speed: 1.50, secret: true}
+  {id: "fried",   name: "Fried Egg",           em: "🍳", price: 12,  flips: 6,  zone: .30, speed: 1.00, need: 0},
+  {id: "omelet",  name: "Cheesy Omelette",     em: "🧀", price: 22,  flips: 7,  zone: .27, speed: 1.05, need: 5},
+  {id: "rice",    name: "Egg Fried Rice",      em: "🍚", price: 38,  flips: 8,  zone: .25, speed: 1.10, need: 15},
+  {id: "shak",    name: "Shakshuka",           em: "🍅", price: 60,  flips: 9,  zone: .23, speed: 1.15, need: 30},
+  {id: "benny",   name: "Eggs Benedict",       em: "🥓", price: 95,  flips: 10, zone: .21, speed: 1.20, need: 55},
+  {id: "souffle", name: "Truffle Soufflé",     em: "🍄", price: 150, flips: 11, zone: .19, speed: 1.25, need: 90},
+  {id: "dragon",  name: "Dragon's Gold Egg",   em: "🐉", price: 400, flips: 12, zone: .17, speed: 1.30, secret: true}
 ];
 const SECRET_VIP_NEEDED = 3;
 const CHEFS = [
@@ -316,7 +316,7 @@ function endDay() {
 /* ---------------- rhythm mini game ---------------- */
 function startCook() {
   const r = day.current.recipe;
-  cook = {recipe: r, pos: .5, dir: 1, target: rnd(.2, .8), done: 0, pts: 0, results: [], lock: false, fb: null, particles: [], pid: 1};
+  cook = {recipe: r, pos: .5, dir: 1, target: rnd(.15, .35), done: 0, pts: 0, results: [], lock: false, fb: null, particles: [], pid: 1};
   clearTimers();
   sfx("start");
   screen = "cook"; render();
@@ -325,9 +325,9 @@ function startCook() {
   const loop = (t) => {
     if (screen !== "cook") return;
     const dt = Math.min((t - last) / 1000, .05); last = t;
-    const speed = (1 + cook.done * .05) * r.speed;
+    const speed = .7 * (1 + cook.done * .03) * r.speed;
     cook.pos += cook.dir * speed * dt;
-    if (cook.pos >= 1) { cook.pos = 1; cook.dir = -1; } else if (cook.pos <= 0) { cook.pos = 0; cook.dir = 1; }
+    if (cook.pos >= 1) { cook.pos = 1; cook.dir = -1; tone(300, .05, "triangle", .08); } else if (cook.pos <= 0) { cook.pos = 0; cook.dir = 1; tone(300, .05, "triangle", .08); }
     const ball = $("#ball"), zone = $("#zone");
     if (ball) ball.style.top = (cook.pos * 100) + "%";
     if (zone) zone.style.boxShadow = Math.abs(cook.pos - cook.target) <= r.zone / 2 ? "0 0 20px 5px rgba(34,197,94,.85)" : "none";
@@ -339,7 +339,7 @@ function flip() {
   if (screen !== "cook" || cook.lock) return;
   cook.lock = true; setTimeout(() => { if (cook) cook.lock = false; }, 260);
   const r = cook.recipe, half = r.zone / 2, d = Math.abs(cook.pos - cook.target);
-  const res = d <= half * .45 ? "perfect" : d <= half ? "good" : "miss";
+  const res = d <= half * .5 ? "perfect" : d <= half ? "good" : "miss";
   sfx(res);
   cook.pts += res === "perfect" ? 10 : res === "good" ? 7 : 0;
   cook.results.push(res); cook.done++;
@@ -354,7 +354,7 @@ function flip() {
     later(() => { screen = "sauce"; render(); }, 1000);
     return;
   }
-  cook.target = rnd(.16, .84);
+  do { cook.target = rnd(.16, .84); } while (Math.abs(cook.target - cook.pos) < .3);
   paint();
   later(() => { if (cook) { cook.particles = []; cook.shake = false; } }, 1000);
 }
