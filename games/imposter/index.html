@@ -230,6 +230,10 @@ function App() {
   const [accusedId, setAccusedId] = useState(null);
 
   const nameInputRef = useRef(null);
+  // Per-session memory (cleared when the tab closes): words already played, and how often each player was Imposter
+  const readSession = (k, d) => { try { return JSON.parse(sessionStorage.getItem(k)) || d; } catch (e) { return d; } };
+  const usedWordsRef = useRef(readSession('imposter:used', []));
+  const impCountsRef = useRef(readSession('imposter:counts', {}));
 
   // ── Setup ──────────────────────────────────────────────────────────────────
   const toggleCat = (key) => {
@@ -258,24 +262,35 @@ function App() {
   const removeName = (n) => setNames(prev => prev.filter(x => x !== n));
 
   const startGame = () => {
-    // Pick category + word
-    let cat, w, pic = '';
-    if (kidsMode) {
-      cat = pickRandom(KIDS_KEYS);
-      [pic, w] = pickRandom(KIDS_CATEGORIES[cat]);
-    } else {
-      const catPool = selectedCats.includes('__random__') ? CAT_KEYS : selectedCats;
-      cat = pickRandom(catPool);
-      w = pickRandom(CATEGORIES[cat]);
+    // Pick a word that hasn't come up yet this session
+    const candidates = kidsMode
+      ? KIDS_KEYS.flatMap(c => KIDS_CATEGORIES[c].map(([p, n]) => ({ cat: c, w: n, pic: p })))
+      : (selectedCats.includes('__random__') ? CAT_KEYS : selectedCats)
+          .flatMap(c => CATEGORIES[c].map(n => ({ cat: c, w: n, pic: '' })));
+    const key = c => `${c.cat}|${c.w}`;
+    const usedWords = new Set(usedWordsRef.current);
+    let fresh = candidates.filter(c => !usedWords.has(key(c)));
+    if (!fresh.length) { // everything in this pool has been played — start over
+      candidates.forEach(c => usedWords.delete(key(c)));
+      fresh = candidates;
     }
+    const { cat, w, pic } = pickRandom(fresh);
+    usedWords.add(key({ cat, w }));
+    usedWordsRef.current = [...usedWords];
 
-    // Assign roles
-    const shuffled = shuffle(names);
-    const assigned = shuffled.map((name, i) => ({
-      id: i, name, role: i < imposterCount ? 'imposter' : 'townsfolk', alive: true,
+    // Fair imposters: whoever has been imposter the fewest times goes first (ties random)
+    const counts = impCountsRef.current;
+    const byTurns = shuffle(names).sort((a, b) => (counts[a] || 0) - (counts[b] || 0));
+    const imposterNames = new Set(byTurns.slice(0, imposterCount));
+    imposterNames.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
+    try {
+      sessionStorage.setItem('imposter:used', JSON.stringify(usedWordsRef.current));
+      sessionStorage.setItem('imposter:counts', JSON.stringify(counts));
+    } catch (e) {}
+
+    const finalPlayers = shuffle(names).map((name, i) => ({
+      id: i, name, role: imposterNames.has(name) ? 'imposter' : 'townsfolk', alive: true,
     }));
-    // Re-shuffle so imposter index isn't predictable
-    const finalPlayers = shuffle(assigned).map((p, i) => ({ ...p, id: i }));
 
     setPlayers(finalPlayers);
     setCategory(cat);
