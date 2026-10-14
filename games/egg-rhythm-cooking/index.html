@@ -96,9 +96,9 @@ const RECIPES = [
 ];
 const SECRET_VIP_NEEDED = 3;
 const CHEFS = [
-  {id: "line",  name: "Line Cook",  em: "🧑‍🍳", cost: 150,  wage: 20, skill: 55},
-  {id: "sous",  name: "Sous Chef",  em: "👩‍🍳", cost: 500,  wage: 60, skill: 70},
-  {id: "head",  name: "Head Chef",  em: "👨‍🍳", cost: 1500, wage: 150, skill: 85}
+  {id: "line",  name: "Line Cook",  em: "🧑‍🍳", cost: 200,  wage: 30, skill: 55},
+  {id: "sous",  name: "Sous Chef",  em: "👩‍🍳", cost: 650,  wage: 80, skill: 70},
+  {id: "head",  name: "Head Chef",  em: "👨‍🍳", cost: 1800, wage: 190, skill: 85}
 ];
 const MAX_CHEFS = 6;
 const FACES = ["🧑","👵","🧔","👧","🤠","👨‍🚀","👩‍🎤","🧓","👱‍♀️","🧑‍🎨"];
@@ -111,9 +111,26 @@ const VIPS = [
   {name: "Sultan Saffron",    face: "🤴"}
 ];
 
+/* ---------------- rebirth gifts ---------------- */
+const REBIRTH_NEED = 30;   // customers served before you can be reborn
+const GIFTS = [
+  {em: "🍳", name: "Lucky Pan",     desc: "+10% pay on every order"},
+  {em: "💰", name: "Starter Fund",  desc: "start each life with +$150"},
+  {em: "🧢", name: "Chef's Hat",    desc: "start with +5 reputation"},
+  {em: "🎯", name: "Steady Hand",   desc: "green zones 5% bigger"},
+  {em: "🧑‍🍳", name: "Free Line Cook", desc: "a line cook joins you for free"}
+];
+function giftCount(i) { // how many times gift i has been earned
+  let n = 0;
+  for (let k = 1; k <= S.rebirths; k++) if ((k - 1) % GIFTS.length === i) n++;
+  return n;
+}
+const payBonus = () => 1 + .1 * giftCount(0);
+const zoneBonus = () => 1 + .05 * giftCount(3);
+
 /* ---------------- save state ---------------- */
 function fresh() {
-  return {started: false, cash: 0, rep: 50, day: 1, served: 0, vipGood: 0, vipTotal: 0, chefs: [], seen: ["fried"], best: 0};
+  return {rebirths: 0, started: false, cash: 0, rep: 50, day: 1, served: 0, vipGood: 0, vipTotal: 0, chefs: [], seen: ["fried"], best: 0};
 }
 let S = load();
 function load() {
@@ -240,12 +257,12 @@ function nextCustomer() {
 /* score a finished order */
 function evaluate(c, score) {
   const q = clamp(score * 0.8 + 20, 0, 100);
-  const st = q >= 88 ? 5 : q >= 72 ? 4 : q >= 52 ? 3 : q >= 32 ? 2 : 1;
+  const st = q >= 90 ? 5 : q >= 76 ? 4 : q >= 58 ? 3 : q >= 38 ? 2 : 1;
   let pay = c.recipe.price * [0.2, 0.5, 0.8, 1, 1.2][st - 1];
   if (st === 5) pay *= 1.25;           // tip
   if (c.vip) pay *= 2.5;
-  pay = Math.round(pay);
-  let rep = [-6, -3, 0, 1.5, 3][st - 1];
+  pay = Math.round(pay * payBonus());
+  let rep = [-7, -4, -1, 1.5, 3][st - 1];
   if (c.vip) rep *= rep < 0 ? 2 : 1.5;
   let review;
   if (st === 5) review = pick(["Chef's kiss! Best egg ever!", "Perfect cook, perfect plate!", "I'm telling EVERYONE about this place."]);
@@ -297,7 +314,7 @@ function endDay() {
 /* ---------------- rhythm mini game ---------------- */
 function startCook() {
   const r = day.current.recipe;
-  cook = {recipe: r, pos: .5, dir: 1, target: rnd(.15, .35), done: 0, pts: 0, results: [], lock: false, fb: null, particles: [], pid: 1};
+  cook = {zone: Math.min(.8, r.zone * zoneBonus()), recipe: r, pos: .5, dir: 1, target: rnd(.15, .35), done: 0, pts: 0, results: [], lock: false, fb: null, particles: [], pid: 1};
   clearTimers();
   sfx("start");
   screen = "cook"; render();
@@ -306,13 +323,13 @@ function startCook() {
   const loop = (t) => {
     if (screen !== "cook") return;
     const dt = Math.min((t - last) / 1000, .05); last = t;
-    const near = Math.abs(cook.pos - cook.target) < r.zone * .5 ? .85 : 1; // ball eases off near the zone
-    const speed = .6 * (1 + cook.done * .03) * r.speed * near;
+    const near = Math.abs(cook.pos - cook.target) < cook.zone * .5 ? .85 : 1; // ball eases off near the zone
+    const speed = .6 * (1 + cook.done * .035) * r.speed * near;
     cook.pos += cook.dir * speed * dt;
     if (cook.pos >= 1) { cook.pos = 1; cook.dir = -1; tone(300, .05, "triangle", .08); } else if (cook.pos <= 0) { cook.pos = 0; cook.dir = 1; tone(300, .05, "triangle", .08); }
     const ball = $("#ball"), zone = $("#zone");
     if (ball) ball.style.top = (cook.pos * 100) + "%";
-    if (zone) zone.style.boxShadow = Math.abs(cook.pos - cook.target) <= r.zone / 2 ? "0 0 20px 5px rgba(34,197,94,.85)" : "none";
+    if (zone) zone.style.boxShadow = Math.abs(cook.pos - cook.target) <= cook.zone / 2 ? "0 0 20px 5px rgba(34,197,94,.85)" : "none";
     rafId = requestAnimationFrame(loop);
   };
   rafId = requestAnimationFrame(loop);
@@ -320,7 +337,7 @@ function startCook() {
 function flip() {
   if (screen !== "cook" || cook.lock || cook.done >= cook.recipe.flips) return;
   cook.lock = true; setTimeout(() => { if (cook) cook.lock = false; }, 260);
-  const r = cook.recipe, half = r.zone / 2, d = Math.abs(cook.pos - cook.target);
+  const r = cook.recipe, half = cook.zone / 2, d = Math.abs(cook.pos - cook.target);
   const res = d <= half * .55 ? "perfect" : d <= half * 1.1 ? "good" : "miss";
   sfx(res);
   cook.pts += res === "perfect" ? 10 : res === "good" ? 7 : 0;
@@ -383,7 +400,7 @@ function paint() {
   dots.innerHTML = dotsHtml();
   pts.textContent = cook.pts;
   const z = $("#zone");
-  if (z) z.style.top = ((cook.target - cook.recipe.zone / 2) * 100) + "%";
+  if (z) z.style.top = ((cook.target - cook.zone / 2) * 100) + "%";
 }
 function dotsHtml() {
   let h = "";
@@ -430,16 +447,19 @@ function vHub() {
       <span class="chip" style="background:#fff">Reputation <span class="bar" style="display:inline-block;width:110px;height:12px;vertical-align:middle"><i style="width:${S.rep}%"></i></span> ${Math.round(S.rep)}%</span>
       <span class="chip" style="background:#fff">🍽️ ${S.served} served</span>
       <span class="chip" style="background:#fff">👑 ${S.vipTotal} VIPs</span>
+      ${S.rebirths ? `<span class="chip" style="background:#fef3c7">✨ Rebirth ${S.rebirths}</span>` : ""}
     </div>
     <div class="card center" style="width:100%">
       <h2 style="font-size:1.8rem">Day ${S.day} — about ${customerCount()} customers expected</h2>
       <p class="muted" style="margin:4px 0 12px">${S.rep >= 70 ? "Word is out — the café is buzzing!" : S.rep >= 40 ? "Steady business." : "Bad reviews are keeping people away. Cook better!"}</p>
       <button class="btn" data-act="open">🍳 Open for business!</button>
     </div>
+    ${S.rebirths ? `<div class="card" style="width:100%"><h3 style="font-size:1.4rem;margin-bottom:8px">🎁 Rebirth gifts</h3><div class="row" style="justify-content:flex-start">${GIFTS.map((g, i) => giftCount(i) ? `<span class="chip" style="background:#fef3c7">${g.em} ${g.name} ×${giftCount(i)} — ${g.desc}</span>` : "").join("")}</div></div>` : ""}
     <div class="grid2">
       <div class="card"><h3 style="font-size:1.4rem;margin-bottom:8px">📖 Menu (${nUnlocked}/${RECIPES.length})</h3><div style="display:grid;gap:8px">${recipeCards}</div></div>
       <div class="card"><h3 style="font-size:1.4rem;margin-bottom:8px">👩‍🍳 Hire help</h3>${chefRows}${rosterHtml}
-        <div class="row" style="margin-top:12px"><button class="btn sm red" data-act="reset">Reset game</button></div>
+        <div class="row" style="margin-top:12px"><button class="btn sm ${S.served >= REBIRTH_NEED ? "" : "gray"}" data-act="rebirth" ${S.served >= REBIRTH_NEED ? "" : "disabled"}>✨ Rebirth</button></div>
+        <p class="muted" style="font-size:.9rem;text-align:center;margin-top:6px">${S.served >= REBIRTH_NEED ? "Start over and earn a permanent gift!" : `Rebirth unlocks after ${REBIRTH_NEED} customers served (${S.served}/${REBIRTH_NEED}).`}</p>
       </div>
     </div>
   </div>`;
@@ -480,7 +500,7 @@ function vCook() {
       <div class="card col" style="gap:10px;padding:10px">
         <b style="font-size:1.4rem">RHYTHM</b>
         <div class="track" id="track" tabindex="0" role="button" aria-label="Rhythm bar">
-          <div class="zone" id="zone" style="top:${(cook.target - r.zone / 2) * 100}%;height:${r.zone * 100}%"></div>
+          <div class="zone" id="zone" style="top:${(cook.target - cook.zone / 2) * 100}%;height:${cook.zone * 100}%"></div>
           <div class="ball" id="ball" style="top:${cook.pos * 100}%"><i></i><b></b></div>
         </div>
         <button class="btn" data-act="flip" style="width:100%;padding:8px">FLIP!</button>
@@ -550,7 +570,16 @@ document.addEventListener("click", (e) => {
     S.started = true;
     save(); screen = "hub"; return render();
   }
-  if (a === "reset") { if (confirm("Reset all progress?")) { S = fresh(); save(); screen = "setup"; render(); } return; }
+  if (a === "rebirth") {
+    if (S.served < REBIRTH_NEED) return;
+    const gift = GIFTS[S.rebirths % GIFTS.length];
+    if (!confirm(`Be reborn? Your cash, days, recipes, reputation and chefs reset, but you keep your gifts and earn a new one: ${gift.em} ${gift.name} (${gift.desc}).`)) return;
+    const n = S.rebirths + 1;
+    S = fresh(); S.rebirths = n; S.started = true;
+    S.cash = 150 * giftCount(1); S.rep = clamp(50 + 5 * giftCount(2), 0, 100);
+    S.chefs = Array(giftCount(4)).fill("line").slice(0, MAX_CHEFS);
+    sfx("unlock"); save(); day = null; cook = null; screen = "hub"; render(); return;
+  }
   if (a === "hire") {
     const c = CHEFS.find(x => x.id === b.dataset.id);
     if (c && S.cash >= c.cost && S.chefs.length < MAX_CHEFS) { S.cash -= c.cost; S.chefs.push(c.id); sfx("cash"); save(); render(); }
