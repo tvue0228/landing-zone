@@ -116,6 +116,15 @@ const CATEGORIES = {
   '🌟 Famous People': ['Albert Einstein','Michael Jordan','Taylor Swift','Elon Musk','Barack Obama','Beyoncé','LeBron James','Cristiano Ronaldo','Oprah Winfrey','Leonardo DiCaprio','Serena Williams','Lady Gaga','Steve Jobs','Kobe Bryant','Marilyn Monroe'],
 };
 
+// Kids mode: every word is a picture (emoji) so little kids don't need to read
+const KIDS_CATEGORIES = {
+  '🐶 Animals': [['🐶','Dog'],['🐱','Cat'],['🐘','Elephant'],['🦁','Lion'],['🐧','Penguin'],['🐸','Frog'],['🐵','Monkey'],['🐮','Cow'],['🐷','Pig'],['🐰','Rabbit'],['🐻','Bear'],['🦒','Giraffe'],['🐢','Turtle'],['🐟','Fish'],['🦆','Duck']],
+  '🍎 Food': [['🍎','Apple'],['🍌','Banana'],['🍕','Pizza'],['🍦','Ice Cream'],['🍪','Cookie'],['🍓','Strawberry'],['🥕','Carrot'],['🍔','Burger'],['🍩','Donut'],['🍉','Watermelon'],['🍿','Popcorn'],['🧀','Cheese'],['🍇','Grapes'],['🥚','Egg'],['🍞','Bread']],
+  '🚗 Things That Go': [['🚗','Car'],['🚌','Bus'],['🚂','Train'],['✈️','Airplane'],['🚁','Helicopter'],['🚲','Bicycle'],['🚀','Rocket'],['⛵','Boat'],['🚒','Fire Truck'],['🚜','Tractor'],['🛴','Scooter'],['🚑','Ambulance'],['🏍️','Motorcycle'],['🚓','Police Car'],['🎈','Balloon']],
+  '🧸 Fun Stuff': [['🧸','Teddy Bear'],['⚽','Soccer Ball'],['🎂','Birthday Cake'],['🌈','Rainbow'],['☀️','Sun'],['🌙','Moon'],['⭐','Star'],['🏠','House'],['🎸','Guitar'],['📚','Book'],['🎨','Paint'],['☂️','Umbrella'],['👑','Crown'],['🪁','Kite'],['⛄','Snowman']],
+};
+const KIDS_KEYS = Object.keys(KIDS_CATEGORIES);
+
 const CAT_KEYS = Object.keys(CATEGORIES);
 
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -190,16 +199,19 @@ function App() {
     return c.length ? c : ['__random__']; // '__random__' or specific keys
   });
   const [imposterCount, setImposterCount] = useState(saved.imposterCount || 1);
+  const [kidsMode, setKidsMode] = useState(!!saved.kidsMode);
 
   // Remember setup (players + options) across reloads
   useEffect(() => {
-    try { localStorage.setItem('imposter:setup', JSON.stringify({ names, selectedCats, imposterCount })); } catch (e) {}
-  }, [names, selectedCats, imposterCount]);
+    try { localStorage.setItem('imposter:setup', JSON.stringify({ names, selectedCats, imposterCount, kidsMode })); } catch (e) {}
+  }, [names, selectedCats, imposterCount, kidsMode]);
 
   // Game
   const [players, setPlayers] = useState([]);
   const [category, setCategory] = useState('');
   const [word, setWord] = useState('');
+  const [wordPic, setWordPic] = useState(''); // emoji picture (kids mode only)
+  const wordLabel = wordPic ? `${wordPic} ${word}` : word;
   const [round, setRound] = useState(1);
   const [winner, setWinner] = useState(null); // 'town' | 'imposter'
   const [winReason, setWinReason] = useState('');
@@ -247,9 +259,15 @@ function App() {
 
   const startGame = () => {
     // Pick category + word
-    const catPool = selectedCats.includes('__random__') ? CAT_KEYS : selectedCats;
-    const cat = pickRandom(catPool);
-    const w = pickRandom(CATEGORIES[cat]);
+    let cat, w, pic = '';
+    if (kidsMode) {
+      cat = pickRandom(KIDS_KEYS);
+      [pic, w] = pickRandom(KIDS_CATEGORIES[cat]);
+    } else {
+      const catPool = selectedCats.includes('__random__') ? CAT_KEYS : selectedCats;
+      cat = pickRandom(catPool);
+      w = pickRandom(CATEGORIES[cat]);
+    }
 
     // Assign roles
     const shuffled = shuffle(names);
@@ -262,6 +280,7 @@ function App() {
     setPlayers(finalPlayers);
     setCategory(cat);
     setWord(w);
+    setWordPic(pic);
     setRound(1);
     setWinner(null);
     setWinReason('');
@@ -334,7 +353,7 @@ function App() {
       addToFeed(
         msg('event', `${accused.name} was accused — but they were innocent!`, { icon: '😱', color: 'var(--imposter)' }),
         msg('event', `The Imposters get away: ${imposters.map(p => p.name).join(', ')}`, { icon: '🔪', color: 'var(--imposter)' }),
-        msg('event', `The word was: ${word}`, { icon: '💬', color: 'var(--text2)' })
+        msg('event', `The word was: ${wordLabel}`, { icon: '💬', color: 'var(--text2)' })
       );
       endGame('imposter', `${accused.name} was wrongly accused`);
     }
@@ -345,7 +364,7 @@ function App() {
     addToFeed(
       msg('event', `No consensus reached — the Imposter escapes!`, { icon: '🌫️', color: 'var(--imposter)' }),
       msg('event', `The Imposters: ${imposters.map(p => p.name).join(', ')}`, { icon: '🔪', color: 'var(--imposter)' }),
-      msg('event', `The word was: ${word}`, { icon: '💬', color: 'var(--text2)' })
+      msg('event', `The word was: ${wordLabel}`, { icon: '💬', color: 'var(--text2)' })
     );
     endGame('imposter', 'Town failed to agree on a suspect');
   };
@@ -354,14 +373,14 @@ function App() {
   const submitGuess = (correct) => {
     if (correct) {
       addToFeed(
-        msg('event', `Correct! The word was "${word}"`, { icon: '✅', color: 'var(--imposter)' }),
+        msg('event', `Correct! The word was "${wordLabel}"`, { icon: '✅', color: 'var(--imposter)' }),
         msg('event', imposterRevealMode ? 'Imposter guessed before being caught!' : 'Imposter guessed correctly and escapes!', { icon: '🔪', color: 'var(--imposter)' })
       );
       endGame('imposter', imposterRevealMode ? 'Self-revealed and guessed the word' : 'Caught but guessed the word correctly');
     } else {
       const accused = accusedId !== null ? players.find(p => p.id === accusedId) : null;
       addToFeed(
-        msg('event', `Wrong! The word was "${word}"`, { icon: '❌', color: 'var(--town)' }),
+        msg('event', `Wrong! The word was "${wordLabel}"`, { icon: '❌', color: 'var(--town)' }),
         msg('event', accused ? `${accused.name} is eliminated. Town wins!` : 'Town wins!', { icon: '⚖️', color: 'var(--town)' })
       );
       endGame('town', accusedId !== null ? 'Imposter was caught and failed to guess the word' : 'Imposter guessed wrong');
@@ -408,6 +427,7 @@ function App() {
           allPlayers={players}
           category={category}
           word={word}
+          wordPic={wordPic}
           roleShown={roleShown}
           isLast={revealIdx === players.length - 1}
           onShow={() => setRoleShown(true)}
@@ -420,6 +440,9 @@ function App() {
           selfReveal={imposterRevealMode}
           accused={accusedId !== null ? players.find(p => p.id === accusedId) : null}
           category={category}
+          kidsMode={kidsMode}
+          word={word}
+          wordPic={wordPic}
           onSubmit={submitGuess}
         />
       )}
@@ -430,6 +453,7 @@ function App() {
           winReason={winReason}
           players={players}
           word={word}
+          wordPic={wordPic}
           category={category}
           onNextRound={() => {
             addToFeed(msg('divider', '— Next Round —'));
@@ -456,6 +480,8 @@ function App() {
           imposterCount={imposterCount}
           setImposterCount={setImposterCount}
           canStart={canStart}
+          kidsMode={kidsMode}
+          setKidsMode={setKidsMode}
           onStart={startGame}
         />
       )}
@@ -489,7 +515,7 @@ function App() {
 // ── SetupBar ───────────────────────────────────────────────────────────────────
 function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemove,
                     selectedCats, onToggleCat, imposterCount, setImposterCount,
-                    canStart, onStart }) {
+                    canStart, kidsMode, setKidsMode, onStart }) {
   const [showConfig, setShowConfig] = useState(false);
   const maxImp = Math.max(1, names.length - 2);
 
@@ -506,7 +532,7 @@ function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemov
       {names.length >= 3 && (
         <div>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowConfig(v => !v)}>
-            {showConfig ? '▲ Hide settings' : `⚙ Settings · ${imposterCount} Imposter`}
+            {showConfig ? '▲ Hide settings' : `⚙ Settings · ${imposterCount} Imposter${kidsMode ? ' · 🧒 Kids' : ''}`}
           </button>
           {showConfig && (
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -522,8 +548,16 @@ function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemov
                 </div>
               </div>
 
-              {/* Category picker */}
+              {/* Kids mode */}
               <div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>KIDS MODE</div>
+                <button className={`cat-btn${kidsMode ? ' active' : ''}`} style={{ width: '100%' }} onClick={() => setKidsMode(v => !v)}>
+                  {kidsMode ? '🧒 On — words are pictures' : '🧒 Off — tap to use pictures'}
+                </button>
+              </div>
+
+              {/* Category picker */}
+              {!kidsMode && <div>
                 <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>CATEGORY</div>
                 <div className="cat-grid">
                   <button className={`cat-btn random-btn${selectedCats.includes('__random__') ? ' active' : ''}`} onClick={() => onToggleCat('__random__')}>
@@ -536,7 +570,7 @@ function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemov
                     </button>
                   ))}
                 </div>
-              </div>
+              </div>}
             </div>
           )}
         </div>
@@ -565,7 +599,7 @@ function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemov
 }
 
 // ── DealOverlay ────────────────────────────────────────────────────────────────
-function DealOverlay({ player, allPlayers, category, word, roleShown, isLast, onShow, onNext }) {
+function DealOverlay({ player, allPlayers, category, word, wordPic, roleShown, isLast, onShow, onNext }) {
   if (!player) return null;
   const isImposter = player.role === 'imposter';
 
@@ -622,7 +656,12 @@ function DealOverlay({ player, allPlayers, category, word, roleShown, isLast, on
         <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, marginBottom: 6 }}>CATEGORY</div>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text2)', marginBottom: 12 }}>{category}</div>
         <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600, marginBottom: 6 }}>THE WORD IS</div>
-        <div style={{ fontSize: 36, fontWeight: 900, color: 'var(--town)', letterSpacing: '-0.5px' }}>{word}</div>
+        {wordPic
+          ? <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 110, lineHeight: 1.1 }}>{wordPic}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--town)' }}>{word}</div>
+            </div>
+          : <div style={{ fontSize: 36, fontWeight: 900, color: 'var(--town)', letterSpacing: '-0.5px' }}>{word}</div>}
         <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(48,209,88,0.1)', borderRadius: 10, fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
           Give clues that prove you know the word — without making it too obvious. Find the Imposter!
         </div>
@@ -721,7 +760,7 @@ function VoteBar({ players, votes, maxVote, topVoters, totalVotes, tied, onVote,
 }
 
 // ── GuessOverlay ───────────────────────────────────────────────────────────────
-function GuessOverlay({ selfReveal, accused, category, onSubmit }) {
+function GuessOverlay({ selfReveal, accused, category, kidsMode, word, wordPic, onSubmit }) {
   return (
     <div className="panel panel-imposter fade-in" style={{ justifyContent: 'flex-start', paddingTop: 60 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
@@ -749,17 +788,28 @@ function GuessOverlay({ selfReveal, accused, category, onSubmit }) {
           <div style={{ fontSize: 22, fontWeight: 700 }}>{category}</div>
         </div>
 
+        {kidsMode ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>Imposter: tap the picture you think it is!</div>
+            {KIDS_CATEGORIES[category].map(([pic, name]) => (
+              <button key={pic} onClick={() => onSubmit(pic === wordPic)}
+                style={{ fontSize: 48, padding: '10px 0', borderRadius: 16, border: '1.5px solid var(--border)', background: 'var(--surface2)', cursor: 'pointer' }}
+                aria-label={name}>{pic}</button>
+            ))}
+          </div>
+        ) : (
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-imposter" style={{ flex: 1 }} onClick={() => onSubmit(true)}>✅ Got it</button>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => onSubmit(false)}>❌ Wrong</button>
         </div>
+        )}
       </div>
     </div>
   );
 }
 
 // ── GameOverOverlay ────────────────────────────────────────────────────────────
-function GameOverOverlay({ winner, winReason, players, word, category, onNextRound, onEditPlayers }) {
+function GameOverOverlay({ winner, winReason, players, word, wordPic, category, onNextRound, onEditPlayers }) {
   const [showRoles, setShowRoles] = useState(false);
   const imposters = players.filter(p => p.role === 'imposter');
   const isImpWin = winner === 'imposter';
@@ -778,6 +828,7 @@ function GameOverOverlay({ winner, winReason, players, word, category, onNextRou
       {/* Word reveal */}
       <div className="role-card" style={{ width: '100%', maxWidth: 340, textAlign: 'center' }}>
         <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 4 }}>{category}</div>
+        {wordPic && <div style={{ fontSize: 80, lineHeight: 1.1 }}>{wordPic}</div>}
         <div style={{ fontSize: 32, fontWeight: 900 }}>{word}</div>
         <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 8 }}>
           Imposters: {imposters.map(p => p.name).join(', ')}
