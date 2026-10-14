@@ -168,20 +168,6 @@ function Feed({ feed }) {
   );
 }
 
-// ── Timer hook ─────────────────────────────────────────────────────────────────
-function useTimer(initialSecs, active) {
-  const [secs, setSecs] = useState(initialSecs);
-  useEffect(() => {
-    setSecs(initialSecs);
-  }, [initialSecs]);
-  useEffect(() => {
-    if (!active || secs <= 0) return;
-    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(id);
-  }, [active, secs]);
-  return secs;
-}
-
 // ── App ────────────────────────────────────────────────────────────────────────
 function App() {
   const [feed, setFeed] = useState([
@@ -204,12 +190,11 @@ function App() {
     return c.length ? c : ['__random__']; // '__random__' or specific keys
   });
   const [imposterCount, setImposterCount] = useState(saved.imposterCount || 1);
-  const [timerMins, setTimerMins] = useState(saved.timerMins ?? 3); // 0 = no timer
 
   // Remember setup (players + options) across reloads
   useEffect(() => {
-    try { localStorage.setItem('imposter:setup', JSON.stringify({ names, selectedCats, imposterCount, timerMins })); } catch (e) {}
-  }, [names, selectedCats, imposterCount, timerMins]);
+    try { localStorage.setItem('imposter:setup', JSON.stringify({ names, selectedCats, imposterCount })); } catch (e) {}
+  }, [names, selectedCats, imposterCount]);
 
   // Game
   const [players, setPlayers] = useState([]);
@@ -224,8 +209,6 @@ function App() {
   const [roleShown, setRoleShown] = useState(false);
 
   // Discuss
-  const [timerActive, setTimerActive] = useState(false);
-  const [timerSecs, setTimerSecs] = useState(0);
   const [imposterRevealMode, setImposterRevealMode] = useState(false);
 
   // Vote
@@ -233,7 +216,6 @@ function App() {
 
   // Guess
   const [accusedId, setAccusedId] = useState(null);
-  const [guessInput, setGuessInput] = useState('');
 
   const nameInputRef = useRef(null);
 
@@ -286,13 +268,8 @@ function App() {
     setRevealIdx(0);
     setRoleShown(false);
     setVotes({});
-    setGuessInput('');
     setAccusedId(null);
     setImposterRevealMode(false);
-
-    const secs = timerMins * 60;
-    setTimerSecs(secs);
-    setTimerActive(false);
 
     addToFeed(
       msg('system', `— ${names.length} players · ${imposterCount} Imposter · ${cat} —`),
@@ -306,15 +283,9 @@ function App() {
   const nextReveal = () => {
     const next = revealIdx + 1;
     if (next >= players.length) {
-      const secs = timerMins * 60;
-      setTimerSecs(secs);
-      setTimerActive(secs > 0);
       addToFeed(
         msg('system', '— All roles revealed —'),
-        msg('narrator', `Everyone knows their role. Start asking each other questions about the word!`),
-        timerMins > 0
-          ? msg('narrator', `You have ${timerMins} minute${timerMins !== 1 ? 's' : ''} to discuss. When time's up or you're ready — vote!`)
-          : msg('narrator', `Take as long as you need. When ready, vote for who you think is the Imposter.`)
+        msg('narrator', `Everyone knows their role. Start asking each other questions about the word! When you're ready, vote.`)
       );
       setPhase('discuss');
     } else {
@@ -326,7 +297,6 @@ function App() {
 
   // ── Discuss ────────────────────────────────────────────────────────────────
   const startVoting = () => {
-    setTimerActive(false);
     setVotes({});
     addToFeed(
       msg('divider', '🗳️ Voting'),
@@ -338,7 +308,6 @@ function App() {
   const imposterSelfReveal = () => {
     // Imposter says "I know the word" — goes straight to guess
     setAccusedId(null); // no specific accused, just imposter guessing
-    setGuessInput('');
     setImposterRevealMode(true);
     addToFeed(msg('event', 'The Imposter is making a move — trying to guess the word!', { icon: '⚡', color: 'var(--imposter)' }));
     setPhase('guess');
@@ -357,7 +326,6 @@ function App() {
         msg('event', `${accused.name} has been accused by the town.`, { icon: '⚖️', color: 'var(--sheriff)' }),
         msg('narrator', `${accused.name} — you are the accused. You're the Imposter! Guess the word to save yourself.`)
       );
-      setGuessInput('');
       setImposterRevealMode(false);
       setPhase('guess');
     } else {
@@ -383,11 +351,7 @@ function App() {
   };
 
   // ── Guess ──────────────────────────────────────────────────────────────────
-  const submitGuess = () => {
-    const g = guessInput.trim().toLowerCase();
-    const w = word.toLowerCase();
-    const correct = g === w || w.includes(g) || g.includes(w);
-
+  const submitGuess = (correct) => {
     if (correct) {
       addToFeed(
         msg('event', `Correct! The word was "${word}"`, { icon: '✅', color: 'var(--imposter)' }),
@@ -400,7 +364,7 @@ function App() {
         msg('event', `Wrong! The word was "${word}"`, { icon: '❌', color: 'var(--town)' }),
         msg('event', accused ? `${accused.name} is eliminated. Town wins!` : 'Town wins!', { icon: '⚖️', color: 'var(--town)' })
       );
-      endGame('town', accusedId ? 'Imposter was caught and failed to guess the word' : 'Imposter guessed wrong');
+      endGame('town', accusedId !== null ? 'Imposter was caught and failed to guess the word' : 'Imposter guessed wrong');
     }
   };
 
@@ -429,7 +393,7 @@ function App() {
         {phase !== 'setup' && (
           <button className="btn btn-sm btn-ghost" onClick={() => {
             if (window.confirm('End game and return to setup?')) {
-              setPhase('setup'); setTimerActive(false);
+              setPhase('setup');
             }
           }}>New Game</button>
         )}
@@ -456,8 +420,6 @@ function App() {
           selfReveal={imposterRevealMode}
           accused={accusedId !== null ? players.find(p => p.id === accusedId) : null}
           category={category}
-          guessInput={guessInput}
-          setGuessInput={setGuessInput}
           onSubmit={submitGuess}
         />
       )}
@@ -469,16 +431,13 @@ function App() {
           players={players}
           word={word}
           category={category}
-          onRestart={() => {
-            setPhase('setup'); setTimerActive(false); setPlayers([]);
-            addToFeed(msg('divider', '— New Game —'));
+          onNextRound={() => {
+            addToFeed(msg('divider', '— Next Round —'));
+            startGame();
           }}
-          onPlayAgainSamePlayers={() => {
-            // Re-deal same players
-            setTimerActive(false);
-            setNames(players.map(p => p.name));
-            addToFeed(msg('divider', '— New Round —'));
-            setPhase('setup');
+          onEditPlayers={() => {
+            setPhase('setup'); setPlayers([]);
+            addToFeed(msg('divider', '— Edit Players —'));
           }}
         />
       )}
@@ -496,8 +455,6 @@ function App() {
           onToggleCat={toggleCat}
           imposterCount={imposterCount}
           setImposterCount={setImposterCount}
-          timerMins={timerMins}
-          setTimerMins={setTimerMins}
           canStart={canStart}
           onStart={startGame}
         />
@@ -506,11 +463,6 @@ function App() {
       {phase === 'discuss' && (
         <DiscussBar
           players={players}
-          timerSecs={timerSecs}
-          timerMins={timerMins}
-          timerActive={timerActive}
-          setTimerActive={setTimerActive}
-          setTimerSecs={setTimerSecs}
           onStartVoting={startVoting}
           onImposterReveal={imposterSelfReveal}
         />
@@ -537,7 +489,7 @@ function App() {
 // ── SetupBar ───────────────────────────────────────────────────────────────────
 function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemove,
                     selectedCats, onToggleCat, imposterCount, setImposterCount,
-                    timerMins, setTimerMins, canStart, onStart }) {
+                    canStart, onStart }) {
   const [showConfig, setShowConfig] = useState(false);
   const maxImp = Math.max(1, names.length - 2);
 
@@ -554,7 +506,7 @@ function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemov
       {names.length >= 3 && (
         <div>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowConfig(v => !v)}>
-            {showConfig ? '▲ Hide settings' : `⚙ Settings · ${imposterCount} Imposter${timerMins ? ` · ${timerMins}min` : ''}`}
+            {showConfig ? '▲ Hide settings' : `⚙ Settings · ${imposterCount} Imposter`}
           </button>
           {showConfig && (
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -567,21 +519,6 @@ function SetupBar({ names, nameInput, setNameInput, nameInputRef, onAdd, onRemov
                   <span style={{ fontWeight: 800, fontSize: 20, color: 'var(--imposter)', minWidth: 24, textAlign: 'center' }}>{imposterCount}</span>
                   <button onClick={() => setImposterCount(n => Math.min(maxImp, n + 1))}
                     style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 18, cursor: 'pointer' }}>+</button>
-                </div>
-              </div>
-
-              {/* Timer */}
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>DISCUSSION TIMER</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {[0, 2, 3, 5].map(m => (
-                    <button key={m} onClick={() => setTimerMins(m)}
-                      style={{ flex: 1, padding: '8px 4px', borderRadius: 8, border: `1.5px solid ${timerMins === m ? 'var(--accent)' : 'var(--border)'}`,
-                        background: timerMins === m ? 'rgba(10,132,255,0.15)' : 'var(--surface2)', color: timerMins === m ? 'var(--text)' : 'var(--text3)',
-                        cursor: 'pointer', fontWeight: 600, fontSize: 13, fontFamily: 'var(--font)' }}>
-                      {m === 0 ? 'None' : `${m}m`}
-                    </button>
-                  ))}
                 </div>
               </div>
 
@@ -698,57 +635,12 @@ function DealOverlay({ player, allPlayers, category, word, roleShown, isLast, on
 }
 
 // ── DiscussBar ─────────────────────────────────────────────────────────────────
-function DiscussBar({ players, timerSecs, timerMins, timerActive, setTimerActive, setTimerSecs, onStartVoting, onImposterReveal }) {
-  const [secs, setSecs] = useState(timerSecs);
-  useEffect(() => { setSecs(timerSecs); }, [timerSecs]);
-  useEffect(() => {
-    if (!timerActive || secs <= 0) return;
-    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(id);
-  }, [timerActive, secs]);
-
-  const mins = Math.floor(secs / 60);
-  const secPart = secs % 60;
-  const pct = timerMins > 0 ? (secs / (timerMins * 60)) * 100 : 100;
-  const timeUp = timerMins > 0 && secs === 0;
-  const timeColor = secs < 30 && timerMins > 0 ? 'var(--imposter)' : 'var(--accent)';
-
+function DiscussBar({ players, onStartVoting, onImposterReveal }) {
   return (
     <div className="input-bar">
       <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         💬 Discussion Phase
       </div>
-
-      {timerMins > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Circular timer */}
-          <div style={{ position: 'relative', width: 70, height: 70, flexShrink: 0 }}>
-            <svg width="70" height="70" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="35" cy="35" r="30" fill="none" stroke="var(--surface2)" strokeWidth="5"/>
-              <circle cx="35" cy="35" r="30" fill="none" stroke={timeColor} strokeWidth="5"
-                strokeDasharray={`${2 * Math.PI * 30}`}
-                strokeDashoffset={`${2 * Math.PI * 30 * (1 - pct / 100)}`}
-                style={{ transition: 'stroke-dashoffset 0.5s linear, stroke 0.5s' }}
-              />
-            </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 800, fontSize: 15, color: timeUp ? 'var(--imposter)' : timeColor,
-              ...(timeUp ? { animation: 'pulse 1.5s infinite' } : {}) }}>
-              {timeUp ? '⏰' : `${mins}:${String(secPart).padStart(2, '0')}`}
-            </div>
-          </div>
-          <div style={{ flex: 1 }}>
-            {timeUp
-              ? <div style={{ fontWeight: 700, color: 'var(--imposter)', fontSize: 15 }}>Time's up! Vote now.</div>
-              : <div style={{ fontWeight: 600, fontSize: 15 }}>Time remaining</div>
-            }
-            <button onClick={() => setTimerActive(a => !a)}
-              style={{ marginTop: 6, background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 12px', color: 'var(--text3)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font)' }}>
-              {timerActive ? '⏸ Pause' : '▶ Resume'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Players reference */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -829,10 +721,7 @@ function VoteBar({ players, votes, maxVote, topVoters, totalVotes, tied, onVote,
 }
 
 // ── GuessOverlay ───────────────────────────────────────────────────────────────
-function GuessOverlay({ selfReveal, accused, category, guessInput, setGuessInput, onSubmit }) {
-  const inputRef = useRef(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
-
+function GuessOverlay({ selfReveal, accused, category, onSubmit }) {
   return (
     <div className="panel panel-imposter fade-in" style={{ justifyContent: 'flex-start', paddingTop: 60 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
@@ -842,14 +731,14 @@ function GuessOverlay({ selfReveal, accused, category, guessInput, setGuessInput
             <>
               <h2 style={{ fontSize: 28, fontWeight: 800 }}>Imposter's Gamble</h2>
               <p style={{ color: 'var(--text3)', marginTop: 8, fontSize: 14, lineHeight: 1.5 }}>
-                You've revealed yourself! Guess the word to win instantly.
+                The Imposter revealed themselves and says the word out loud. Was it right?
               </p>
             </>
           ) : (
             <>
               <h2 style={{ fontSize: 28, fontWeight: 800 }}>Last Chance!</h2>
               <p style={{ color: 'var(--text3)', marginTop: 8, fontSize: 14, lineHeight: 1.5 }}>
-                {accused?.name}, you were caught. Guess the word correctly to escape!
+                {accused?.name} was caught and gets one spoken guess at the word. Was it right?
               </p>
             </>
           )}
@@ -860,20 +749,9 @@ function GuessOverlay({ selfReveal, accused, category, guessInput, setGuessInput
           <div style={{ fontSize: 22, fontWeight: 700 }}>{category}</div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <input
-            ref={inputRef}
-            className="text-input"
-            value={guessInput}
-            onChange={e => setGuessInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && guessInput.trim() && onSubmit()}
-            placeholder={`What's the word?`}
-            style={{ borderRadius: 12, padding: '14px 16px', fontSize: 18, textAlign: 'center' }}
-            autoComplete="off"
-          />
-          <button className="btn btn-imposter btn-block" disabled={!guessInput.trim()} onClick={onSubmit}>
-            Submit Guess
-          </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-imposter" style={{ flex: 1 }} onClick={() => onSubmit(true)}>✅ Got it</button>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => onSubmit(false)}>❌ Wrong</button>
         </div>
       </div>
     </div>
@@ -881,7 +759,7 @@ function GuessOverlay({ selfReveal, accused, category, guessInput, setGuessInput
 }
 
 // ── GameOverOverlay ────────────────────────────────────────────────────────────
-function GameOverOverlay({ winner, winReason, players, word, category, onRestart, onPlayAgainSamePlayers }) {
+function GameOverOverlay({ winner, winReason, players, word, category, onNextRound, onEditPlayers }) {
   const [showRoles, setShowRoles] = useState(false);
   const imposters = players.filter(p => p.role === 'imposter');
   const isImpWin = winner === 'imposter';
@@ -923,9 +801,9 @@ function GameOverOverlay({ winner, winReason, players, word, category, onRestart
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 340 }}>
-        <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onPlayAgainSamePlayers}>Same Players</button>
-        <button className="btn btn-primary" style={{ flex: 1 }} onClick={onRestart}>New Game</button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 340 }}>
+        <button className="btn btn-primary btn-block" onClick={onNextRound}>Next Round →</button>
+        <button className="btn btn-ghost btn-block" onClick={onEditPlayers}>Edit Players</button>
       </div>
     </div>
   );
