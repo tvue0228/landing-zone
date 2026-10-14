@@ -278,10 +278,20 @@ function App() {
     usedWords.add(key({ cat, w }));
     usedWordsRef.current = [...usedWords];
 
-    // Fair imposters: whoever has been imposter the fewest times goes first (ties random)
+    // Fair but unpredictable imposters: weighted random draw. Anyone who has been Imposter
+    // more than the least-picked player gets half the odds per extra turn, so it evens out
+    // over time without turning into a rotation you could guess.
     const counts = impCountsRef.current;
-    const byTurns = shuffle(names).sort((a, b) => (counts[a] || 0) - (counts[b] || 0));
-    const imposterNames = new Set(byTurns.slice(0, imposterCount));
+    const minCount = Math.min(...names.map(n => counts[n] || 0));
+    const pool = names.map(n => ({ n, wt: Math.pow(0.5, (counts[n] || 0) - minCount) }));
+    const imposterNames = new Set();
+    while (imposterNames.size < imposterCount && pool.length) {
+      let r = Math.random() * pool.reduce((t, p) => t + p.wt, 0);
+      let k = pool.findIndex(p => (r -= p.wt) < 0);
+      if (k < 0) k = pool.length - 1;
+      imposterNames.add(pool[k].n);
+      pool.splice(k, 1);
+    }
     imposterNames.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
     try {
       sessionStorage.setItem('imposter:used', JSON.stringify(usedWordsRef.current));
