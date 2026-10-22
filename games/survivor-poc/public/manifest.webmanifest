@@ -1,0 +1,14 @@
+{
+  "id": "/",
+  "name": "Survivor PoC",
+  "short_name": "Survivor",
+  "description": "Proof-of-concept 3D survivor game built with Vite, TypeScript and three.js.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "categories": ["games"],
+  "background_color": "#1a1630",
+  "theme_color": "#1a1630",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
