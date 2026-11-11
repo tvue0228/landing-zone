@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>YouTube Extractor</title>
+<style>
+:root {
+  --bg: #0a0c10; --surface: #111318; --surface2: #191c24; --border: #22262f;
+  --text: #e8eaf0; --text2: #8b92a8; --text3: #4a5068;
+  --red: #ef4444; --blue: #3b82f6; --green: #22c55e; --yellow: #fbbf24;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font-family: var(--font); cursor: pointer; }
+
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 16px; position: sticky; top: 0; z-index: 10; }
+.header h1 { font-size: 16px; font-weight: 700; }
+.header p { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.extract-row { display: flex; gap: 8px; margin-top: 12px; }
+.extract-row input { flex: 1; min-width: 0; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: var(--font); }
+.extract-row input:focus { outline: none; border-color: var(--blue); }
+.btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; transition: all .15s; white-space: nowrap; }
+.btn:hover { border-color: var(--blue); color: var(--text); }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.primary:hover { filter: brightness(1.1); }
+.btn:disabled { opacity: .5; cursor: default; }
+.status { font-size: 13px; margin-top: 8px; color: var(--text2); min-height: 18px; }
+.status.err { color: var(--red); } .status.ok { color: var(--green); }
+details.token { margin-top: 8px; font-size: 12px; color: var(--text3); }
+details.token summary { cursor: pointer; }
+details.token p { margin: 8px 0; color: var(--text2); line-height: 1.5; }
+details.token .extract-row { margin-top: 6px; }
+
+.layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 110px); }
+.sidebar { border-right: 1px solid var(--border); background: var(--surface); }
+.search { width: calc(100% - 24px); margin: 12px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--font); }
+.search:focus { outline: none; border-color: var(--blue); }
+.vid { display: block; width: 100%; text-align: left; background: none; border: none; border-top: 1px solid var(--border); padding: 12px 14px; color: var(--text); }
+.vid:hover, .vid.active { background: var(--surface2); }
+.vid .t { font-size: 14px; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vid .m { font-size: 12px; color: var(--text3); margin-top: 3px; }
+.main { padding: 20px; min-width: 0; }
+.empty { color: var(--text3); text-align: center; padding: 60px 20px; font-size: 14px; line-height: 1.7; }
+
+.title { font-size: 20px; font-weight: 700; line-height: 1.3; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 14px; font-size: 13px; color: var(--text2); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.warn { background: #2a1d05; border: 1px solid #5a3f0a; color: var(--yellow); border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; word-break: break-word; }
+.section { margin-top: 20px; }
+.section h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.section h2 label { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; cursor: pointer; }
+.chapters a { display: block; font-size: 13px; padding: 2px 0; }
+.chapters .ts, .seg .ts { font-family: var(--mono); color: var(--text3); margin-right: 8px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 99px; padding: 2px 10px; color: var(--text2); }
+.desc, .transcript { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+.transcript { max-height: 60vh; overflow-y: auto; line-height: 1.7; }
+.seg { display: block; color: var(--text); }
+a.ts { text-decoration: none; }
+
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 40vh; overflow-y: auto; }
+  .main { padding: 16px; }
+  .layout.has-sel .sidebar { display: none; }
+  .back { display: inline-block !important; }
+}
+.back { display: none; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>▶ YouTube Extractor</h1>
+  <p>Transcript + metadata for any video, ready to hand to an LLM</p>
+  <div class="extract-row">
+    <input id="url" type="url" placeholder="Paste a YouTube link…" autocomplete="off"/>
+    <button id="go" class="btn primary">Extract</button>
+  </div>
+  <div id="status" class="status"></div>
+  <details class="token">
+    <summary>One-tap extraction (optional)</summary>
+    <p>YouTube blocks browsers from fetching transcripts directly, so extraction runs as a GitHub Action
+      (<a id="actionsLink" target="_blank" rel="noopener">open it</a>). Without a token the button copies your link and opens that page — paste it in <b>Run workflow</b>.
+      To trigger it straight from here, save a fine-grained token limited to this repo with <b>Actions: read &amp; write</b>. It stays in this browser only.</p>
+    <div class="extract-row">
+      <input id="token" type="password" placeholder="github_pat_…" autocomplete="off"/>
+      <button id="saveToken" class="btn">Save</button>
+      <button id="clearToken" class="btn">Clear</button>
+    </div>
+  </details>
+</div>
+
+<div id="layout" class="layout">
+  <div class="sidebar">
+    <input id="search" class="search" placeholder="Search extracted videos…"/>
+    <div id="list"></div>
+  </div>
+  <div id="main" class="main"><div class="empty">Loading…</div></div>
+</div>
+
+<script>
+const REPO = 'tvue0228/landing-zone', WORKFLOW = 'youtube-extract.yml', BRANCH = 'main';
+const ACTIONS_URL = `https://github.com/${REPO}/actions/workflows/${WORKFLOW}`;
+const $ = id => document.getElementById(id);
+const store = {
+  get: k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
+  set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} },
+};
+let index = [], current = null, showTs = true, pollTimer = null;
+
+// ── helpers ──
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => c != null && n.append(c));
+  return n;
+}
+const fmtTime = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+const fmtNum = n => n == null ? null : n.toLocaleString();
+const ytLink = (id, t) => `https://www.youtube.com/watch?v=${id}${t ? '&t=' + Math.floor(t) + 's' : ''}`;
+function setStatus(msg, cls = '') { const s = $('status'); s.textContent = msg; s.className = 'status ' + cls; }
+
+function parseVideoId(raw) {
+  raw = raw.trim();
+  if (/^[\w-]{11}$/.test(raw)) return raw;
+  try {
+    const u = new URL(/^https?:\/\//.test(raw) ? raw : 'https://' + raw);
+    const host = u.hostname.replace(/^(www|m)\./, '');
+    let id = null;
+    if (host === 'youtu.be') id = u.pathname.split('/')[1];
+    else if (['youtube.com', 'music.youtube.com', 'youtube-nocookie.com'].includes(host))
+      id = u.pathname === '/watch' ? u.searchParams.get('v') : (u.pathname.match(/^\/(?:shorts|embed|live|v)\/([^/?#]+)/) || [])[1];
+    return id && /^[\w-]{11}$/.test(id) ? id : null;
+  } catch (e) { return null; }
+}
+
+// ── data ──
+async function loadIndex() {
+  try {
+    const r = await fetch('../../data/youtube/index.json?t=' + Date.now());
+    index = r.ok ? await r.json() : [];
+  } catch (e) { index = []; }
+  renderList();
+  return index;
+}
+async function loadVideo(id) {
+  const r = await fetch(`../../data/youtube/${id}.json?t=${Date.now()}`);
+  if (!r.ok) throw new Error('not found');
+  return r.json();
+}
+
+// ── list ──
+function renderList() {
+  const q = $('search').value.trim().toLowerCase();
+  const items = index.filter(v => !q || `${v.title} ${v.channel || ''}`.toLowerCase().includes(q));
+  const box = $('list'); box.replaceChildren();
+  if (!items.length) box.append(el('div', { class: 'empty', text: index.length ? 'No matches' : 'Nothing extracted yet' }));
+  items.forEach(v => box.append(el('button', { class: 'vid' + (current && current.id === v.id ? ' active' : ''), onclick: () => select(v.id) },
+    el('div', { class: 't', text: v.title }),
+    el('div', { class: 'm', text: [v.channel, v.duration_secs ? fmtTime(v.duration_secs) : null, v.has_transcript ? null : '⚠ no transcript'].filter(Boolean).join(' · ') }))));
+  if (!current) renderMain();
+}
+
+// ── detail ──
+function llmText(v, withTs) {
+  const lines = [`Title: ${v.title || v.id}`, `Channel: ${v.channel || 'unknown'}`, `URL: ${v.url}`];
+  if (v.published) lines.push(`Published: ${v.published}`);
+  if (v.duration_secs) lines.push(`Duration: ${fmtTime(v.duration_secs)}`);
+  const stats = [['Views', v.views], ['Likes', v.likes], ['Comments', v.comments]].filter(x => x[1] != null).map(x => `${x[0]}: ${fmtNum(x[1])}`);
+  if (stats.length) lines.push(stats.join(' | '));
+  if (v.tags && v.tags.length) lines.push(`Tags: ${v.tags.join(', ')}`);
+  if (v.chapters && v.chapters.length) lines.push('', 'Chapters:', ...v.chapters.map(c => `[${fmtTime(c.start)}] ${c.title}`));
+  if (v.description) lines.push('', 'Description:', v.description);
+  if (v.transcript) {
+    const t = v.transcript;
+    lines.push('', `Transcript (${t.language}${t.is_generated ? ', auto-generated' : ''}):`,
+      ...t.segments.map(s => withTs ? `[${fmtTime(s.start)}] ${s.text}` : s.text));
+  }
+  return lines.join('\n');
+}
+function download(name, text, type) {
+  const a = el('a', { href: URL.createObjectURL(new Blob([text], { type })), download: name });
+  document.body.append(a); a.click(); a.remove();
+}
+async function copy(text, btn) {
+  const old = btn.textContent;
+  try { await navigator.clipboard.writeText(text); btn.textContent = '✓ Copied'; }
+  catch (e) { btn.textContent = 'Copy failed'; }
+  setTimeout(() => btn.textContent = old, 1500);
+}
+
+function renderMain() {
+  const m = $('main'); m.replaceChildren();
+  $('layout').classList.toggle('has-sel', !!current);
+  if (!current) { m.append(el('div', { class: 'empty' }, 'Paste a YouTube link above and tap Extract.', el('br'), 'Finished extractions show up here.')); return; }
+  const v = current;
+  const t = v.transcript;
+  const slug = (v.title || v.id).replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || v.id;
+  const copyBtn = el('button', { class: 'btn primary', text: 'Copy for LLM', onclick: () => copy(llmText(v, showTs), copyBtn) });
+  m.append(
+    el('button', { class: 'btn back', text: '← All videos', onclick: () => { current = null; history.replaceState(null, '', location.pathname); renderList(); } }),
+    el('h1', { class: 'title', text: v.title || v.id }),
+    el('div', { class: 'meta' }, [
+      v.channel, v.published && String(v.published).slice(0, 10), v.duration_secs ? fmtTime(v.duration_secs) : null,
+      v.views != null ? fmtNum(v.views) + ' views' : null, v.likes != null ? fmtNum(v.likes) + ' likes' : null,
+      v.comments != null ? fmtNum(v.comments) + ' comments' : null,
+      t ? `${t.language}${t.is_generated ? ' (auto)' : ''} · ${t.segments.length} lines` : null,
+    ].filter(Boolean).map(x => el('span', { text: x }))),
+    el('div', { class: 'actions' },
+      copyBtn,
+      t ? el('button', { class: 'btn', text: 'Download .txt', onclick: () => download(slug + '.txt', llmText(v, showTs), 'text/plain') }) : null,
+      el('button', { class: 'btn', text: 'Download .json', onclick: () => download(slug + '.json', JSON.stringify(v, null, 2), 'application/json') }),
+      el('a', { class: 'btn', href: ytLink(v.id), target: '_blank', rel: 'noopener', text: 'Open on YouTube' })),
+  );
+  if (v.transcript_error) m.append(el('div', { class: 'warn', text: 'No transcript: ' + v.transcript_error }));
+  if (v.chapters && v.chapters.length) m.append(el('div', { class: 'section' }, el('h2', { text: 'Chapters' }),
+    el('div', { class: 'chapters' }, v.chapters.map(c => el('a', { href: ytLink(v.id, c.start), target: '_blank', rel: 'noopener' }, el('span', { class: 'ts', text: fmtTime(c.start) }), c.title)))));
+  if (v.tags && v.tags.length) m.append(el('div', { class: 'section' }, el('h2', { text: 'Tags' }), el('div', { class: 'tags' }, v.tags.map(x => el('span', { class: 'tag', text: x })))));
+  if (v.description) m.append(el('div', { class: 'section' }, el('h2', { text: 'Description' }), el('div', { class: 'desc', text: v.description })));
+  if (t) {
+    const box = el('div', { class: 'transcript' });
+    const fill = () => { box.replaceChildren(...t.segments.map(s => el('span', { class: 'seg' },
+      showTs ? el('a', { class: 'ts', href: ytLink(v.id, s.start), target: '_blank', rel: 'noopener', text: fmtTime(s.start) }) : null, s.text))); };
+    fill();
+    const cb = el('input', { type: 'checkbox', onchange: e => { showTs = e.target.checked; fill(); } }); cb.checked = showTs;
+    m.append(el('div', { class: 'section' }, el('h2', {}, 'Transcript', el('label', {}, cb, ' timestamps')), box));
+  }
+}
+
+async function select(id) {
+  try { current = await loadVideo(id); } catch (e) { current = null; setStatus('Could not load that video', 'err'); }
+  if (current) history.replaceState(null, '', '?v=' + id);
+  renderList(); renderMain(); scrollTo(0, 0);
+}
+
+// ── extract ──
+function stopPoll() { clearInterval(pollTimer); pollTimer = null; }
+function pollFor(id) {
+  stopPoll();
+  const started = Date.now();
+  pollTimer = setInterval(async () => {
+    await loadIndex();
+    if (index.some(v => v.id === id && Date.parse(v.extracted_at) > started - 5000)) {
+      stopPoll(); setStatus('Done — extraction finished', 'ok'); select(id);
+    } else if (Date.now() - started > 4 * 60 * 1000) {
+      stopPoll(); setStatus(`Still not here after 4 min — check the run on GitHub: ${ACTIONS_URL}`, 'err');
+    }
+  }, 10000);
+}
+async function extract() {
+  const raw = $('url').value.trim();
+  const id = parseVideoId(raw);
+  if (!id) return setStatus('That doesn’t look like a YouTube link', 'err');
+  const existing = index.find(v => v.id === id);
+  if (existing && !confirm('Already extracted. Run it again?')) return select(id);
+  const token = store.get('yt_gh_token');
+  const btn = $('go'); btn.disabled = true;
+  try {
+    if (!token) {
+      try { await navigator.clipboard.writeText(raw); } catch (e) {}
+      window.open(ACTIONS_URL, '_blank', 'noopener');
+      setStatus('Link copied. On the GitHub page: Run workflow → paste → Run. Then come back and refresh.', 'ok');
+      return;
+    }
+    setStatus('Starting extraction…');
+    const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: BRANCH, inputs: { url: raw } }),
+    });
+    if (r.status === 204) { setStatus('Extracting… usually takes under a minute. This page will update when it’s done.'); pollFor(id); }
+    else if (r.status === 401 || r.status === 403 || r.status === 404) setStatus('GitHub rejected the token — it needs Actions: read & write on this repo.', 'err');
+    else setStatus('GitHub returned ' + r.status, 'err');
+  } catch (e) { setStatus('Network error — ' + e.message, 'err'); }
+  finally { btn.disabled = false; }
+}
+
+// ── init ──
+$('actionsLink').href = ACTIONS_URL;
+$('go').onclick = extract;
+$('url').addEventListener('keydown', e => e.key === 'Enter' && extract());
+$('search').addEventListener('input', renderList);
+$('token').value = store.get('yt_gh_token');
+$('saveToken').onclick = () => { store.set('yt_gh_token', $('token').value.trim()); setStatus('Token saved in this browser', 'ok'); };
+$('clearToken').onclick = () => { store.set('yt_gh_token', ''); $('token').value = ''; setStatus('Token removed', 'ok'); };
+loadIndex().then(() => {
+  const id = new URLSearchParams(location.search).get('v');
+  if (id && /^[\w-]{11}$/.test(id)) select(id); else renderMain();
+});
+</script>
+</body>
+</html>

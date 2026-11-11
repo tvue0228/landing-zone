@@ -1,0 +1,54 @@
+name: YouTube Extract
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "YouTube video URL (or 11-character video ID)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+# Serialize runs so two extractions can't race on data/youtube/index.json
+concurrency:
+  group: youtube-extract
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: scripts/requirements-youtube.txt
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements-youtube.txt
+
+      - name: Extract
+        # Input goes through env, never interpolated into the shell command
+        env:
+          VIDEO_URL: ${{ inputs.url }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YT_PROXY: ${{ secrets.YT_PROXY }}
+        run: python scripts/youtube_extract.py "$VIDEO_URL"
+
+      - name: Commit extraction
+        # Also commit a metadata-only result when the transcript step failed the run
+        if: success() || failure()
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: youtube extract [skip ci]"
+          file_pattern: data/youtube
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
